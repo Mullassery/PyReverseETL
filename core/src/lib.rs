@@ -9,6 +9,7 @@ pub mod statguardian;
 pub mod streamxl;
 pub mod streampdf;
 pub mod adapters;
+pub mod streaming;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
