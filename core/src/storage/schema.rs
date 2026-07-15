@@ -14,6 +14,8 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
             sync_mode TEXT NOT NULL,
             mappings TEXT NOT NULL,
             schedule TEXT,
+            rate_limit TEXT,
+            event_stream_config TEXT,
             enabled BOOLEAN NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL

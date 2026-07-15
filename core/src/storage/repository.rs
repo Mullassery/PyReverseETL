@@ -23,11 +23,13 @@ impl Repository {
         let sync_mode_json = serde_json::to_string(&workflow.sync_mode)?;
         let source_type_json = serde_json::to_string(&workflow.source_type)?;
         let schedule_json = serde_json::to_string(&workflow.schedule)?;
+        let rate_limit_json = serde_json::to_string(&workflow.rate_limit)?;
+        let event_stream_config_json = serde_json::to_string(&workflow.event_stream_config)?;
 
         conn.execute(
             "INSERT OR REPLACE INTO workflows
-             (id, name, description, version, owner, source_type, sync_mode, mappings, schedule, enabled, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+             (id, name, description, version, owner, source_type, sync_mode, mappings, schedule, rate_limit, event_stream_config, enabled, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
             rusqlite::params![
                 &workflow.id,
                 &workflow.name,
@@ -38,6 +40,8 @@ impl Repository {
                 sync_mode_json,
                 mappings_json,
                 schedule_json,
+                rate_limit_json,
+                event_stream_config_json,
                 workflow.enabled,
                 workflow.created_at.to_rfc3339(),
                 workflow.updated_at.to_rfc3339(),
@@ -53,7 +57,7 @@ impl Repository {
         })?;
 
         let mut stmt = conn.prepare(
-            "SELECT id, name, description, version, owner, source_type, sync_mode, mappings, schedule, enabled, created_at, updated_at
+            "SELECT id, name, description, version, owner, source_type, sync_mode, mappings, schedule, rate_limit, event_stream_config, enabled, created_at, updated_at
              FROM workflows WHERE id = ?1",
         )?;
 
@@ -62,6 +66,8 @@ impl Repository {
             let sync_mode_json: String = row.get(6)?;
             let mappings_json: String = row.get(7)?;
             let schedule_json: String = row.get(8)?;
+            let rate_limit_json: String = row.get(9)?;
+            let event_stream_config_json: String = row.get(10)?;
 
             Ok(Workflow {
                 id: row.get(0)?,
@@ -73,11 +79,13 @@ impl Repository {
                 sync_mode: serde_json::from_str(&sync_mode_json).unwrap_or_default(),
                 mappings: serde_json::from_str(&mappings_json).unwrap_or_default(),
                 schedule: serde_json::from_str(&schedule_json).ok(),
-                enabled: row.get(9)?,
-                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(10)?)
+                rate_limit: serde_json::from_str(&rate_limit_json).ok(),
+                event_stream_config: serde_json::from_str(&event_stream_config_json).ok(),
+                enabled: row.get(11)?,
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(12)?)
                     .unwrap()
                     .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(11)?)
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(13)?)
                     .unwrap()
                     .with_timezone(&chrono::Utc),
             })
