@@ -6,6 +6,7 @@ pub mod error;
 pub mod mapping;
 pub mod schema_detect;
 pub mod alert_compat;
+pub mod retry_policy;
 pub mod webhook;
 pub mod salesforce;
 pub mod hubspot;
