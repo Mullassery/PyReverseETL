@@ -176,25 +176,45 @@ activation = Activation(
 
 See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--context-discovery) for details.
 
-## Features
+## Roadmap
 
-### ✅ Phase 1: Core Foundation (Current)
+### ✅ Phase 1: Core Foundation (v1.0.0)
 - Core data model (Workflow, Activation, Destination, Entity)
-- SQLite persistence
+- SQLite persistence with CRUD repositories
 - Builder patterns for ergonomic API
-- 18+ unit tests
+- 59 tests passing
 
-### 🚧 Phase 2: Runtime Engine (In Progress)
-- Scheduler for time-based triggers
-- Executor for action execution
-- State manager for transitions
-- Condition evaluator
+### ✅ Phase 2: Destination Ecosystem (v1.1.0)
+- 4 Production adapters (Webhook, Salesforce, HubSpot, Marketo)
+- YAML-based field mapping configuration
+- Automatic schema detection with type inference
+- OpenTelemetry-compatible alert message structures
+- 48 tests passing
 
-### 📋 Phase 3: Full Activation (Planned)
-- Batch and incremental sync
-- CDC pipeline
-- Streaming integrations
-- Bidirectional sync
+### ✅ Phase 3 Week 1: Resilience & HTTP (v1.1.5)
+- Exponential backoff retry logic
+- Production HTTP client with connection pooling
+- OAuth token manager with automatic refresh
+- 24 tests passing
+
+### ✅ Phase 3 Week 2: Event Streaming (v1.2.0) ← Current
+- Event schema with types and sources
+- Thread-safe EventProcessor with batch buffering
+- Async event handlers with Tokio
+- Ready for Kafka/CDC/API integration
+- 11 new tests (142 total)
+
+### 🚧 Phase 3 Week 3: CDC Engine (Planned)
+- Change detection with before/after comparison
+- Changelog with transaction log storage
+- Checkpoint management
+- 9 new tests (151 total)
+
+### 📋 Phase 3 Week 4: Real-Time Pipeline (Planned)
+- End-to-end ActivationPipeline
+- Latency tracking and metrics
+- Error recovery & backpressure handling
+- 18 new tests (165+ total → v1.5.0)
 
 ### 🔮 Phase 4: Advanced Features (Planned)
 - Entity graph synchronization
