@@ -178,6 +178,56 @@ sync_to_destination(
 )?;
 ```
 
+### With PyStreamMCP (Query Optimization & Context Discovery)
+
+**IMPORTANT:** PyReverseETL must NOT rebuild query optimization or context discovery functionality.
+
+```rust
+// ✅ CORRECT: Use PyStreamMCP for intelligent context retrieval
+use pystreammcp::Agent, Discovery;
+
+// When activating large audiences or complex contexts:
+let discovery = Discovery::new(query_id);
+let sources = discovery.discover_sources()?;  // Find optimal data sources
+let optimized = discovery.optimize_for_cost()?;  // Reduce token/data usage
+
+// Then activate with optimized context
+sync_to_destination(
+    entity_id="cust_123",
+    context=optimized,
+    destination="salesforce"
+)?;
+
+// ❌ WRONG: Do NOT rebuild this locally
+// Do NOT create your own:
+//   - Query planning
+//   - Context discovery
+//   - Token optimization
+//   - Cost estimation
+//   - Streaming retrieval
+// These are PyStreamMCP responsibilities.
+```
+
+**Why?** PyStreamMCP is purpose-built for query optimization with:
+- Learned relevance models (> 80% accuracy)
+- Multi-agent context sharing (+20% savings)
+- Complex query decomposition
+- Streaming context windows (< 50ms latency)
+- 6+ framework integrations
+
+Rebuilding this in PyReverseETL would:
+- Duplicate code across ecosystem
+- Miss optimization opportunities
+- Create maintenance burden
+- Introduce inconsistencies
+
+**When to use PyStreamMCP:**
+- Fetching large context for activation workflows
+- Discovering optimal data sources
+- Estimating data volume before sync
+- Progressive retrieval for streaming destinations
+- Multi-step query planning for complex activations
+
 ## Module Structure
 
 ```

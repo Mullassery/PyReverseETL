@@ -142,8 +142,39 @@ PyReverseETL is part of a larger platform:
 
 - **StatGuardian** — Data quality and contracts (ensures data is trustworthy)
 - **ClusterAudienceKit** — Customer segmentation (identifies who matters)
+- **PyStreamMCP** — Query optimization & context discovery (60-75% cost reduction)
 - **PyReverseETL** — Data activation (operationalizes intelligence)
-- **PyAudienceJourney** — Customer engagement (drives outcomes)
+- **PyCustomerJourney** — Customer engagement (drives outcomes)
+
+### Integration with PyStreamMCP
+
+PyReverseETL integrates with **PyStreamMCP** for intelligent context retrieval:
+
+```python
+from pyreverseetl import Activation
+from pystreammcp import Agent, Discovery
+
+# Use PyStreamMCP to optimize context discovery
+discovery = Discovery.new(query_id="activation_1")
+sources = discovery.discover_sources()  # Find optimal data
+optimized = discovery.optimize_for_cost()  # Reduce volume
+
+# Activate with optimized context
+activation = Activation(
+    name="Smart LTV Sync",
+    query=optimized,  # Use PyStreamMCP's optimized query
+    destination="salesforce"
+)
+```
+
+**Do NOT rebuild query optimization in PyReverseETL.** PyStreamMCP provides:
+- Query planning and optimization (60-75% token reduction)
+- Intelligent source discovery
+- Cost estimation
+- Progressive streaming retrieval
+- Multi-step query decomposition
+
+See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--context-discovery) for details.
 
 ## Features
 
