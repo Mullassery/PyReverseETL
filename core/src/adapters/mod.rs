@@ -7,12 +7,16 @@ pub mod mapping;
 pub mod schema_detect;
 pub mod alert_compat;
 pub mod retry_policy;
+pub mod http_client;
+pub mod oauth_manager;
 pub mod webhook;
 pub mod salesforce;
 pub mod hubspot;
 pub mod marketo;
 
 pub use error::AdapterError;
+pub use retry_policy::RetryPolicy;
+pub use http_client::HttpClient;
 
 /// Field transformation operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
