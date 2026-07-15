@@ -25,6 +25,7 @@ classifiers = [
 [tool.maturin]
 module-name = "pyreverseetl._core"
 python-source = "python"
+manifest-path = "python/Cargo.toml"
 features = ["pyo3/extension-module"]
 
 [project.urls]
