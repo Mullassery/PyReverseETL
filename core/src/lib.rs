@@ -8,6 +8,7 @@ pub mod storage;
 pub mod statguardian;
 pub mod streamxl;
 pub mod streampdf;
+pub mod adapters;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -19,3 +20,4 @@ pub use storage::Repository;
 pub use statguardian::{ValidationGate, ValidationResult, ValidationStatus, StatGuardianConfig};
 pub use streamxl::{StreamXLSource, StreamXLConfig, StreamXLAccessMethod};
 pub use streampdf::{StreamPDFSource, StreamPDFConfig, ExtractionMode, ExtractedData};
+pub use adapters::{DestinationAdapter, FieldMapping, AuthMethod, OperationResult, BatchResult};
