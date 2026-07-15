@@ -2,11 +2,17 @@ use serde::{Deserialize, Serialize};
 
 /// Workflow defines WHERE data comes from and HOW to extract it.
 ///
-/// A workflow specifies a data source (table, model, query, audience, or event)
-/// and extraction method (batch, incremental, CDC, streaming, or event-driven).
+/// A workflow specifies a data source (warehouse table, model, query, audience, event,
+/// spreadsheet via StreamXL, or PDF via PyStreamPDF) and extraction method
+/// (batch, incremental, CDC, streaming, or event-driven).
+///
+/// Integrated data sources:
+/// - Warehouse: Table, Model, Query, Audience, Event
+/// - Spreadsheets: StreamXL sheets with column mapping
+/// - PDFs: PyStreamPDF with intelligent extraction and token efficiency
 ///
 /// What Workflow DOES:
-/// ✓ Specify data source (table, model, query, audience, event stream)
+/// ✓ Specify data source (warehouse, spreadsheet, PDF)
 /// ✓ Define sync mode (Batch, Incremental, CDC, Streaming, EventDriven)
 /// ✓ Map source fields to destination fields
 /// ✓ Schedule execution (optional)
@@ -33,11 +39,16 @@ pub struct Workflow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SourceType {
+    // Warehouse sources
     Table { table_name: String },
     Model { model_name: String },
     Query { sql: String },
     Audience { audience_id: String },
     Event { event_type: String },
+    // StreamXL integration - spreadsheet data sources
+    StreamXL { sheet_name: String, api_url: String },
+    // PyStreamPDF integration - PDF data sources with intelligent extraction
+    StreamPDF { pdf_path: String, extraction_query: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

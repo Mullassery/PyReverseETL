@@ -6,6 +6,8 @@ pub mod entity;
 pub mod sync;
 pub mod storage;
 pub mod statguardian;
+pub mod streamxl;
+pub mod streampdf;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -15,3 +17,5 @@ pub use entity::Entity;
 pub use sync::{SyncEngine, SyncRun, SyncRecord, SyncStatus};
 pub use storage::Repository;
 pub use statguardian::{ValidationGate, ValidationResult, ValidationStatus, StatGuardianConfig};
+pub use streamxl::{StreamXLSource, StreamXLConfig, StreamXLAccessMethod};
+pub use streampdf::{StreamPDFSource, StreamPDFConfig, ExtractionMode, ExtractedData};
