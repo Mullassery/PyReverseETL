@@ -54,6 +54,19 @@ impl Destination {
         self.enabled = enabled;
         self
     }
+
+    pub fn get_config(&self, key: &str) -> Option<&serde_json::Value> {
+        self.config.get(key)
+    }
+
+    pub fn update_timestamp(&mut self) {
+        self.updated_at = chrono::Utc::now();
+    }
+
+    pub fn increment_version(&mut self) {
+        self.version += 1;
+        self.update_timestamp();
+    }
 }
 
 impl Default for DestinationType {
@@ -106,5 +119,64 @@ mod tests {
     fn test_destination_type_str() {
         assert_eq!(DestinationType::Salesforce.as_str(), "salesforce");
         assert_eq!(DestinationType::HubSpot.as_str(), "hubspot");
+    }
+
+    #[test]
+    fn test_destination_disabled() {
+        let dest = Destination::new("Test", DestinationType::Webhook)
+            .set_enabled(false);
+        assert!(!dest.enabled);
+    }
+
+    #[test]
+    fn test_destination_get_config() {
+        let dest = Destination::new("Test", DestinationType::Kafka)
+            .set_config("broker", serde_json::json!("localhost:9092"));
+
+        let broker = dest.get_config("broker");
+        assert!(broker.is_some());
+        assert_eq!(broker.unwrap().as_str().unwrap(), "localhost:9092");
+    }
+
+    #[test]
+    fn test_destination_version_increment() {
+        let mut dest = Destination::new("Test", DestinationType::Salesforce);
+        assert_eq!(dest.version, 1);
+
+        let original_updated = dest.updated_at;
+        dest.increment_version();
+        assert_eq!(dest.version, 2);
+        assert!(dest.updated_at > original_updated);
+    }
+
+    #[test]
+    fn test_destination_all_types() {
+        let types = vec![
+            DestinationType::Salesforce,
+            DestinationType::HubSpot,
+            DestinationType::Braze,
+            DestinationType::Kafka,
+            DestinationType::Webhook,
+        ];
+
+        for dest_type in types {
+            let dest = Destination::new("Test", dest_type);
+            assert_eq!(dest.version, 1);
+            assert!(dest.enabled);
+        }
+    }
+
+    #[test]
+    fn test_destination_complex_config() {
+        let dest = Destination::new("HubSpot API", DestinationType::HubSpot)
+            .set_config("api_key", serde_json::json!("key123"))
+            .set_config("base_url", serde_json::json!("https://api.hubapi.com"))
+            .set_config("rate_limit", serde_json::json!(1000));
+
+        assert_eq!(dest.config.len(), 3);
+        assert_eq!(
+            dest.get_config("api_key").unwrap().as_str().unwrap(),
+            "key123"
+        );
     }
 }

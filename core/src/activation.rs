@@ -92,6 +92,19 @@ impl Activation {
         self.enabled = enabled;
         self
     }
+
+    pub fn get_policy(&self, key: &str) -> Option<&serde_json::Value> {
+        self.policies.get(key)
+    }
+
+    pub fn update_timestamp(&mut self) {
+        self.updated_at = chrono::Utc::now();
+    }
+
+    pub fn increment_version(&mut self) {
+        self.version += 1;
+        self.update_timestamp();
+    }
 }
 
 #[cfg(test)]
@@ -136,6 +149,57 @@ mod tests {
             .with_validation_gates(vec![gate1, gate2]);
 
         assert_eq!(activation.validation_gates.len(), 2);
+        assert!(activation.requires_validation());
+    }
+
+    #[test]
+    fn test_activation_policies() {
+        let activation = Activation::new("Test", "wf_1", "owner")
+            .set_policy("batch_size", serde_json::json!(1000))
+            .set_policy("timeout_seconds", serde_json::json!(300))
+            .set_policy("retry_count", serde_json::json!(3));
+
+        assert_eq!(activation.policies.len(), 3);
+        assert_eq!(
+            activation.get_policy("batch_size").unwrap().as_i64().unwrap(),
+            1000
+        );
+    }
+
+    #[test]
+    fn test_activation_disabled() {
+        let activation = Activation::new("Test", "wf_1", "owner")
+            .set_enabled(false);
+
+        assert!(!activation.enabled);
+    }
+
+    #[test]
+    fn test_activation_version_increment() {
+        let mut activation = Activation::new("Test", "wf_1", "owner");
+        assert_eq!(activation.version, 1);
+
+        let original_updated = activation.updated_at;
+        activation.increment_version();
+        assert_eq!(activation.version, 2);
+        assert!(activation.updated_at > original_updated);
+    }
+
+    #[test]
+    fn test_activation_complete_workflow() {
+        let gate = ValidationGate::new("customer_data").block_on_failure(true);
+
+        let activation = Activation::new("Revenue Sync", "wf_revenue", "analytics_team")
+            .with_description("Sync revenue data to CRM daily")
+            .add_destination("salesforce_prod")
+            .add_destination("hubspot_prod")
+            .set_policy("sync_frequency", serde_json::json!("daily"))
+            .set_policy("batch_size", serde_json::json!(5000))
+            .add_validation_gate(gate);
+
+        assert_eq!(activation.name, "Revenue Sync");
+        assert_eq!(activation.destinations.len(), 2);
+        assert_eq!(activation.policies.len(), 2);
         assert!(activation.requires_validation());
     }
 }

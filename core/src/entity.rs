@@ -74,6 +74,34 @@ impl Entity {
         }
         self
     }
+
+    pub fn get_trait(&self, name: &str) -> Option<&serde_json::Value> {
+        self.traits.get(name)
+    }
+
+    pub fn get_attribute(&self, key: &str) -> Option<&serde_json::Value> {
+        self.attributes.get(key)
+    }
+
+    pub fn update_timestamp(&mut self) {
+        self.updated_at = chrono::Utc::now();
+    }
+
+    pub fn trait_count(&self) -> usize {
+        if let serde_json::Value::Object(obj) = &self.traits {
+            obj.len()
+        } else {
+            0
+        }
+    }
+
+    pub fn attribute_count(&self) -> usize {
+        if let serde_json::Value::Object(obj) = &self.attributes {
+            obj.len()
+        } else {
+            0
+        }
+    }
 }
 
 impl Default for EntityType {
@@ -124,5 +152,85 @@ mod tests {
             .add_attribute("region", json!("us-west"));
 
         assert_eq!(entity.attributes.get("segment").and_then(|v| v.as_str()), Some("premium"));
+    }
+
+    #[test]
+    fn test_entity_get_trait() {
+        let entity = Entity::new(EntityType::Customer, "customer_id", "cust_1")
+            .add_trait("lifetime_value", json!(5000.0));
+
+        let ltv = entity.get_trait("lifetime_value");
+        assert!(ltv.is_some());
+        assert_eq!(ltv.unwrap().as_f64().unwrap(), 5000.0);
+    }
+
+    #[test]
+    fn test_entity_get_attribute() {
+        let entity = Entity::new(EntityType::Account, "account_id", "acc_1")
+            .add_attribute("tier", json!("enterprise"));
+
+        let tier = entity.get_attribute("tier");
+        assert!(tier.is_some());
+        assert_eq!(tier.unwrap().as_str().unwrap(), "enterprise");
+    }
+
+    #[test]
+    fn test_entity_count_traits_and_attributes() {
+        let entity = Entity::new(EntityType::Customer, "customer_id", "cust_1")
+            .add_trait("ltv", json!(1000.0))
+            .add_trait("churn_risk", json!(0.05))
+            .add_attribute("segment", json!("high_value"))
+            .add_attribute("region", json!("north"))
+            .add_attribute("status", json!("active"));
+
+        assert_eq!(entity.trait_count(), 2);
+        assert_eq!(entity.attribute_count(), 3);
+    }
+
+    #[test]
+    fn test_entity_all_types() {
+        let types = vec![
+            EntityType::Customer,
+            EntityType::Account,
+            EntityType::Company,
+            EntityType::Lead,
+            EntityType::Subscription,
+            EntityType::Order,
+            EntityType::Product,
+        ];
+
+        for entity_type in types {
+            let entity = Entity::new(entity_type, "id", "test");
+            assert_eq!(entity.trait_count(), 0);
+            assert_eq!(entity.attribute_count(), 0);
+        }
+    }
+
+    #[test]
+    fn test_entity_complex_structure() {
+        let entity = Entity::new(EntityType::Customer, "customer_id", "premium_customer_123")
+            .add_trait("lifetime_value", json!(50000))
+            .add_trait("purchase_frequency", json!(12))
+            .add_trait("avg_order_value", json!(4166.67))
+            .add_attribute("segment", json!("vip"))
+            .add_attribute("region", json!("us-west-2"))
+            .add_attribute("subscription_tier", json!("enterprise"))
+            .add_attribute("churn_risk_score", json!(0.02));
+
+        assert_eq!(entity.id, "premium_customer_123");
+        assert_eq!(entity.trait_count(), 3);
+        assert_eq!(entity.attribute_count(), 4);
+        assert!(entity.get_trait("lifetime_value").is_some());
+        assert!(entity.get_attribute("subscription_tier").is_some());
+    }
+
+    #[test]
+    fn test_entity_timestamp_update() {
+        let mut entity = Entity::new(EntityType::Customer, "customer_id", "cust_1");
+        let original_updated = entity.updated_at;
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        entity.update_timestamp();
+        assert!(entity.updated_at >= original_updated);
     }
 }
