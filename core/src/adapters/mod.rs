@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub mod error;
 pub mod mapping;
 pub mod schema_detect;
+pub mod alert_compat;
 pub mod webhook;
 pub mod salesforce;
 pub mod hubspot;
