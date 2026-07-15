@@ -1,4 +1,4 @@
-use crate::{Activation, Destination, Entity, Result, Workflow, SyncRun};
+use crate::{Activation, Destination, Entity, Result, Workflow, SyncRun, SyncRecord};
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 
@@ -208,6 +208,113 @@ impl Repository {
 
         Ok(())
     }
+
+    pub fn get_destination(&self, dest_id: &str) -> Result<Option<Destination>> {
+        let conn = self.conn.lock().map_err(|_| {
+            crate::Error::StorageError("Failed to acquire lock".to_string())
+        })?;
+
+        let mut stmt = conn.prepare(
+            "SELECT id, name, destination_type, config, version, enabled, created_at, updated_at
+             FROM destinations WHERE id = ?1",
+        )?;
+
+        let destination = stmt.query_row(rusqlite::params![dest_id], |row| {
+            let dest_type_json: String = row.get(2)?;
+            let config_json: String = row.get(3)?;
+
+            Ok(Destination {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                destination_type: serde_json::from_str(&dest_type_json).unwrap_or_default(),
+                config: serde_json::from_str(&config_json).unwrap_or_default(),
+                version: row.get(4)?,
+                enabled: row.get(5)?,
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(6)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            })
+        });
+
+        match destination {
+            Ok(d) => Ok(Some(d)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn list_workflows(&self) -> Result<Vec<Workflow>> {
+        let conn = self.conn.lock().map_err(|_| {
+            crate::Error::StorageError("Failed to acquire lock".to_string())
+        })?;
+
+        let mut stmt = conn.prepare(
+            "SELECT id, name, description, version, owner, source_type, sync_mode, mappings, schedule, rate_limit, event_stream_config, enabled, created_at, updated_at
+             FROM workflows ORDER BY created_at DESC",
+        )?;
+
+        let workflows = stmt.query_map([], |row| {
+            let source_type_json: String = row.get(5)?;
+            let sync_mode_json: String = row.get(6)?;
+            let mappings_json: String = row.get(7)?;
+            let schedule_json: String = row.get(8)?;
+            let rate_limit_json: String = row.get(9)?;
+            let event_stream_config_json: String = row.get(10)?;
+
+            Ok(Workflow {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                version: row.get(3)?,
+                owner: row.get(4)?,
+                source_type: serde_json::from_str(&source_type_json).unwrap_or_default(),
+                sync_mode: serde_json::from_str(&sync_mode_json).unwrap_or_default(),
+                mappings: serde_json::from_str(&mappings_json).unwrap_or_default(),
+                schedule: serde_json::from_str(&schedule_json).ok(),
+                rate_limit: serde_json::from_str(&rate_limit_json).ok(),
+                event_stream_config: serde_json::from_str(&event_stream_config_json).ok(),
+                enabled: row.get(11)?,
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(12)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(13)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            })
+        })?;
+
+        let mut result = Vec::new();
+        for workflow in workflows {
+            result.push(workflow?);
+        }
+        Ok(result)
+    }
+
+    pub fn delete_workflow(&self, workflow_id: &str) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| {
+            crate::Error::StorageError("Failed to acquire lock".to_string())
+        })?;
+
+        conn.execute(
+            "DELETE FROM workflows WHERE id = ?1",
+            rusqlite::params![workflow_id],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn workflow_count(&self) -> Result<u64> {
+        let conn = self.conn.lock().map_err(|_| {
+            crate::Error::StorageError("Failed to acquire lock".to_string())
+        })?;
+
+        let mut stmt = conn.prepare("SELECT COUNT(*) FROM workflows")?;
+        let count: u64 = stmt.query_row([], |row| row.get(0))?;
+        Ok(count)
+    }
 }
 
 #[cfg(test)]
@@ -265,6 +372,105 @@ mod tests {
         let mut stmt = conn.prepare("SELECT name FROM activations WHERE id = ?1")?;
         let name: String = stmt.query_row(rusqlite::params![&activation.id], |row| row.get(0))?;
         assert_eq!(name, "Test Activation");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_destination() -> Result<()> {
+        let conn = rusqlite::Connection::open_in_memory()?;
+        let repo = Repository::new(conn)?;
+
+        let destination = Destination::new("Test Dest", crate::destination::DestinationType::HubSpot);
+        repo.save_destination(&destination)?;
+
+        let retrieved = repo.get_destination(&destination.id)?;
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().name, "Test Dest");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_list_workflows() -> Result<()> {
+        let conn = rusqlite::Connection::open_in_memory()?;
+        let repo = Repository::new(conn)?;
+
+        let wf1 = Workflow::new("WF1", "owner", SourceType::Table {
+            table_name: "t1".to_string(),
+        });
+        let wf2 = Workflow::new("WF2", "owner", SourceType::Table {
+            table_name: "t2".to_string(),
+        });
+
+        repo.save_workflow(&wf1)?;
+        repo.save_workflow(&wf2)?;
+
+        let workflows = repo.list_workflows()?;
+        assert_eq!(workflows.len(), 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_workflow_count() -> Result<()> {
+        let conn = rusqlite::Connection::open_in_memory()?;
+        let repo = Repository::new(conn)?;
+
+        assert_eq!(repo.workflow_count()?, 0);
+
+        let wf = Workflow::new("WF", "owner", SourceType::Table {
+            table_name: "t".to_string(),
+        });
+        repo.save_workflow(&wf)?;
+
+        assert_eq!(repo.workflow_count()?, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_workflow() -> Result<()> {
+        let conn = rusqlite::Connection::open_in_memory()?;
+        let repo = Repository::new(conn)?;
+
+        let wf = Workflow::new("WF", "owner", SourceType::Table {
+            table_name: "t".to_string(),
+        });
+        repo.save_workflow(&wf)?;
+        assert_eq!(repo.workflow_count()?, 1);
+
+        repo.delete_workflow(&wf.id)?;
+        assert_eq!(repo.workflow_count()?, 0);
+
+        let retrieved = repo.get_workflow(&wf.id)?;
+        assert!(retrieved.is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_workflow_with_rate_limit_persistence() -> Result<()> {
+        use crate::workflow::RateLimit;
+
+        let conn = rusqlite::Connection::open_in_memory()?;
+        let repo = Repository::new(conn)?;
+
+        let workflow = Workflow::new("WF with RateLimit", "owner", SourceType::Table {
+            table_name: "t".to_string(),
+        })
+        .set_rate_limit(RateLimit {
+            records_per_second: 100,
+            burst_size: Some(500),
+        });
+
+        repo.save_workflow(&workflow)?;
+        let retrieved = repo.get_workflow(&workflow.id)?;
+
+        assert!(retrieved.is_some());
+        let w = retrieved.unwrap();
+        assert!(w.rate_limit.is_some());
+        assert_eq!(w.rate_limit.unwrap().records_per_second, 100);
 
         Ok(())
     }
