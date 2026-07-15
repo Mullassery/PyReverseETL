@@ -19,8 +19,11 @@ pub enum Error {
     #[error("Sync failed: {0}")]
     SyncError(String),
 
-    #[error("Validation error: {0}")]
-    ValidationError(String),
+    #[error("Connector error: {0}")]
+    ConnectorError(String),
+
+    #[error("Activation blocked by StatGuardian validation: {0}")]
+    ValidationGateFailed(String),
 
     #[error("Storage error: {0}")]
     StorageError(String),
@@ -37,3 +40,13 @@ pub enum Error {
     #[error("Timeout: {0}")]
     Timeout(String),
 }
+
+// NOTE: We deliberately do NOT have validation errors like:
+// - SchemaValidationError
+// - DataDriftError
+// - FreshnessError
+// - ContractViolationError
+//
+// These belong exclusively to StatGuardian.
+// PyReverseETL consumes validation outcomes from StatGuardian,
+// but does not implement validation itself.

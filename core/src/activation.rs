@@ -1,6 +1,21 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Activation defines WHERE and HOW to sync data to operational systems.
+///
+/// Activation maps a Workflow (data source) to one or more Destinations (where to send it).
+/// It optionally requires validation gates from StatGuardian.
+///
+/// What Activation DOES:
+/// ✓ Specify sync source, destinations, and schedules
+/// ✓ Define field mappings and transformations
+/// ✓ Apply validation gates from StatGuardian
+/// ✓ Track sync status and outcomes
+///
+/// What Activation does NOT do:
+/// ✗ Create audiences (that's ClusterAudienceKit)
+/// ✗ Validate data (that's StatGuardian)
+/// ✗ Define customer journeys (that's PyCustomerJourney)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Activation {
     pub id: String,

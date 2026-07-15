@@ -1,5 +1,20 @@
 use serde::{Deserialize, Serialize};
 
+/// Workflow defines WHERE data comes from and HOW to extract it.
+///
+/// A workflow specifies a data source (table, model, query, audience, or event)
+/// and extraction method (batch, incremental, CDC, streaming, or event-driven).
+///
+/// What Workflow DOES:
+/// ✓ Specify data source (table, model, query, audience, event stream)
+/// ✓ Define sync mode (Batch, Incremental, CDC, Streaming, EventDriven)
+/// ✓ Map source fields to destination fields
+/// ✓ Schedule execution (optional)
+///
+/// What Workflow does NOT do:
+/// ✗ Validate source data (that's StatGuardian)
+/// ✗ Create audiences (that's ClusterAudienceKit)
+/// ✗ Define journeys (that's PyCustomerJourney)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workflow {
     pub id: String,
