@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod error;
+pub mod mapping;
 pub mod webhook;
 pub mod salesforce;
 pub mod hubspot;
