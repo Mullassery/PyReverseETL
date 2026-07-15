@@ -1,0 +1,16 @@
+[package]
+name = "pyreverseetl"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]
+pyreverseetl-core = { path = "../core" }
+pyo3 = { version = "0.23", features = ["extension-module"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[lib]
+crate-type = ["cdylib"]
