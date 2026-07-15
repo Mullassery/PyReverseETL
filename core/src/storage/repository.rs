@@ -1,4 +1,4 @@
-use crate::{Activation, Destination, Entity, Result, Workflow, SyncRun, SyncRecord};
+use crate::{Activation, Destination, Entity, Result, Workflow, SyncRun};
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 
