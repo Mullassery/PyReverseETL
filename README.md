@@ -2,6 +2,10 @@
 
 **The Open Operational Data Activation Runtime**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Version: v1.5.0](https://img.shields.io/badge/Version-v1.5.0-blue)
+![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+
 PyReverseETL is an open-source, Rust-powered platform for operationalizing warehouse intelligence across all business systems. It goes beyond traditional Reverse ETL by focusing on **activation** rather than synchronization.
 
 ## Philosophy
