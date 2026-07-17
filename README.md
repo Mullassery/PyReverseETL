@@ -64,9 +64,9 @@ The platform sits between analytical systems and operational systems, continuous
 - Developer experience
 
 **Persistence**
-- SQLite (local)
-- PostgreSQL (enterprise)
-- DuckDB (analytics)
+- SQLite (v1.5 - lightweight, no setup required)
+- PostgreSQL (planned for v2.0 - enterprise)
+- DuckDB (planned for v2.0 - analytics)
 
 ## Getting Started
 
