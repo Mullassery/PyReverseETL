@@ -65,8 +65,8 @@ The platform sits between analytical systems and operational systems, continuous
 
 **Persistence**
 - SQLite (v1.5 - lightweight, no setup required)
-- PostgreSQL (planned for v2.0 - enterprise)
-- DuckDB (planned for v2.0 - analytics)
+- PostgreSQL (v2.0+)
+- DuckDB (v2.0+)
 
 ## Getting Started
 
@@ -208,25 +208,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--conte
 - Ready for Kafka/CDC/API integration
 - 11 new tests (142 total)
 
-### 🚧 Phase 3 Week 3: CDC Engine (Planned)
-- Change detection with before/after comparison
-- Changelog with transaction log storage
-- Checkpoint management
-- 9 new tests (151 total)
-
-### 📋 Phase 3 Week 4: Real-Time Pipeline (Planned)
-- End-to-end ActivationPipeline
-- Latency tracking and metrics
-- Error recovery & backpressure handling
-- 18 new tests (165+ total → v1.5.0)
-
-### 🔮 Phase 4: Advanced Features (Planned)
-- Entity graph synchronization
-- Activation lineage tracking
-- Activation analytics
-- AI-assisted workflows
-- Enterprise features
-
 ## Platform Philosophy
 
 PyReverseETL should be:
@@ -239,7 +220,7 @@ PyReverseETL should be:
 - **Event-aware** — React to business events
 - **AI-assisted** — Learn from historical patterns
 - **Lineage-aware** — Track data flow and impact
-- **Enterprise-ready** — Multi-tenant, secure, scalable
+- **Production-ready** — Multi-tenant, secure, scalable
 
 while remaining **simple enough for data teams to adopt**.
 
