@@ -1,5 +1,6 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Utc, Weekday, Timelike};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -67,6 +68,17 @@ pub struct PollingConfig {
     pub frequency: SyncFrequency,
     /// Enable polling
     pub enabled: bool,
+    /// Days of week to skip polling (e.g., Saturday, Sunday)
+    /// Use Weekday enum: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    pub skip_days: HashSet<String>, // "Saturday", "Sunday", etc.
+    /// Blackout dates - start of date range to skip syncs
+    pub blackout_start: Option<DateTime<Utc>>,
+    /// Blackout dates - end of date range to skip syncs
+    pub blackout_end: Option<DateTime<Utc>>,
+    /// Hour to prevent syncs from starting (e.g., 20 = 8 PM to 8 AM next day)
+    pub no_sync_after_hour: Option<u32>,
+    /// Hour to allow syncs to resume (e.g., 8 = 8 AM)
+    pub sync_resume_hour: Option<u32>,
     /// Last successful poll timestamp
     #[serde(skip)]
     pub last_poll_at: Option<DateTime<Utc>>,
@@ -87,6 +99,11 @@ impl PollingConfig {
         Self {
             frequency,
             enabled: true,
+            skip_days: HashSet::new(),
+            blackout_start: None,
+            blackout_end: None,
+            no_sync_after_hour: None,
+            sync_resume_hour: None,
             last_poll_at: None,
             last_change_at: None,
             poll_count: 0,
@@ -94,12 +111,102 @@ impl PollingConfig {
         }
     }
 
-    /// Check if it's time to poll
+    /// Add a day to skip syncing (e.g., "Saturday", "Sunday")
+    pub fn skip_day(&mut self, day: &str) -> &mut Self {
+        self.skip_days.insert(day.to_string());
+        self
+    }
+
+    /// Skip multiple days (e.g., ["Saturday", "Sunday"])
+    pub fn skip_days_list(&mut self, days: Vec<&str>) -> &mut Self {
+        for day in days {
+            self.skip_days.insert(day.to_string());
+        }
+        self
+    }
+
+    /// Set blackout date range (no syncs between start and end)
+    pub fn set_blackout_period(&mut self, start: DateTime<Utc>, end: DateTime<Utc>) -> &mut Self {
+        self.blackout_start = Some(start);
+        self.blackout_end = Some(end);
+        self
+    }
+
+    /// Set time window to prevent syncs (e.g., no_sync_after=20, resume=8 means 8PM-8AM)
+    pub fn set_no_sync_window(&mut self, no_sync_after_hour: u32, resume_hour: u32) -> &mut Self {
+        self.no_sync_after_hour = Some(no_sync_after_hour);
+        self.sync_resume_hour = Some(resume_hour);
+        self
+    }
+
+    /// Check if today is a skip day
+    pub fn is_skip_day(&self) -> bool {
+        let now = Utc::now();
+        let weekday = now.weekday();
+
+        let day_name = match weekday {
+            Weekday::Mon => "Monday",
+            Weekday::Tue => "Tuesday",
+            Weekday::Wed => "Wednesday",
+            Weekday::Thu => "Thursday",
+            Weekday::Fri => "Friday",
+            Weekday::Sat => "Saturday",
+            Weekday::Sun => "Sunday",
+        };
+
+        self.skip_days.contains(day_name)
+    }
+
+    /// Check if current time is in blackout period
+    pub fn is_in_blackout(&self) -> bool {
+        let now = Utc::now();
+
+        match (self.blackout_start, self.blackout_end) {
+            (Some(start), Some(end)) => now >= start && now <= end,
+            _ => false,
+        }
+    }
+
+    /// Check if current hour is in no-sync window
+    pub fn is_in_no_sync_window(&self) -> bool {
+        match (self.no_sync_after_hour, self.sync_resume_hour) {
+            (Some(no_sync_after), Some(resume)) => {
+                let current_hour = Utc::now().hour();
+
+                if no_sync_after < resume {
+                    // Normal case: no_sync_after=20, resume=8 (8 PM to 8 AM)
+                    current_hour >= no_sync_after || current_hour < resume
+                } else {
+                    // Edge case: no_sync_after=1, resume=23 (1 AM to 11 PM)
+                    current_hour >= no_sync_after && current_hour < resume
+                }
+            }
+            _ => false,
+        }
+    }
+
+    /// Check if it's time to poll (respects skip days, blackout, and time windows)
     pub fn should_poll(&self) -> bool {
         if !self.enabled {
             return false;
         }
 
+        // Check blackout period
+        if self.is_in_blackout() {
+            return false;
+        }
+
+        // Check skip days
+        if self.is_skip_day() {
+            return false;
+        }
+
+        // Check no-sync time window
+        if self.is_in_no_sync_window() {
+            return false;
+        }
+
+        // Check frequency interval
         match self.last_poll_at {
             None => true,
             Some(last_poll) => {
@@ -273,6 +380,11 @@ mod tests {
         let config = PollingConfig {
             frequency: SyncFrequency::Hourly,
             enabled: false,
+            skip_days: HashSet::new(),
+            blackout_start: None,
+            blackout_end: None,
+            no_sync_after_hour: None,
+            sync_resume_hour: None,
             last_poll_at: None,
             last_change_at: None,
             poll_count: 0,
@@ -318,5 +430,82 @@ mod tests {
     fn test_sync_frequency_default() {
         let freq = SyncFrequency::default();
         assert_eq!(freq, SyncFrequency::Hourly);
+    }
+
+    #[test]
+    fn test_polling_config_skip_day() {
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.skip_day("Saturday");
+        config.skip_day("Sunday");
+
+        assert!(config.skip_days.contains("Saturday"));
+        assert!(config.skip_days.contains("Sunday"));
+        assert!(!config.skip_days.contains("Monday"));
+    }
+
+    #[test]
+    fn test_polling_config_skip_days_list() {
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.skip_days_list(vec!["Saturday", "Sunday"]);
+
+        assert_eq!(config.skip_days.len(), 2);
+        assert!(config.skip_days.contains("Saturday"));
+        assert!(config.skip_days.contains("Sunday"));
+    }
+
+    #[test]
+    fn test_polling_config_blackout_period() {
+        let start = Utc::now();
+        let end = Utc::now() + Duration::days(7);
+
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.set_blackout_period(start, end);
+
+        assert!(config.is_in_blackout());
+    }
+
+    #[test]
+    fn test_polling_config_blackout_period_not_in_range() {
+        let start = Utc::now() - Duration::days(7);
+        let end = Utc::now() - Duration::days(1);
+
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.set_blackout_period(start, end);
+
+        assert!(!config.is_in_blackout());
+    }
+
+    #[test]
+    fn test_polling_config_no_sync_window() {
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        // No sync from 8 PM (20) to 8 AM (8)
+        config.set_no_sync_window(20, 8);
+
+        assert!(config.no_sync_after_hour.is_some());
+        assert!(config.sync_resume_hour.is_some());
+    }
+
+    #[test]
+    fn test_polling_should_poll_with_blackout() {
+        let now = Utc::now();
+        let future = now + Duration::days(7);
+
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.enabled = true;
+        config.set_blackout_period(now, future);
+
+        // Should not poll during blackout
+        assert!(!config.should_poll());
+    }
+
+    #[test]
+    fn test_polling_config_builder_pattern() {
+        let mut config = PollingConfig::new(SyncFrequency::Daily);
+        config
+            .skip_days_list(vec!["Saturday", "Sunday"])
+            .set_no_sync_window(20, 8);
+
+        assert_eq!(config.skip_days.len(), 2);
+        assert!(config.no_sync_after_hour.is_some());
     }
 }
