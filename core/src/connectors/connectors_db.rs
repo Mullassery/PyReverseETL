@@ -990,6 +990,63 @@ impl ConnectorRegistry {
                 auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
+            // Singer/Meltano inspired additions
+            ConnectorInfo {
+                id: "harvest".to_string(),
+                name: "Harvest".to_string(),
+                description: "Time tracking and invoicing".to_string(),
+                category: ConnectorCategory::SaaS,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "intercom_enhanced".to_string(),
+                name: "Intercom".to_string(),
+                description: "Customer communication platform".to_string(),
+                category: ConnectorCategory::SaaS,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "access_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "calendly".to_string(),
+                name: "Calendly".to_string(),
+                description: "Meeting scheduling and calendaring".to_string(),
+                category: ConnectorCategory::SaaS,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "personal_token"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "typeform".to_string(),
+                name: "Typeform".to_string(),
+                description: "Online form and survey platform".to_string(),
+                category: ConnectorCategory::SaaS,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "figma".to_string(),
+                name: "Figma".to_string(),
+                description: "Design and prototyping platform".to_string(),
+                category: ConnectorCategory::SaaS,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "personal_token"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
         ]
     }
 
