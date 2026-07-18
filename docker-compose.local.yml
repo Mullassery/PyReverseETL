@@ -1,0 +1,230 @@
+# Docker Compose for LOCAL DEVELOPMENT on Mac Studio
+# Includes test infrastructure for all connectors
+
+version: '3.8'
+
+services:
+  # ============================================================
+  # PyReverseETL Core (development mode)
+  # ============================================================
+  pyreverseetl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pyreverseetl-dev
+    ports:
+      - "8080:8080"      # REST API
+      - "3000:3000"      # Web UI (future)
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+      - DATABASE_URL=sqlite:///app/data/pyreverseetl.db
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    depends_on:
+      - postgres
+      - mysql
+      - mongodb
+      - redis
+      - kafka
+    networks:
+      - pyreverseetl
+
+  # ============================================================
+  # Test Databases
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: pyreverseetl-postgres
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_pyreverseetl
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./tests/fixtures/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  mysql:
+    image: mysql:8.0
+    container_name: pyreverseetl-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+      MYSQL_DATABASE: test_pyreverseetl
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./tests/fixtures/mysql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  mongodb:
+    image: mongo:7.0
+    container_name: pyreverseetl-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: test_user
+      MONGO_INITDB_ROOT_PASSWORD: test_password
+      MONGO_INITDB_DATABASE: test_pyreverseetl
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./tests/fixtures/mongodb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  redis:
+    image: redis:7-alpine
+    container_name: pyreverseetl-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  # ============================================================
+  # Message Queues
+  # ============================================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: pyreverseetl-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: pyreverseetl-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: pyreverseetl-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: test_user
+      RABBITMQ_DEFAULT_PASS: test_password
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pyreverseetl
+
+  # ============================================================
+  # Monitoring & Observability
+  # ============================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pyreverseetl-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - pyreverseetl
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pyreverseetl-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - pyreverseetl
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: pyreverseetl-jaeger
+    ports:
+      - "6831:6831/udp"  # Jaeger agent
+      - "16686:16686"    # UI
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - pyreverseetl
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongodb_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  pyreverseetl:
+    driver: bridge

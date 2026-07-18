@@ -1,0 +1,64 @@
+# Cargo configuration for Mac Studio + Server deployment
+
+# Profile: Development (fast iteration on Mac)
+[profile.dev]
+opt-level = 1           # Minimal optimization for fast builds
+debug = true           # Full debug symbols
+split-debuginfo = "packed"
+incremental = true     # Incremental compilation
+
+# Profile: Release (optimized for both Mac Studio and servers)
+[profile.release]
+opt-level = 3          # Maximum optimization
+debug = true           # Keep debug symbols for profiling
+strip = false
+lto = true             # Link-time optimization
+codegen-units = 1      # Single codegen unit for better optimization
+panic = "abort"        # Smaller binaries
+
+# Profile: Bench (performance testing on Mac)
+[profile.bench]
+inherits = "release"
+debug = true
+
+# Build settings
+[build]
+# Use all available cores for faster builds on Mac Studio
+jobs = 12              # Mac Studio has 8 cores (4P+4E), 12 gives headroom
+
+# Target-specific settings
+[target.'cfg(target_os = "macos")']
+# Mac-specific optimizations
+rustflags = [
+    "-C", "link-arg=-mmacosx-version-min=11.0",  # Target macOS 11+
+    "-C", "llvm-args=-mcpu=apple-a14",           # Optimize for Apple Silicon
+]
+
+[target.'cfg(target_os = "linux")']
+# Linux-specific optimizations
+rustflags = [
+    "-C", "llvm-args=-mcpu=generic",             # Generic CPU for broad compatibility
+]
+
+# Aliases for common tasks
+[alias]
+# Fast local development build
+dev = "build --release"
+
+# Optimized build for deployment
+prod = "build --release --strip"
+
+# Run with optimization
+run-opt = "run --release"
+
+# Full test suite
+test-all = "test --all --release"
+
+# Benchmark
+bench = "bench --all --release"
+
+# Format check
+fmt-check = "fmt --all -- --check"
+
+# Linting
+lint = "clippy --all --release -- -D warnings"
