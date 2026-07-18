@@ -17,14 +17,14 @@
 
 ## What Is PyReverseETL?
 
-**PyReverseETL** is a production-grade data activation platform that moves data from sources (Kafka, APIs, databases) to destinations (data warehouses, CRMs, analytics platforms) with:
+**PyReverseETL** is a production-grade data synchronization platform that moves data from sources (event streams, APIs, databases) to destinations (data warehouses, CRMs, analytics platforms) with:
 
-- ✅ **Exactly-once delivery** - Every event delivered exactly once, no duplicates, no loss
-- ✅ **High-volume handling** - Millions of events per second with bursty traffic
-- ✅ **Automatic scaling** - Costs optimized through dynamic resource scaling
-- ✅ **Global timezone support** - 400+ timezones for multi-region deployments
-- ✅ **Optional transformations** - Python (lightweight) or PySpark (distributed)
-- ✅ **Fault tolerance** - Automatic recovery from failures
+- ✅ **Reliable delivery** - Every piece of data reaches its destination exactly once, no duplicates, no loss
+- ✅ **High-volume handling** - Works with massive data streams and unexpected traffic spikes
+- ✅ **Automatic resource optimization** - Scales resources up and down to minimize costs
+- ✅ **Global timezone support** - Works with 400+ world timezones for multi-region deployments
+- ✅ **Optional data transformation** - Simple Python or advanced distributed processing options
+- ✅ **Automatic failure recovery** - Continues working even if something fails
 
 **Result:** Your data reliably reaches its destination, on schedule, in the right format.
 
@@ -32,43 +32,41 @@
 
 ## Core Concepts
 
-### 1. Source Polling
-**What:** PyReverseETL checks your source system for changes at regular intervals
+### 1. Check Frequency
+**What:** How often should we check your data source for new information?
 
-**When:** Configured intervals like Hourly, Daily, Every 5 minutes, etc.
+**Options:** Every 5 minutes, 15 minutes, 30 minutes, hourly, 4 hours, 12 hours, or daily
 
-**Example:** "Check Kafka every 5 minutes for new events"
+**Example:** "Check for new orders every 5 minutes"
 
-### 2. Destination Polling
-**What:** PyReverseETL sends data to your destination at regular intervals
+### 2. Write Frequency
+**What:** How often should we send data to your destination?
 
-**When:** Independent of source polling (can be faster or slower)
+**Options:** Can be different from check frequency (fast checking, slower writing)
 
-**Example:** "Write to data warehouse once per day"
+**Example:** "Write all new orders to warehouse once per day"
 
-### 3. Transformations (Optional)
-**What:** Optional data transformation between source and destination
+### 3. Optional Data Transformation
+**What:** Should the data be modified before delivery to the destination?
 
-**Engines:** 
-- **Python** - Simple transformations (mapping, filtering, aggregation)
-- **PySpark** - Large-scale distributed transformations
+**Options:** 
+- **No transformation** - Send data as-is
+- **Simple transformation** - Use Python scripts for mapping, filtering, simple calculations
+- **Advanced transformation** - Use distributed processing for complex operations
 
-**Example:** "Map Kafka event schema to warehouse schema"
+**Example:** "Reformat order data to match warehouse schema"
 
-### 4. Timezone Awareness
-**What:** All scheduling respects your configured timezone
+### 4. Timezone Support
+**What:** Make scheduling decisions in your local time zone, not just UTC
 
-**Impact:** Skip days and time windows work in your local timezone, not UTC
+**Impact:** Skip days and time windows work in your time zone
 
-**Example:** "No syncs between 8 PM - 8 AM New York time"
+**Example:** "Don't run syncs between 8 PM - 8 AM in New York time"
 
-### 5. Fault Tolerance
-**What:** Automatic recovery from failures
+### 5. Automatic Failure Recovery
+**What:** If something fails, the system automatically recovers
 
-**Mechanisms:**
-- Dead letter topics (captures failed events)
-- Result caching (recovery capability)
-- Retry logic (exponential backoff)
+**What happens:** Failed data is tracked and can be retried later, plus automatic recovery from temporary issues
 
 ---
 
@@ -111,112 +109,81 @@ python run.py
 
 ## Configuration Guide
 
-### Polling Configuration
+### Basic Setup
 
-The foundation of PyReverseETL: how often to check sources and write to destinations.
+The foundation: how often to check for data and when to write it.
 
-#### Frequency Options
+#### How Often to Check
 
 ```yaml
 source_polling:
   frequency: FiveMinutes      # Check every 5 minutes
-  # OR
-  frequency: FifteenMinutes   # Every 15 minutes
-  # OR
-  frequency: ThirtyMinutes    # Every 30 minutes
-  # OR
-  frequency: Hourly           # Every hour
-  # OR
-  frequency: FourHourly       # Every 4 hours
-  # OR
-  frequency: TwelveHourly     # Every 12 hours
-  # OR
-  frequency: Daily            # Every 24 hours
+  # Other options: FifteenMinutes, ThirtyMinutes, Hourly, FourHourly, TwelveHourly, Daily
 ```
 
-#### Timezone Configuration
+#### Your Time Zone
 
 ```yaml
 source_polling:
-  timezone: America/New_York      # US Eastern
-  # OR
-  timezone: Europe/London         # UK
-  # OR
-  timezone: Asia/Tokyo            # Japan
-  # OR
-  timezone: UTC                   # Universal (default)
+  timezone: America/New_York      # Your local time
+  # Other examples: Europe/London, Asia/Tokyo, Australia/Sydney
   
-# All times (skip days, time windows) respect this timezone
+# All scheduling respects your time zone
 ```
 
-#### Skip Days
+#### Skip Specific Days
 
 ```yaml
 source_polling:
   skip_days:
     - Saturday
     - Sunday
-  # Syncs only Monday-Friday
+  # Only sync Monday through Friday
 ```
 
-#### Time Windows (No-Sync Hours)
+#### Business Hours Only
 
 ```yaml
 destination_polling:
-  no_sync_after_hour: 22    # 10 PM
-  sync_resume_hour: 8       # 8 AM
-  # No syncs between 10 PM - 8 AM
-  # All times in configured timezone
+  no_sync_after_hour: 18    # Stop at 6 PM
+  sync_resume_hour: 9       # Start at 9 AM
+  # No syncing between 6 PM - 9 AM (in your timezone)
 ```
 
-#### Blackout Dates (Maintenance Windows)
+#### Maintenance Windows
 
 ```yaml
 source_polling:
-  blackout_start: 2026-12-20T00:00:00Z  # Dec 20 midnight UTC
-  blackout_end: 2026-12-26T23:59:59Z    # Dec 26 end of day UTC
-  # No syncs between these dates
+  blackout_start: 2026-12-20T00:00:00Z  # Dec 20 at midnight
+  blackout_end: 2026-12-26T23:59:59Z    # Dec 26 at end of day
+  # No syncing during this period
 ```
 
-### Transformation Configuration
+### Data Transformation (Optional)
 
-Optional data transformation between source and destination.
+Optional: Transform data before sending to destination.
 
-#### Python Transformation (Lightweight)
+#### Simple Data Transformation
 
 ```yaml
 transformation:
   enabled: true
   engine: Python
-  script_path: transforms/simple_transform.py
+  script_path: transform.py
   
-  max_retries: 3
-  retry_delay_secs: 5
   timeout_secs: 60
-  
-  dead_letter_topic: transform_errors
   skip_on_error: false
-  
-  enable_caching: true
-  cache_dir: /var/cache/transforms
 ```
 
-#### PySpark Transformation (Distributed)
+#### Advanced Data Transformation
 
 ```yaml
 transformation:
   enabled: true
   engine: PySpark
-  script_path: transforms/complex_transform.py
+  script_path: transform.py
   
-  intermediate_topic: staging
-  max_retries: 5
-  retry_delay_secs: 10
   timeout_secs: 300
-  
-  dead_letter_topic: spark_errors
-  enable_caching: true
-  cache_dir: /var/cache/spark
 ```
 
 ### Complete Configuration Example
