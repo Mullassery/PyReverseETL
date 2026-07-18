@@ -33,6 +33,13 @@ pub enum ConnectorCategory {
     TimeSeries,
     Communication,
     BigData,
+    Finance,
+    HRPayroll,
+    ProjectManagement,
+    Ecommerce,
+    Identity,
+    SocialMedia,
+    Publishing,
     Other,
 }
 
@@ -86,7 +93,7 @@ impl ConnectorRegistry {
         // === SAAS/CRM (15) ===
         connectors.extend(Self::saas_crm());
 
-        // === MARKETING (10) ===
+        // === MARKETING (20) ===
         connectors.extend(Self::marketing());
 
         // === ADVERTISING (8) ===
@@ -104,8 +111,29 @@ impl ConnectorRegistry {
         // === COMMUNICATION (8) ===
         connectors.extend(Self::communication());
 
-        // === BIG DATA (5) ===
+        // === BIG DATA (7) ===
         connectors.extend(Self::big_data());
+
+        // === FINANCE/ACCOUNTING (8) ===
+        connectors.extend(Self::finance());
+
+        // === HR/PAYROLL (7) ===
+        connectors.extend(Self::hr_payroll());
+
+        // === PROJECT MANAGEMENT (8) ===
+        connectors.extend(Self::project_management());
+
+        // === E-COMMERCE (7) ===
+        connectors.extend(Self::ecommerce());
+
+        // === IDENTITY/AUTH (5) ===
+        connectors.extend(Self::identity());
+
+        // === SOCIAL MEDIA (7) ===
+        connectors.extend(Self::social_media());
+
+        // === PUBLISHING (6) ===
+        connectors.extend(Self::publishing());
 
         connectors
     }
@@ -1606,6 +1634,525 @@ impl ConnectorRegistry {
             .into_iter()
             .filter(|c| c.category == category)
             .collect()
+    }
+}
+
+    fn finance() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "quickbooks_online".to_string(),
+                name: "QuickBooks Online".to_string(),
+                description: "Cloud accounting software".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(100)),
+            },
+            ConnectorInfo {
+                id: "xero".to_string(),
+                name: "Xero".to_string(),
+                description: "Online accounting software".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "netsuite".to_string(),
+                name: "NetSuite".to_string(),
+                description: "ERP and financial management".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "stripe_billing".to_string(),
+                name: "Stripe Billing".to_string(),
+                description: "Subscription and invoice management".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(100)),
+            },
+            ConnectorInfo {
+                id: "freshbooks".to_string(),
+                name: "FreshBooks".to_string(),
+                description: "Invoicing and accounting software".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "wave".to_string(),
+                name: "Wave".to_string(),
+                description: "Accounting software for small business".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "sage".to_string(),
+                name: "Sage".to_string(),
+                description: "Enterprise accounting and ERP".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "chargebee".to_string(),
+                name: "Chargebee".to_string(),
+                description: "Subscription billing platform".to_string(),
+                category: ConnectorCategory::Finance,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn hr_payroll() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "workday".to_string(),
+                name: "Workday".to_string(),
+                description: "Enterprise HCM and payroll".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "bamboohr".to_string(),
+                name: "BambooHR".to_string(),
+                description: "HR software".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "adp".to_string(),
+                name: "ADP".to_string(),
+                description: "Payroll and HR services".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "gusto".to_string(),
+                name: "Gusto".to_string(),
+                description: "Payroll and HR platform".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "rippling".to_string(),
+                name: "Rippling".to_string(),
+                description: "HR, IT, and payroll software".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "paychex".to_string(),
+                name: "Paychex".to_string(),
+                description: "Payroll and HR solutions".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "ukg".to_string(),
+                name: "UKG (Ultimate Kronos)".to_string(),
+                description: "Workforce management and payroll".to_string(),
+                category: ConnectorCategory::HRPayroll,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn project_management() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "asana".to_string(),
+                name: "Asana".to_string(),
+                description: "Project and task management".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "monday".to_string(),
+                name: "Monday.com".to_string(),
+                description: "Work management platform".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "notion".to_string(),
+                name: "Notion".to_string(),
+                description: "Workspace and knowledge base".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "airtable".to_string(),
+                name: "Airtable".to_string(),
+                description: "Spreadsheet-database hybrid".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(30)),
+            },
+            ConnectorInfo {
+                id: "linear".to_string(),
+                name: "Linear".to_string(),
+                description: "Issue tracking for software teams".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "jira_cloud".to_string(),
+                name: "Jira Cloud".to_string(),
+                description: "Issue and project tracking".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "confluence".to_string(),
+                name: "Confluence".to_string(),
+                description: "Wiki and documentation platform".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "trello".to_string(),
+                name: "Trello".to_string(),
+                description: "Card-based project management".to_string(),
+                category: ConnectorCategory::ProjectManagement,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn ecommerce() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "shopify_plus".to_string(),
+                name: "Shopify Plus".to_string(),
+                description: "Enterprise e-commerce platform".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(2)),
+            },
+            ConnectorInfo {
+                id: "bigcommerce".to_string(),
+                name: "BigCommerce".to_string(),
+                description: "E-commerce platform".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "wix".to_string(),
+                name: "Wix".to_string(),
+                description: "Website builder and e-commerce".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "lightspeed".to_string(),
+                name: "Lightspeed".to_string(),
+                description: "Omnichannel commerce platform".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "ecwid".to_string(),
+                name: "Ecwid".to_string(),
+                description: "Shopping cart software".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "webflow".to_string(),
+                name: "Webflow".to_string(),
+                description: "Web design and hosting platform".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "square_online".to_string(),
+                name: "Square Online".to_string(),
+                description: "E-commerce and payments".to_string(),
+                category: ConnectorCategory::Ecommerce,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn identity() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "auth0".to_string(),
+                name: "Auth0".to_string(),
+                description: "Identity and access management".to_string(),
+                category: ConnectorCategory::Identity,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "okta".to_string(),
+                name: "Okta".to_string(),
+                description: "Identity and access management".to_string(),
+                category: ConnectorCategory::Identity,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "azure_ad".to_string(),
+                name: "Azure Active Directory".to_string(),
+                description: "Identity and access management".to_string(),
+                category: ConnectorCategory::Identity,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "service_principal"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "keycloak".to_string(),
+                name: "Keycloak".to_string(),
+                description: "Open-source identity platform".to_string(),
+                category: ConnectorCategory::Identity,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "plaid".to_string(),
+                name: "Plaid".to_string(),
+                description: "Financial API and identity".to_string(),
+                category: ConnectorCategory::Identity,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn social_media() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "facebook".to_string(),
+                name: "Facebook".to_string(),
+                description: "Social network and data".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "instagram".to_string(),
+                name: "Instagram".to_string(),
+                description: "Social media platform".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "twitter".to_string(),
+                name: "Twitter/X".to_string(),
+                description: "Social network platform".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(300)),
+            },
+            ConnectorInfo {
+                id: "pinterest".to_string(),
+                name: "Pinterest".to_string(),
+                description: "Social media platform".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "snapchat".to_string(),
+                name: "Snapchat".to_string(),
+                description: "Social media platform".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "tiktok_data".to_string(),
+                name: "TikTok Data".to_string(),
+                description: "Social media analytics".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "youtube".to_string(),
+                name: "YouTube".to_string(),
+                description: "Video platform and analytics".to_string(),
+                category: ConnectorCategory::SocialMedia,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn publishing() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "medium".to_string(),
+                name: "Medium".to_string(),
+                description: "Publishing platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "wordpress".to_string(),
+                name: "WordPress.com".to_string(),
+                description: "Blogging and CMS platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "substack".to_string(),
+                name: "Substack".to_string(),
+                description: "Newsletter platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "ghost".to_string(),
+                name: "Ghost".to_string(),
+                description: "Publishing platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "dev_to".to_string(),
+                name: "Dev.to".to_string(),
+                description: "Developer community platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "hashnode".to_string(),
+                name: "Hashnode".to_string(),
+                description: "Developer blogging platform".to_string(),
+                category: ConnectorCategory::Publishing,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
     }
 }
 
