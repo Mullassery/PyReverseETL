@@ -42,6 +42,8 @@ pub enum ConnectorCategory {
     Publishing,
     Developer,
     FileTransfer,
+    Enterprise,
+    Legacy,
     Other,
 }
 
@@ -145,6 +147,12 @@ impl ConnectorRegistry {
 
         // === SPREADSHEETS & FILES (3) ===
         connectors.extend(Self::spreadsheets());
+
+        // === ENTERPRISE SYSTEMS (5) ===
+        connectors.extend(Self::enterprise());
+
+        // === LEGACY SYSTEMS (7) ===
+        connectors.extend(Self::legacy());
 
         connectors
     }
@@ -2320,6 +2328,142 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn enterprise() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "sap_erp".to_string(),
+                name: "SAP ERP".to_string(),
+                description: "SAP Enterprise Resource Planning".to_string(),
+                category: ConnectorCategory::Enterprise,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["basic", "sso"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "oracle_ebs".to_string(),
+                name: "Oracle EBS".to_string(),
+                description: "Oracle E-Business Suite".to_string(),
+                category: ConnectorCategory::Enterprise,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["basic", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "netsuite_erp".to_string(),
+                name: "NetSuite ERP".to_string(),
+                description: "Oracle NetSuite (already covered in Finance)".to_string(),
+                category: ConnectorCategory::Enterprise,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "teradata".to_string(),
+                name: "Teradata".to_string(),
+                description: "Enterprise data warehouse".to_string(),
+                category: ConnectorCategory::Enterprise,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password", "ldap"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "greenplum".to_string(),
+                name: "Greenplum".to_string(),
+                description: "Distributed data warehouse".to_string(),
+                category: ConnectorCategory::Enterprise,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn legacy() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "db2".to_string(),
+                name: "IBM DB2".to_string(),
+                description: "IBM relational database".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "sybase".to_string(),
+                name: "Sybase ASE".to_string(),
+                description: "Sybase adaptive server".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "firebird".to_string(),
+                name: "Firebird".to_string(),
+                description: "Open source relational database".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "h2".to_string(),
+                name: "H2 Database".to_string(),
+                description: "Embedded relational database".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "couchdb".to_string(),
+                name: "CouchDB".to_string(),
+                description: "Document-oriented database".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["password", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "jms".to_string(),
+                name: "JMS (Java Message Service)".to_string(),
+                description: "Java message queue standard".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "stream"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["basic", "ssl"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "mainframe".to_string(),
+                name: "Mainframe (AS/400, COBOL)".to_string(),
+                description: "Legacy mainframe systems".to_string(),
+                category: ConnectorCategory::Legacy,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["basic", "custom"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
                 rate_limit_default: None,
             },
         ]
