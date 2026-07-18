@@ -12,7 +12,7 @@ PyReverseETL gives you complete visibility into sync operations through three ty
 - **🔍 Operation Traces** - See what happened step-by-step: source → transform → destination
 - **📝 Event Logs** - Detailed record of everything that happened for debugging
 
-All data automatically flows to standard monitoring tools: Prometheus, Datadog, Grafana, etc.
+All data automatically flows to any standard monitoring backend: metrics database, tracing backend, or log aggregation system.
 
 ---
 
@@ -62,11 +62,11 @@ print(metrics.summary())
 
 ### 3. See Results
 
-All metrics and logs automatically flow to your OTel backend:
-- **Prometheus:** Query `pyreverseetl_sync_duration_seconds`
-- **Jaeger:** View sync trace with all operations
-- **Datadog:** Dashboard with sync status and throughput
-- **Logs:** Structured logs in your log aggregator
+All metrics and logs automatically flow to your monitoring backend:
+- **Metrics database:** Query `pyreverseetl_sync_duration_seconds`
+- **Tracing backend:** View sync trace with all operations
+- **Monitoring dashboard:** See sync status and throughput
+- **Log aggregator:** Structured logs available for search and analysis
 
 ---
 
@@ -102,21 +102,25 @@ print(f"Success rate: {metrics.success_rate()}%")
 print(f"Duration: {metrics.total_duration().as_secs()} seconds")
 ```
 
-### Example: Prometheus Queries
+### Example: Metrics Queries
 
-```promql
-# Average sync duration
-avg(pyreverseetl_sync_duration_seconds) by (sync_name)
+Query your metrics database for:
+
+```
+# Average sync duration by sync name
+metric: pyreverseetl_sync_duration_seconds | avg by sync_name
 
 # Error rate by sync
 pyreverseetl_sync_events_failed_total / pyreverseetl_sync_events_processed_total
 
-# Throughput trending
+# Throughput trending (events per 5 minutes)
 rate(pyreverseetl_sync_events_processed_total[5m])
 
-# Alert on high error rate
+# Alert on high error rate (> 5%)
 pyreverseetl_sync_error_rate_percent > 5
 ```
+
+(Syntax varies by metrics backend - adjust query for your system)
 
 ---
 
@@ -175,14 +179,14 @@ print(f"Success rate: {summary.success_rate()}%")
 print(f"Total duration: {summary.total_duration_ms}ms")
 ```
 
-### Example: Jaeger Visualization
+### Example: Trace Visualization
 
-View complete trace in Jaeger:
+View complete trace in your tracing backend:
 - **Service:** PyReverseETL
 - **Operation:** sync_run
 - **Trace Duration:** 8 seconds
-- **Spans:** 3 (check_source, transform, write_destination)
-- **Tags:** sync_run_id, source_type, destination_type
+- **Operations:** 3 (check source, transform, write destination)
+- **Attributes:** sync_run_id, source_type, destination_type
 - **Status:** Success
 
 ---
@@ -223,79 +227,53 @@ SyncLogger.sync_completed("orders_sync", "run-123", 1000, 8, 125.0)
 }
 ```
 
-### Example: Datadog Logs
+### Example: Log Queries
 
-Query logs in Datadog:
+Query logs in your log aggregator:
 ```
-service:pyreverseetl sync_name:orders_sync status:success
+service:pyreverseetl AND sync_name:orders_sync AND status:success
 ```
 
-Filter by error:
+Filter by errors:
 ```
-service:pyreverseetl level:error
+service:pyreverseetl AND level:error
 ```
+
+(Syntax varies by log aggregation system)
 
 ---
 
-## Setup by Backend
+## Setup by Backend Type
 
-### Option 1: Prometheus + Jaeger
+PyReverseETL supports any OpenTelemetry-compatible backend.
+
+### Metrics + Traces Backend
 
 ```python
 from pyreverseetl_core import init_otel
-import opentelemetry
-
-# Configure Prometheus exporter
-from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.metrics import MeterProvider
-
-prometheus_reader = PrometheusMetricReader()
-meter_provider = MeterProvider(metric_readers=[prometheus_reader])
-
-# Configure Jaeger exporter
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-jaeger_exporter = JaegerExporter(
-    agent_host_name="localhost",
-    agent_port=6831,
-)
+# Configure metrics exporter (use your backend's exporter)
+meter_provider = MeterProvider()
+
+# Configure traces exporter
 trace_provider = TracerProvider()
-trace_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+# trace_provider.add_span_processor(YourBackendExporter(...))
 
-# Initialize
+# Initialize PyReverseETL
 init_otel("orders_sync", "v2.0.1")
 ```
 
-### Option 2: Datadog
-
-```python
-from pyreverseetl_core import init_otel
-from opentelemetry.exporter.datadog import DatadogExporter
-
-# Configure Datadog exporter
-datadog_exporter = DatadogExporter(
-    agent_host="localhost",
-    agent_port=8126,
-    service_name="orders_sync",
-    env="production",
-    version="v2.0.1",
-)
-
-# Initialize
-init_otel("orders_sync", "v2.0.1")
-```
-
-### Option 3: Grafana Loki (Logs Only)
+### Logs Backend (JSON Format)
 
 ```python
 from pyreverseetl_core import SyncLogger
-
-# Configure logging to Loki
 import logging
 from pythonjsonlogger import jsonlogger
 
+# Configure JSON logging for any log aggregation system
 handler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter()
 handler.setFormatter(formatter)
@@ -304,12 +282,14 @@ logger = logging.getLogger()
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-# Logs automatically flow to Loki with JSON format
+# Logs automatically emit as JSON for ingestion by any backend
 ```
+
+**Note:** Replace `YourBackendExporter` with your monitoring system's OpenTelemetry exporter. Most modern monitoring systems support OpenTelemetry.
 
 ---
 
-## Dashboard Example: Grafana
+## Dashboard Example: Monitoring Dashboard
 
 ### Sync Status Panel
 
@@ -359,7 +339,7 @@ Top failed syncs:
 
 ## Alerting Examples
 
-### PagerDuty Alerts
+### Alert Configuration
 
 ```yaml
 # Alert on sync failure
