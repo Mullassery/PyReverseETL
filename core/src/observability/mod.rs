@@ -6,28 +6,15 @@ pub mod traces;
 pub mod logs;
 
 pub use metrics::{SyncMetrics, MetricsCollector};
-pub use traces::{SyncTracer, TraceSpan};
+pub use traces::{SyncTracer, TraceSpan, TraceSummary};
 pub use logs::SyncLogger;
 
 use std::sync::Arc;
-use opentelemetry::sdk::Resource;
-use opentelemetry::{global, KeyValue};
 
 /// Initialize OpenTelemetry for PyReverseETL
 pub fn init_otel(service_name: &str, version: &str) -> Result<(), String> {
-    // Create resource with service metadata
-    let resource = Resource::new(vec![
-        KeyValue::new("service.name", service_name.to_string()),
-        KeyValue::new("service.version", version.to_string()),
-        KeyValue::new("telemetry.sdk.language", "rust"),
-        KeyValue::new("telemetry.sdk.name", "opentelemetry"),
-    ]);
-
-    // Initialize metrics (uses stdout exporter by default)
-    // Production: configure with Prometheus, Datadog, etc.
-
-    // Initialize traces (uses stdout exporter by default)
-    // Production: configure with Jaeger, Datadog, etc.
+    // Initialize OpenTelemetry with service metadata
+    // Production: configure with exporters (Prometheus, Jaeger, Datadog, etc.)
 
     tracing::info!(
         service = service_name,
