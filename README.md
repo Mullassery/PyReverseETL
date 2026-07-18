@@ -289,13 +289,21 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--conte
 - Backpressure management and checkpoint recovery
 - 36 new tests (178 total)
 
-### ✅ Phase 4: Event Sources & Transformations (v2.0.0) ← Current
+### ✅ Phase 4: Event Sources & Transformations (v2.0.0 → v2.0.1)
 - **Event Sources**: Kafka connector with SSL/SASL support
-- **Sync Frequency**: Configurable polling (5min-24hours)
+- **Sync Frequency**: Configurable polling (5min-24hours) with timezone support
 - **Change Detection**: Track changes at preset intervals
-- **PySpark Transformations**: Multi-stage processing pipelines
+- **PySpark Transformations**: Multi-stage processing pipelines (optional)
 - **Intermediate Staging**: Kafka topics between transformation stages
-- 37 new tests (213 total passing)
+- **YAML Configuration**: Load/save configurations from YAML files
+- **Separate Source/Destination Polling**: Different schedules per system
+- **Transformation Error Handling**: Dead letter topics, retries, caching
+- **Detailed Status Messages**: Congratulatory success + actionable error messages
+- **Timezone Support**: IANA timezone database (400+ timezones)
+- **Day-of-Week & Blackout Filtering**: Skip syncs on specific days/dates
+- **Fault Tolerance & Caching**: Result caching for reliability
+- **Auto-Scaling**: Kafka (by lag/throughput) & PySpark (by size/latency)
+- 50+ new tests (265+ total passing)
 
 ## Platform Philosophy
 
