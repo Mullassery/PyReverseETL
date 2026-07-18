@@ -13,6 +13,7 @@ pub mod streaming;
 pub mod cdc;
 pub mod pipeline;
 pub mod sources;
+pub mod transformers;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -31,4 +32,9 @@ pub use streaming::{Event, EventType, EventSource, EventProcessor, EventHandler}
 pub use sources::{
     KafkaSource, KafkaConfig, KafkaMessage, EventSourceConnector,
     SyncFrequency, PollingConfig, ChangePoller, PollingMetrics, PollResult, SharedPollingState,
+};
+pub use transformers::{
+    SparkTransformer, SparkConfig, SparkJobResult, Transformer,
+    TransformationConfig, TransformationResult, TransformationStatus,
+    TransformationPipeline, TransformationStage,
 };
