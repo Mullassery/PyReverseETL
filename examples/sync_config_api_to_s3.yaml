@@ -1,0 +1,30 @@
+# PyReverseETL v2.0.1 - API to S3 Sync Configuration
+# Example: Polling API for updates and storing in S3
+
+name: api_to_s3_sync
+description: Fetch data from REST API every hour and upload to S3
+
+# Source: Poll API frequently for changes
+source_polling:
+  frequency: Hourly
+  enabled: true
+  timezone: UTC  # API is UTC-based
+  skip_days: []  # Poll 24/7
+  no_sync_after_hour: null
+  sync_resume_hour: null
+  blackout_start: null
+  blackout_end: null
+
+# Destination: S3 uploads are quick, but limit to business hours for compliance
+destination_polling:
+  frequency: Hourly
+  enabled: true
+  timezone: America/Los_Angeles
+  skip_days:
+    - Saturday
+    - Sunday
+  # Compliance: data uploads only during business hours 9 AM - 6 PM
+  no_sync_after_hour: 18  # 6 PM
+  sync_resume_hour: 9     # 9 AM
+  blackout_start: null
+  blackout_end: null

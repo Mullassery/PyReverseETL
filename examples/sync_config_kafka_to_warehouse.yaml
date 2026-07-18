@@ -1,0 +1,38 @@
+# PyReverseETL v2.0.1 - Sync Configuration Example
+# Kafka → Data Warehouse with different source/destination polling
+
+name: kafka_to_redshift
+description: |
+  Real-time event sync from Apache Kafka to AWS Redshift data warehouse.
+  Source polling is frequent (5 min) to catch new events quickly.
+  Destination polling is slower (daily) for cost optimization.
+
+# Source Polling Configuration
+# Kafka has many events, so poll frequently
+source_polling:
+  frequency: FiveMinutes
+  enabled: true
+  timezone: America/New_York
+  skip_days:
+    - Saturday
+    - Sunday
+  # No syncs overnight
+  no_sync_after_hour: 20  # 8 PM
+  sync_resume_hour: 8     # 8 AM
+  blackout_start: null
+  blackout_end: null
+
+# Destination Polling Configuration
+# Redshift has limited resources, so poll less frequently
+destination_polling:
+  frequency: Daily
+  enabled: true
+  timezone: America/New_York
+  skip_days:
+    - Saturday
+    - Sunday
+  # Data warehouse maintenance window
+  no_sync_after_hour: 22  # 10 PM
+  sync_resume_hour: 6     # 6 AM
+  blackout_start: null
+  blackout_end: null
