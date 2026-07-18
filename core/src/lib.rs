@@ -12,6 +12,7 @@ pub mod adapters;
 pub mod streaming;
 pub mod cdc;
 pub mod pipeline;
+pub mod sources;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -27,3 +28,4 @@ pub use adapters::{DestinationAdapter, FieldMapping, AuthMethod, OperationResult
 pub use cdc::{Change, ChangeDetector, ChangeType, ChangeLog, ChangeLogEntry, Checkpoint, CheckpointManager};
 pub use pipeline::{ActivationPipeline, PipelineMetrics, PipelineStatus, LatencyTracker, BackpressureManager};
 pub use streaming::{Event, EventType, EventSource, EventProcessor, EventHandler};
+pub use sources::{KafkaSource, KafkaConfig, KafkaMessage, EventSourceConnector};
