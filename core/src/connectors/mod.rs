@@ -18,6 +18,7 @@ pub mod rate_limiting;
 pub mod object_storage;
 pub mod database_advanced;
 pub mod hdfs;
+pub mod connectors_db;
 
 pub use destination::{DestinationConnector, DestinationConfig, WriteMode};
 pub use source::{SourceConnector, SourceConfig};
@@ -28,6 +29,7 @@ pub use rate_limiting::{RateLimiter, RateLimitConfig, RateLimitStrategy, RateLim
 pub use object_storage::{ObjectStorageConfig, ObjectStorageSource, ObjectStorageDestination, FileFormat, TableFormat, FileOperations};
 pub use database_advanced::{DatabaseConfig, AdvancedDatabaseSource, AdvancedDatabaseDestination, WriteStrategy, TableSchema};
 pub use hdfs::{HdfsConfig, HdfsSource, HdfsDestination, HdfsAuth, HdfsOperations, FileStatus};
+pub use connectors_db::{ConnectorRegistry as ConnectorDb, ConnectorInfo, ConnectorCategory, ConnectorTypeInfo, RateLimitDefault};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
