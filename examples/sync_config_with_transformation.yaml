@@ -1,0 +1,67 @@
+# PyReverseETL v2.0.1 - Sync with PySpark Transformation
+# Complete pipeline: Source → Transform → Destination
+# With fault tolerance for millions of events and bursty traffic
+
+name: kafka_to_warehouse_transform
+description: |
+  Real-time transformation pipeline:
+  - Read from Kafka topic (catch events immediately)
+  - Apply PySpark transformation (schema mapping, aggregations)
+  - Write to data warehouse (batched daily)
+
+  Handles millions of events with bursty traffic patterns using:
+  - Staging topic for intermediate results
+  - Dead letter topic for transformation errors
+  - Result caching for fault tolerance
+  - Auto-retries with exponential backoff
+
+# Source: Poll Kafka frequently for high-volume events
+source_polling:
+  frequency: FiveMinutes
+  enabled: true
+  timezone: UTC
+  skip_days: []
+  no_sync_after_hour: null
+  sync_resume_hour: null
+  blackout_start: null
+  blackout_end: null
+
+# PySpark Transformation (optional, applied between source and destination)
+transformation:
+  enabled: true
+  script_path: transforms/kafka_to_warehouse.py
+
+  # Intermediate Kafka topic for staging transformation results
+  intermediate_topic: warehouse_staging
+
+  # Max retries for transformation failures
+  max_retries: 5
+  retry_delay_secs: 10
+
+  # Transformation timeout (300 seconds = 5 minutes)
+  timeout_secs: 300
+
+  # Dead letter topic for events that fail transformation
+  dead_letter_topic: warehouse_transform_errors
+
+  # Continue pipeline if transformation fails (skip failed events)
+  skip_on_error: false
+
+  # Fault tolerance: Cache transformation results before sending to destination
+  enable_caching: true
+  cache_dir: /var/cache/pyreverseetl/transforms
+  max_cache_size_mb: 2048  # 2GB max cache
+
+# Destination: Write to warehouse (less frequent, for cost optimization)
+destination_polling:
+  frequency: Daily
+  enabled: true
+  timezone: America/New_York
+  skip_days:
+    - Saturday
+    - Sunday
+  # Warehouse maintenance window: 10 PM - 6 AM
+  no_sync_after_hour: 22
+  sync_resume_hour: 6
+  blackout_start: null
+  blackout_end: null

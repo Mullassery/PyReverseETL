@@ -59,6 +59,10 @@ pub struct ConfigurationDetails {
     pub source_has_blackout: bool,
     /// Destination has blackout periods
     pub destination_has_blackout: bool,
+    /// PySpark transformation is configured (optional)
+    pub transformation_configured: bool,
+    /// PySpark transformation has error handling configured
+    pub transformation_has_error_handling: bool,
 }
 
 impl ConfigurationDetails {
@@ -76,11 +80,92 @@ impl ConfigurationDetails {
             destination_has_time_window: false,
             source_has_blackout: false,
             destination_has_blackout: false,
+            transformation_configured: false,
+            transformation_has_error_handling: false,
         }
     }
 }
 
-/// Complete sync configuration for source → destination sync
+/// PySpark transformation configuration with error handling and caching
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransformationConfig {
+    /// Transformation is enabled
+    pub enabled: bool,
+    /// Script path or transformation logic
+    pub script_path: String,
+    /// Intermediate Kafka topic for staging
+    pub intermediate_topic: Option<String>,
+    /// Max retries on failure
+    pub max_retries: u32,
+    /// Retry delay in seconds
+    pub retry_delay_secs: u32,
+    /// Timeout for transformation in seconds
+    pub timeout_secs: u32,
+    /// Continue pipeline on transformation failure
+    pub skip_on_error: bool,
+    /// Dead letter topic for failed transformations
+    pub dead_letter_topic: Option<String>,
+    /// Enable result caching for fault tolerance (cache before sending to destination)
+    pub enable_caching: bool,
+    /// Cache directory path (for local or mounted filesystem)
+    pub cache_dir: Option<String>,
+    /// Maximum cache size in MB (for cleanup)
+    pub max_cache_size_mb: Option<u32>,
+}
+
+impl TransformationConfig {
+    /// Create new transformation config
+    pub fn new(script_path: &str) -> Self {
+        Self {
+            enabled: true,
+            script_path: script_path.to_string(),
+            intermediate_topic: None,
+            max_retries: 3,
+            retry_delay_secs: 5,
+            timeout_secs: 300,
+            skip_on_error: false,
+            dead_letter_topic: None,
+            enable_caching: false,
+            cache_dir: None,
+            max_cache_size_mb: None,
+        }
+    }
+
+    /// Set intermediate Kafka topic for staging
+    pub fn with_intermediate_topic(mut self, topic: &str) -> Self {
+        self.intermediate_topic = Some(topic.to_string());
+        self
+    }
+
+    /// Set dead letter topic for failures
+    pub fn with_dead_letter_topic(mut self, topic: &str) -> Self {
+        self.dead_letter_topic = Some(topic.to_string());
+        self
+    }
+
+    /// Set retry policy
+    pub fn with_retries(mut self, max_retries: u32, retry_delay_secs: u32) -> Self {
+        self.max_retries = max_retries;
+        self.retry_delay_secs = retry_delay_secs;
+        self
+    }
+
+    /// Allow pipeline to continue if transformation fails
+    pub fn skip_on_error(mut self, skip: bool) -> Self {
+        self.skip_on_error = skip;
+        self
+    }
+
+    /// Enable caching for fault tolerance (cache results before sending to destination)
+    pub fn with_caching(mut self, cache_dir: &str, max_size_mb: u32) -> Self {
+        self.enable_caching = true;
+        self.cache_dir = Some(cache_dir.to_string());
+        self.max_cache_size_mb = Some(max_size_mb);
+        self
+    }
+}
+
+/// Complete sync configuration for source → [transformation] → destination sync
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncConfiguration {
     /// Configuration name (e.g., "kafka_to_postgres_sync")
@@ -89,6 +174,8 @@ pub struct SyncConfiguration {
     pub source_polling: Option<PollingConfig>,
     /// Destination polling configuration (can differ from source)
     pub destination_polling: Option<PollingConfig>,
+    /// Optional PySpark transformation (can be applied mid-pipeline)
+    pub transformation: Option<TransformationConfig>,
     /// Description of what this sync does
     pub description: Option<String>,
 }
@@ -100,6 +187,7 @@ impl SyncConfiguration {
             name: name.to_string(),
             source_polling: None,
             destination_polling: None,
+            transformation: None,
             description: None,
         }
     }
@@ -116,6 +204,12 @@ impl SyncConfiguration {
         self
     }
 
+    /// Set optional PySpark transformation (applied between source and destination)
+    pub fn with_transformation(mut self, config: TransformationConfig) -> Self {
+        self.transformation = Some(config);
+        self
+    }
+
     /// Set description
     pub fn with_description(mut self, desc: &str) -> Self {
         self.description = Some(desc.to_string());
@@ -126,6 +220,34 @@ impl SyncConfiguration {
     pub fn validate(&self) -> ConfigurationResult {
         let mut details = ConfigurationDetails::new();
         let mut recommendations = Vec::new();
+
+        // Check transformation configuration
+        if let Some(transformation) = &self.transformation {
+            details.transformation_configured = true;
+            details.transformation_has_error_handling = transformation.max_retries > 0
+                || transformation.dead_letter_topic.is_some()
+                || transformation.skip_on_error
+                || transformation.enable_caching;
+
+            // Validate transformation
+            if transformation.intermediate_topic.is_none() && transformation.max_retries == 0 {
+                recommendations.push(
+                    "⚠️  Transformation: Consider adding intermediate_topic for staging or increase max_retries for reliability".to_string(),
+                );
+            }
+
+            if transformation.dead_letter_topic.is_none() && !transformation.skip_on_error && !transformation.enable_caching {
+                recommendations.push(
+                    "⚠️  Transformation: Consider adding dead_letter_topic, enabling skip_on_error, or enabling caching for failure handling".to_string(),
+                );
+            }
+
+            if transformation.enable_caching && transformation.cache_dir.is_none() {
+                recommendations.push(
+                    "⚠️  Transformation: Caching enabled but cache_dir not set. Provide cache directory path".to_string(),
+                );
+            }
+        }
 
         // Validate source polling
         let source_ok = if let Some(source_cfg) = &self.source_polling {
@@ -252,6 +374,22 @@ impl SyncConfiguration {
             }
         } else {
             parts.push("   📤 Source: No polling configured (on-demand only)".to_string());
+        }
+
+        if let Some(transform) = &self.transformation {
+            parts.push(format!(
+                "   ⚙️  Transformation: {} (retries: {}, timeout: {}s)",
+                transform.script_path, transform.max_retries, transform.timeout_secs
+            ));
+            if let Some(intermediate) = &transform.intermediate_topic {
+                parts.push(format!("      Staging topic: {}", intermediate));
+            }
+            if let Some(dlt) = &transform.dead_letter_topic {
+                parts.push(format!("      Dead letter topic: {}", dlt));
+            }
+            if transform.skip_on_error {
+                parts.push("      Error handling: Skip on error (continue pipeline)".to_string());
+            }
         }
 
         if let Some(dest) = &self.destination_polling {
@@ -413,5 +551,50 @@ mod tests {
             loaded.destination_polling.unwrap().timezone,
             config.destination_polling.unwrap().timezone
         );
+    }
+
+    #[test]
+    fn test_sync_config_with_transformation() {
+        let source = PollingConfig::new(SyncFrequency::Hourly);
+        let transformation = TransformationConfig::new("transform.py")
+            .with_intermediate_topic("transform_staging")
+            .with_dead_letter_topic("transform_errors")
+            .with_retries(5, 10)
+            .with_caching("/var/cache/transforms", 1024);
+
+        let config = SyncConfiguration::new("kafka_to_warehouse")
+            .with_source_polling(source)
+            .with_transformation(transformation)
+            .with_description("Transform Kafka events to warehouse schema");
+
+        let result = config.validate();
+        assert_eq!(result.status, ConfigStatus::Success);
+        assert!(result.details.transformation_configured);
+        assert!(result.details.transformation_has_error_handling);
+        assert!(result.message.contains("⚙️"));
+    }
+
+    #[test]
+    fn test_transformation_config_fault_tolerance() {
+        let transform = TransformationConfig::new("script.py")
+            .with_intermediate_topic("staging")
+            .with_dead_letter_topic("dead_letters")
+            .with_retries(3, 5);
+
+        assert_eq!(transform.max_retries, 3);
+        assert_eq!(transform.retry_delay_secs, 5);
+        assert!(transform.intermediate_topic.is_some());
+        assert!(transform.dead_letter_topic.is_some());
+        assert!(!transform.enable_caching);
+    }
+
+    #[test]
+    fn test_transformation_config_with_caching() {
+        let transform = TransformationConfig::new("script.py")
+            .with_caching("/tmp/cache", 512);
+
+        assert!(transform.enable_caching);
+        assert_eq!(transform.cache_dir, Some("/tmp/cache".to_string()));
+        assert_eq!(transform.max_cache_size_mb, Some(512));
     }
 }
