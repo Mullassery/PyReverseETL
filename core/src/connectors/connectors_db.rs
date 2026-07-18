@@ -40,6 +40,8 @@ pub enum ConnectorCategory {
     Identity,
     SocialMedia,
     Publishing,
+    Developer,
+    FileTransfer,
     Other,
 }
 
@@ -134,6 +136,15 @@ impl ConnectorRegistry {
 
         // === PUBLISHING (6) ===
         connectors.extend(Self::publishing());
+
+        // === DEVELOPER TOOLS (4) ===
+        connectors.extend(Self::developer());
+
+        // === FILE TRANSFER (4) ===
+        connectors.extend(Self::file_transfer());
+
+        // === SPREADSHEETS & FILES (3) ===
+        connectors.extend(Self::spreadsheets());
 
         connectors
     }
@@ -2150,6 +2161,165 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+}
+
+    fn developer() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "github".to_string(),
+                name: "GitHub".to_string(),
+                description: "Developer collaboration platform".to_string(),
+                category: ConnectorCategory::Developer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "personal_token"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(60)),
+            },
+            ConnectorInfo {
+                id: "gitlab".to_string(),
+                name: "GitLab".to_string(),
+                description: "DevOps platform".to_string(),
+                category: ConnectorCategory::Developer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "personal_token"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "bitbucket".to_string(),
+                name: "Bitbucket".to_string(),
+                description: "Git repository hosting".to_string(),
+                category: ConnectorCategory::Developer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "app_password"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "duckdb".to_string(),
+                name: "DuckDB".to_string(),
+                description: "In-process analytical database".to_string(),
+                category: ConnectorCategory::Developer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "sql"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["file_path"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+        ]
+    }
+
+    fn file_transfer() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "sftp".to_string(),
+                name: "SFTP".to_string(),
+                description: "SSH file transfer protocol".to_string(),
+                category: ConnectorCategory::FileTransfer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "delete"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["password", "ssh_key", "certificate"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "ftp".to_string(),
+                name: "FTP".to_string(),
+                description: "File transfer protocol".to_string(),
+                category: ConnectorCategory::FileTransfer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "delete"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "smb".to_string(),
+                name: "SMB/CIFS".to_string(),
+                description: "Windows file sharing".to_string(),
+                category: ConnectorCategory::FileTransfer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "delete"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["password", "ntlm"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "dropbox".to_string(),
+                name: "Dropbox".to_string(),
+                description: "Cloud file storage".to_string(),
+                category: ConnectorCategory::FileTransfer,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "delete"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(150)),
+            },
+        ]
+    }
+
+    fn spreadsheets() -> Vec<ConnectorInfo> {
+        vec![
+            ConnectorInfo {
+                id: "google_sheets".to_string(),
+                name: "Google Sheets".to_string(),
+                description: "Collaborative spreadsheets".to_string(),
+                category: ConnectorCategory::Other,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "service_account"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                rate_limit_default: Some(RateLimitDefault::conservative(500)),
+            },
+            ConnectorInfo {
+                id: "microsoft_excel".to_string(),
+                name: "Microsoft Excel (OneDrive)".to_string(),
+                description: "Excel files via OneDrive".to_string(),
+                category: ConnectorCategory::Other,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "local_excel".to_string(),
+                name: "Excel Files (Local)".to_string(),
+                description: "Local .xlsx and .xls files".to_string(),
+                category: ConnectorCategory::Other,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
