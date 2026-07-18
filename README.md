@@ -3,7 +3,7 @@
 **The Open Operational Data Activation Runtime**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version: v1.5.0](https://img.shields.io/badge/Version-v1.5.0-blue)
+![Version: v2.0.0](https://img.shields.io/badge/Version-v2.0.0-blue)
 ![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
 PyReverseETL is an open-source, Rust-powered platform for operationalizing warehouse intelligence across all business systems. It goes beyond traditional Reverse ETL by focusing on **activation** rather than synchronization.
@@ -23,6 +23,22 @@ Business Outcomes
 The platform sits between analytical systems and operational systems, continuously delivering trusted intelligence to where action happens.
 
 ## Core Capabilities
+
+### Event Sources (NEW in v2.0)
+- **Kafka** — Real-time event streaming from Kafka topics
+- **CDC** — Change Data Capture from databases (PostgreSQL, MySQL, MongoDB)
+- **API Polling** — REST endpoint polling and webhook receivers
+- **Scheduled Polling** — Configurable intervals (5min to 24hours)
+- **Change Detection** — Automatic detection of data changes
+- **Event Metadata** — Preserve source context (topic, partition, offset, key)
+
+### Data Transformations (NEW in v2.0)
+- **PySpark Processing** — Real-time Spark transformations
+- **Multi-Stage Pipelines** — Chain transformations with error handling
+- **Intermediate Staging** — Use Kafka topics between stages
+- **Cost Optimization** — Filter data early in pipeline
+- **Feature Engineering** — ML-ready feature preparation
+- **Spark Cluster Support** — Local, YARN, Kubernetes deployment
 
 ### Synchronization Engine
 - **Batch Sync** — Scheduled synchronization
@@ -115,6 +131,72 @@ run = activation.execute()
 print(f"Synced {run.rows_processed} records")
 ```
 
+### Kafka Event Source with Polling
+
+```python
+from pyreverseetl import KafkaSource, KafkaConfig, SyncFrequency
+
+# Configure Kafka source
+kafka_config = KafkaConfig(
+    brokers="localhost:9092",
+    topic="customer-events",
+    group_id="pyreverseetl-consumer"
+)
+
+# Create source with hourly polling
+source = KafkaSource(kafka_config)
+source.set_sync_frequency(SyncFrequency.Hourly)
+
+# Connect and poll for events
+source.connect()
+while True:
+    event = source.next_event()
+    if event:
+        print(f"Received: {event.entity_id} from {event.source}")
+```
+
+### PySpark Data Transformation Pipeline
+
+```python
+from pyreverseetl import (
+    SparkTransformer, SparkConfig, TransformationPipeline, TransformationStage
+)
+
+# Define transformation stages
+normalize_stage = TransformationStage(
+    name="normalize",
+    config=SparkConfig(
+        script="/path/to/normalize.py",
+        input_topic="raw-events",
+        output_topic="normalized-events"
+    ),
+    retry_count=3,
+    skip_on_error=False
+)
+
+enrich_stage = TransformationStage(
+    name="enrich",
+    config=SparkConfig(
+        script="/path/to/enrich.py",
+        input_topic="normalized-events",
+        output_topic="enriched-events"
+    ),
+    retry_count=2,
+    skip_on_error=False
+)
+
+# Create pipeline
+pipeline = TransformationPipeline()\
+    .add_stage(normalize_stage)\
+    .add_stage(enrich_stage)
+
+# Execute pipeline
+for stage in pipeline.stages:
+    transformer = SparkTransformer(stage.config)
+    result = transformer.execute()
+    print(f"{stage.name}: {result.records_output} records output")
+```
+
 ## Core Concepts
 
 ### Workflows
@@ -201,12 +283,19 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--conte
 - OAuth token manager with automatic refresh
 - 24 tests passing
 
-### ✅ Phase 3 Week 2: Event Streaming (v1.2.0) ← Current
-- Event schema with types and sources
-- Thread-safe EventProcessor with batch buffering
-- Async event handlers with Tokio
-- Ready for Kafka/CDC/API integration
-- 11 new tests (142 total)
+### ✅ Phase 3 Weeks 3-4: Real-Time Activation (v1.5.0)
+- Change Data Capture (CDC) engine with changelog persistence
+- Real-time activation pipeline with latency tracking
+- Backpressure management and checkpoint recovery
+- 36 new tests (178 total)
+
+### ✅ Phase 4: Event Sources & Transformations (v2.0.0) ← Current
+- **Event Sources**: Kafka connector with SSL/SASL support
+- **Sync Frequency**: Configurable polling (5min-24hours)
+- **Change Detection**: Track changes at preset intervals
+- **PySpark Transformations**: Multi-stage processing pipelines
+- **Intermediate Staging**: Kafka topics between transformation stages
+- 37 new tests (213 total passing)
 
 ## Platform Philosophy
 
