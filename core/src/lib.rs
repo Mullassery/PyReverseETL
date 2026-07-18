@@ -15,6 +15,7 @@ pub mod pipeline;
 pub mod sources;
 pub mod transformers;
 pub mod observability;
+pub mod testing;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
