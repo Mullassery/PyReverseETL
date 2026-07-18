@@ -1,44 +1,45 @@
 # PyReverseETL
 
-**The Open Operational Data Activation Runtime**
+**Move your data automatically to where it's needed.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version: v2.0.0](https://img.shields.io/badge/Version-v2.0.0-blue)
+![Version: v2.0.1](https://img.shields.io/badge/Version-v2.0.1-blue)
 ![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
-PyReverseETL is an open-source, Rust-powered platform for operationalizing warehouse intelligence across all business systems. It goes beyond traditional Reverse ETL by focusing on **activation** rather than synchronization.
+PyReverseETL automatically syncs your data from source systems to destinations. Set it once, and your data stays current automatically.
 
-## Philosophy
+## Simple as 1-2-3
 
-Traditional Reverse ETL platforms move rows from warehouses into SaaS applications. PyReverseETL moves **business intent**.
+1. **Describe** - Create a simple text file describing what you want to sync
+2. **Configure** - Set when, how often, and any special rules (skip weekends, business hours, etc.)
+3. **Run** - Start it up. Data syncs automatically on schedule.
 
-```
-Business Intelligence
-        ↓
-Operational Activation
-        ↓
-Business Outcomes
-```
+That's it. No complex setup. No manual work.
 
-The platform sits between analytical systems and operational systems, continuously delivering trusted intelligence to where action happens.
+## What Problems Does It Solve?
+
+- ✅ Data goes stale in your systems - PyReverseETL keeps it current
+- ✅ Manual data syncs are error-prone - PyReverseETL does it automatically
+- ✅ Multiple systems can't talk to each other - PyReverseETL connects them
+- ✅ Syncing on a schedule is complicated - PyReverseETL handles it simply
 
 ## Core Capabilities
 
-### Event Sources (NEW in v2.0)
-- **Kafka** — Real-time event streaming from Kafka topics
-- **CDC** — Change Data Capture from databases (PostgreSQL, MySQL, MongoDB)
+### Data Sources (NEW in v2.0)
+- **Event Streams** — Real-time data from event streaming platforms
+- **Database Change Capture** — Real-time changes from databases (PostgreSQL, MySQL, MongoDB)
 - **API Polling** — REST endpoint polling and webhook receivers
 - **Scheduled Polling** — Configurable intervals (5min to 24hours)
 - **Change Detection** — Automatic detection of data changes
-- **Event Metadata** — Preserve source context (topic, partition, offset, key)
+- **Source Metadata** — Preserve source context and lineage
 
 ### Data Transformations (NEW in v2.0)
-- **PySpark Processing** — Real-time Spark transformations
+- **Distributed Processing** — Large-scale data transformations
 - **Multi-Stage Pipelines** — Chain transformations with error handling
-- **Intermediate Staging** — Use Kafka topics between stages
+- **Intermediate Staging** — Temporary storage between processing stages
 - **Cost Optimization** — Filter data early in pipeline
-- **Feature Engineering** — ML-ready feature preparation
-- **Spark Cluster Support** — Local, YARN, Kubernetes deployment
+- **Data Preparation** — ML-ready feature preparation
+- **Cluster Support** — Local, YARN, Kubernetes deployment
 
 ### Synchronization Engine
 - **Batch Sync** — Scheduled synchronization
