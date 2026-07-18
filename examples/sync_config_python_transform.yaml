@@ -1,0 +1,63 @@
+# PyReverseETL v2.0.1 - Python Transformation Example
+# Lightweight, local transformations for simple use cases
+
+name: api_to_warehouse_python
+description: |
+  Simple data sync with Python transformation:
+  - Poll REST API for updates (30 min intervals)
+  - Apply lightweight Python transformation (schema mapping, filtering)
+  - Write to data warehouse (daily)
+
+  Uses local Python execution (not distributed like PySpark).
+  Good for: simple mappings, small datasets, rapid development.
+
+# Source: Poll API every 30 minutes
+source_polling:
+  frequency: ThirtyMinutes
+  enabled: true
+  timezone: UTC
+  skip_days: []
+  no_sync_after_hour: null
+  sync_resume_hour: null
+  blackout_start: null
+  blackout_end: null
+
+# Python Transformation (lightweight, local execution)
+transformation:
+  enabled: true
+  engine: Python
+  script_path: transforms/simple_transform.py
+
+  # No intermediate topic needed for Python (runs locally)
+  intermediate_topic: null
+
+  # Max retries for Python transformation
+  max_retries: 3
+  retry_delay_secs: 5
+
+  # Shorter timeout for local Python execution (60 sec)
+  timeout_secs: 60
+
+  # Dead letter topic for failed transformations
+  dead_letter_topic: transform_errors
+
+  # Continue pipeline if transformation fails
+  skip_on_error: true
+
+  # Optional: Cache results for fault tolerance
+  enable_caching: true
+  cache_dir: /var/cache/pyreverseetl/python_transforms
+  max_cache_size_mb: 512  # 512MB cache
+
+# Destination: Write to warehouse (daily, with maintenance window)
+destination_polling:
+  frequency: Daily
+  enabled: true
+  timezone: America/New_York
+  skip_days:
+    - Saturday
+    - Sunday
+  no_sync_after_hour: 22  # 10 PM - 6 AM
+  sync_resume_hour: 6
+  blackout_start: null
+  blackout_end: null

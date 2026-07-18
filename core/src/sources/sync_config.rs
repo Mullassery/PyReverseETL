@@ -86,14 +86,36 @@ impl ConfigurationDetails {
     }
 }
 
-/// PySpark transformation configuration with error handling and caching
+/// Type of transformation engine
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum TransformationEngine {
+    /// PySpark for distributed transformations
+    PySpark,
+    /// Python for local/lightweight transformations
+    Python,
+}
+
+impl std::fmt::Display for TransformationEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransformationEngine::PySpark => write!(f, "PySpark"),
+            TransformationEngine::Python => write!(f, "Python"),
+        }
+    }
+}
+
+/// Transformation configuration supporting both PySpark and Python
+/// PySpark: distributed, large-scale transformations
+/// Python: local, lightweight transformations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransformationConfig {
     /// Transformation is enabled
     pub enabled: bool,
+    /// Type of transformation engine (PySpark or Python)
+    pub engine: TransformationEngine,
     /// Script path or transformation logic
     pub script_path: String,
-    /// Intermediate Kafka topic for staging
+    /// Intermediate Kafka topic for staging (optional)
     pub intermediate_topic: Option<String>,
     /// Max retries on failure
     pub max_retries: u32,
@@ -114,15 +136,39 @@ pub struct TransformationConfig {
 }
 
 impl TransformationConfig {
-    /// Create new transformation config
+    /// Create new PySpark transformation config (default)
     pub fn new(script_path: &str) -> Self {
+        Self::pyspark(script_path)
+    }
+
+    /// Create new PySpark transformation (distributed, high-volume)
+    pub fn pyspark(script_path: &str) -> Self {
         Self {
             enabled: true,
+            engine: TransformationEngine::PySpark,
             script_path: script_path.to_string(),
             intermediate_topic: None,
             max_retries: 3,
             retry_delay_secs: 5,
             timeout_secs: 300,
+            skip_on_error: false,
+            dead_letter_topic: None,
+            enable_caching: false,
+            cache_dir: None,
+            max_cache_size_mb: None,
+        }
+    }
+
+    /// Create new Python transformation (local, lightweight)
+    pub fn python(script_path: &str) -> Self {
+        Self {
+            enabled: true,
+            engine: TransformationEngine::Python,
+            script_path: script_path.to_string(),
+            intermediate_topic: None,
+            max_retries: 3,
+            retry_delay_secs: 5,
+            timeout_secs: 60,  // Shorter timeout for local execution
             skip_on_error: false,
             dead_letter_topic: None,
             enable_caching: false,
@@ -378,14 +424,17 @@ impl SyncConfiguration {
 
         if let Some(transform) = &self.transformation {
             parts.push(format!(
-                "   ⚙️  Transformation: {} (retries: {}, timeout: {}s)",
-                transform.script_path, transform.max_retries, transform.timeout_secs
+                "   ⚙️  Transformation: {} (engine: {}, retries: {}, timeout: {}s)",
+                transform.script_path, transform.engine, transform.max_retries, transform.timeout_secs
             ));
             if let Some(intermediate) = &transform.intermediate_topic {
                 parts.push(format!("      Staging topic: {}", intermediate));
             }
             if let Some(dlt) = &transform.dead_letter_topic {
                 parts.push(format!("      Dead letter topic: {}", dlt));
+            }
+            if transform.enable_caching {
+                parts.push(format!("      Caching: Enabled ({} MB max)", transform.max_cache_size_mb.unwrap_or(0)));
             }
             if transform.skip_on_error {
                 parts.push("      Error handling: Skip on error (continue pipeline)".to_string());
@@ -596,5 +645,57 @@ mod tests {
         assert!(transform.enable_caching);
         assert_eq!(transform.cache_dir, Some("/tmp/cache".to_string()));
         assert_eq!(transform.max_cache_size_mb, Some(512));
+    }
+
+    #[test]
+    fn test_transformation_python_engine() {
+        let transform = TransformationConfig::python("transform.py");
+
+        assert_eq!(transform.engine, TransformationEngine::Python);
+        assert!(transform.enabled);
+        assert_eq!(transform.timeout_secs, 60);  // Shorter timeout for Python
+        assert_eq!(transform.script_path, "transform.py");
+    }
+
+    #[test]
+    fn test_transformation_pyspark_engine() {
+        let transform = TransformationConfig::pyspark("transform.py");
+
+        assert_eq!(transform.engine, TransformationEngine::PySpark);
+        assert!(transform.enabled);
+        assert_eq!(transform.timeout_secs, 300);  // Longer timeout for PySpark
+    }
+
+    #[test]
+    fn test_sync_config_with_python_transformation() {
+        let source = PollingConfig::new(SyncFrequency::Hourly);
+        let transform = TransformationConfig::python("simple_transform.py")
+            .with_retries(2, 3)
+            .with_dead_letter_topic("errors");
+
+        let config = SyncConfiguration::new("api_to_warehouse")
+            .with_source_polling(source)
+            .with_transformation(transform)
+            .with_description("Lightweight Python transformation");
+
+        let result = config.validate();
+        assert_eq!(result.status, ConfigStatus::Success);
+        assert!(result.message.contains("Python"));
+    }
+
+    #[test]
+    fn test_sync_config_with_pyspark_transformation() {
+        let source = PollingConfig::new(SyncFrequency::FiveMinutes);
+        let transform = TransformationConfig::pyspark("transform.py")
+            .with_intermediate_topic("staging")
+            .with_retries(5, 10);
+
+        let config = SyncConfiguration::new("kafka_to_warehouse")
+            .with_source_polling(source)
+            .with_transformation(transform);
+
+        let result = config.validate();
+        assert_eq!(result.status, ConfigStatus::Success);
+        assert!(result.message.contains("PySpark"));
     }
 }
