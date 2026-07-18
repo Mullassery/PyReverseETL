@@ -19,6 +19,8 @@ pub mod object_storage;
 pub mod database_advanced;
 pub mod hdfs;
 pub mod connectors_db;
+pub mod mysql;
+pub mod postgres;
 
 pub use destination::{DestinationConnector, DestinationConfig, WriteMode};
 pub use source::{SourceConnector, SourceConfig};
@@ -30,6 +32,8 @@ pub use object_storage::{ObjectStorageConfig, ObjectStorageSource, ObjectStorage
 pub use database_advanced::{DatabaseConfig, AdvancedDatabaseSource, AdvancedDatabaseDestination, WriteStrategy, TableSchema};
 pub use hdfs::{HdfsConfig, HdfsSource, HdfsDestination, HdfsAuth, HdfsOperations, FileStatus};
 pub use connectors_db::{ConnectorRegistry as ConnectorDb, ConnectorInfo, ConnectorCategory, ConnectorTypeInfo, RateLimitDefault};
+pub use mysql::{MySQLConnector, MySQLConfig};
+pub use postgres::{PostgreSQLConnector, PostgreSQLConfig};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
