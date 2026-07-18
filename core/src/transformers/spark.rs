@@ -2,6 +2,21 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Instant;
 
+/// PySpark auto-scaling policy
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ScalingPolicy {
+    /// No auto-scaling (static configuration)
+    Static,
+    /// Scale based on input data size
+    DataSize,
+    /// Scale based on processing latency
+    Latency,
+    /// Scale based on CPU/memory usage
+    ResourceUtilization,
+    /// Aggressive scaling for batch jobs
+    Aggressive,
+}
+
 /// PySpark transformer configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SparkConfig {
@@ -25,8 +40,16 @@ pub struct SparkConfig {
     pub driver_memory: String,
     /// Executor memory (e.g., "2g")
     pub executor_memory: String,
-    /// Number of executors
+    /// Number of executors (initial)
     pub num_executors: u32,
+    /// Min executors for auto-scaling
+    pub min_executors: u32,
+    /// Max executors for auto-scaling
+    pub max_executors: u32,
+    /// Auto-scaling policy
+    pub scaling_policy: ScalingPolicy,
+    /// Auto-shutdown after completion (seconds)
+    pub auto_shutdown_seconds: Option<u32>,
     /// Checkpointing directory
     pub checkpoint_dir: Option<String>,
     /// Additional Spark configurations
@@ -49,6 +72,10 @@ impl Default for SparkConfig {
             driver_memory: "2g".to_string(),
             executor_memory: "2g".to_string(),
             num_executors: 2,
+            min_executors: 1,
+            max_executors: 16,
+            scaling_policy: ScalingPolicy::DataSize,
+            auto_shutdown_seconds: Some(300), // 5 min auto-shutdown
             checkpoint_dir: None,
             spark_conf: HashMap::new(),
             script_parameters: HashMap::new(),
@@ -181,6 +208,112 @@ impl SparkTransformer {
     /// Update configuration
     pub fn set_config(&mut self, config: SparkConfig) {
         self.config = config;
+    }
+
+    /// Calculate optimal executor count based on data size
+    pub fn calculate_executors_for_data_size(&self, data_size_mb: u64) -> u32 {
+        let scale_factor = (data_size_mb / 1000).max(1); // 1 executor per 1GB
+        ((scale_factor as u32) * self.config.num_executors)
+            .min(self.config.max_executors)
+            .max(self.config.min_executors)
+    }
+
+    /// Calculate optimal executor count based on latency target
+    pub fn calculate_executors_for_latency(&self, current_latency_ms: u64, target_latency_ms: u64) -> u32 {
+        if current_latency_ms <= target_latency_ms {
+            return self.config.num_executors; // No scaling needed
+        }
+
+        let ratio = current_latency_ms as f64 / target_latency_ms as f64;
+        let new_executors = (self.config.num_executors as f64 * ratio).ceil() as u32;
+        new_executors
+            .min(self.config.max_executors)
+            .max(self.config.min_executors)
+    }
+
+    /// Auto-scale executors based on policy
+    pub fn get_auto_scaled_executor_count(
+        &self,
+        data_size_mb: Option<u64>,
+        current_latency_ms: Option<u64>,
+    ) -> u32 {
+        match self.config.scaling_policy {
+            ScalingPolicy::Static => self.config.num_executors,
+            ScalingPolicy::DataSize => {
+                data_size_mb.map(|size| self.calculate_executors_for_data_size(size))
+                    .unwrap_or(self.config.num_executors)
+            }
+            ScalingPolicy::Latency => {
+                current_latency_ms.map(|latency| self.calculate_executors_for_latency(latency, 5000))
+                    .unwrap_or(self.config.num_executors)
+            }
+            ScalingPolicy::ResourceUtilization => {
+                // Default to 70% of max for balanced resource utilization
+                ((self.config.max_executors as f64 * 0.7) as u32)
+                    .min(self.config.max_executors)
+                    .max(self.config.min_executors)
+            }
+            ScalingPolicy::Aggressive => {
+                // Use max executors for aggressive parallel processing
+                self.config.max_executors
+            }
+        }
+    }
+
+    /// Build Spark submit command with auto-scaled executors
+    pub fn build_spark_submit_command_with_scaling(
+        &self,
+        data_size_mb: Option<u64>,
+        current_latency_ms: Option<u64>,
+    ) -> String {
+        let scaled_executors = self.get_auto_scaled_executor_count(data_size_mb, current_latency_ms);
+
+        let mut cmd = String::from("spark-submit");
+        cmd.push_str(&format!(" --master {}", self.config.master));
+        cmd.push_str(&format!(" --name {}", self.config.app_name));
+        cmd.push_str(&format!(" --driver-memory {}", self.config.driver_memory));
+        cmd.push_str(&format!(" --executor-memory {}", self.config.executor_memory));
+
+        if !self.config.master.starts_with("local") {
+            cmd.push_str(&format!(" --num-executors {}", scaled_executors));
+
+            // Add dynamic allocation for YARN/K8s
+            if self.config.master == "yarn" || self.config.master.contains("k8s") {
+                cmd.push_str(&format!(" --conf spark.dynamicAllocation.minExecutors={}", self.config.min_executors));
+                cmd.push_str(&format!(" --conf spark.dynamicAllocation.maxExecutors={}", self.config.max_executors));
+                cmd.push_str(" --conf spark.dynamicAllocation.enabled=true");
+            }
+
+            // Add auto-shutdown
+            if let Some(shutdown_secs) = self.config.auto_shutdown_seconds {
+                cmd.push_str(&format!(" --conf spark.dynamicAllocation.executorIdleTimeout={}s", shutdown_secs));
+            }
+        }
+
+        for (key, value) in &self.config.spark_conf {
+            cmd.push_str(&format!(" --conf {}={}", key, value));
+        }
+
+        cmd.push_str(&format!(
+            " --conf spark.kafka.bootstrap.servers={}",
+            self.config.kafka_brokers
+        ));
+
+        cmd.push_str(&format!(" {}", self.config.script));
+        cmd.push_str(&format!(" --input-topic {}", self.config.input_topic));
+        cmd.push_str(&format!(" --output-topic {}", self.config.output_topic));
+        cmd.push_str(&format!(" --batch-interval {}", self.config.batch_interval_seconds));
+        cmd.push_str(&format!(" --num-partitions {}", self.config.num_partitions));
+
+        if let Some(checkpoint_dir) = &self.config.checkpoint_dir {
+            cmd.push_str(&format!(" --checkpoint-dir {}", checkpoint_dir));
+        }
+
+        for (key, value) in &self.config.script_parameters {
+            cmd.push_str(&format!(" --param-{} {}", key, value));
+        }
+
+        cmd
     }
 }
 
@@ -382,5 +515,100 @@ mod tests {
 
         assert!(cmd.contains("--param-version v1"));
         assert!(cmd.contains("--param-env prod"));
+    }
+
+    #[test]
+    fn test_spark_auto_scaling_data_size() {
+        let config = SparkConfig {
+            max_executors: 16,
+            min_executors: 1,
+            num_executors: 2,
+            ..Default::default()
+        };
+
+        let transformer = SparkTransformer::new(config);
+
+        // 1GB data → 2 executors
+        assert_eq!(transformer.calculate_executors_for_data_size(1000), 2);
+
+        // 5GB data → 10 executors (capped at max 16)
+        assert_eq!(transformer.calculate_executors_for_data_size(5000), 10);
+
+        // 20GB data → 16 executors (max capped)
+        assert_eq!(transformer.calculate_executors_for_data_size(20000), 16);
+    }
+
+    #[test]
+    fn test_spark_auto_scaling_latency() {
+        let config = SparkConfig {
+            max_executors: 16,
+            min_executors: 1,
+            num_executors: 2,
+            ..Default::default()
+        };
+
+        let transformer = SparkTransformer::new(config);
+
+        // Current latency = target latency → no scaling
+        assert_eq!(transformer.calculate_executors_for_latency(5000, 5000), 2);
+
+        // Current latency 10s, target 5s → scale up 2x
+        let scaled = transformer.calculate_executors_for_latency(10000, 5000);
+        assert!(scaled >= 4 && scaled <= 5);
+
+        // Current latency 1s, target 5s → no need to scale
+        assert_eq!(transformer.calculate_executors_for_latency(1000, 5000), 2);
+    }
+
+    #[test]
+    fn test_spark_scaling_policy_static() {
+        let mut config = SparkConfig::default();
+        config.scaling_policy = ScalingPolicy::Static;
+        let transformer = SparkTransformer::new(config);
+
+        assert_eq!(
+            transformer.get_auto_scaled_executor_count(Some(5000), None),
+            2 // Original num_executors
+        );
+    }
+
+    #[test]
+    fn test_spark_scaling_policy_aggressive() {
+        let mut config = SparkConfig::default();
+        config.scaling_policy = ScalingPolicy::Aggressive;
+        config.max_executors = 16;
+        let transformer = SparkTransformer::new(config);
+
+        assert_eq!(transformer.get_auto_scaled_executor_count(None, None), 16);
+    }
+
+    #[test]
+    fn test_spark_auto_shutdown_config() {
+        let config = SparkConfig {
+            auto_shutdown_seconds: Some(300),
+            ..Default::default()
+        };
+
+        assert_eq!(config.auto_shutdown_seconds, Some(300));
+    }
+
+    #[test]
+    fn test_spark_submit_with_auto_scaling() {
+        let config = SparkConfig {
+            master: "yarn".to_string(),
+            max_executors: 16,
+            min_executors: 2,
+            auto_shutdown_seconds: Some(300),
+            ..Default::default()
+        };
+
+        let transformer = SparkTransformer::new(config);
+        let cmd = transformer.build_spark_submit_command_with_scaling(Some(5000), None);
+
+        assert!(cmd.contains("--master yarn"));
+        assert!(cmd.contains("spark.dynamicAllocation.enabled=true"));
+        assert!(cmd.contains("spark.dynamicAllocation.minExecutors=2"));
+        assert!(cmd.contains("spark.dynamicAllocation.maxExecutors=16"));
+        assert!(cmd.contains("executorIdleTimeout=300s"));
     }
 }

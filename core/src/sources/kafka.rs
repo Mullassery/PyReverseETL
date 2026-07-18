@@ -59,13 +59,16 @@ impl Default for KafkaConfig {
     }
 }
 
-/// Kafka event source connector
+/// Kafka event source connector with auto-scaling support
 pub struct KafkaSource {
     config: KafkaConfig,
     consumer: Option<BaseConsumer>,
     connected: bool,
     message_count: u64,
     polling_config: super::polling::PollingConfig,
+    consumer_lag: u64,
+    last_message_time: Option<std::time::Instant>,
+    start_time: std::time::Instant,
 }
 
 impl KafkaSource {
@@ -77,6 +80,9 @@ impl KafkaSource {
             connected: false,
             message_count: 0,
             polling_config: super::polling::PollingConfig::new(super::polling::SyncFrequency::Hourly),
+            consumer_lag: 0,
+            last_message_time: None,
+            start_time: std::time::Instant::now(),
         }
     }
 
@@ -88,14 +94,50 @@ impl KafkaSource {
             connected: false,
             message_count: 0,
             polling_config: polling,
+            consumer_lag: 0,
+            last_message_time: None,
+            start_time: std::time::Instant::now(),
         }
     }
 
-    /// Get metrics
+    /// Calculate current throughput in messages/second
+    pub fn calculate_throughput(&self) -> f64 {
+        let elapsed_secs = self.start_time.elapsed().as_secs_f64().max(1.0);
+        self.message_count as f64 / elapsed_secs
+    }
+
+    /// Calculate recommended parallelism based on consumer lag and throughput
+    pub fn calculate_recommended_parallelism(&self) -> u32 {
+        let throughput = self.calculate_throughput();
+
+        // Target: 1000 msgs/sec per partition
+        // Adjust based on lag: high lag = more partitions needed
+        let partition_target = 1000.0;
+        let throughput_multiplier = (throughput / partition_target).max(1.0).ceil() as u32;
+
+        // Lag penalty: 10ms lag per 100 messages behind
+        let lag_multiplier = ((self.consumer_lag / 100).max(1) as u32).min(4);
+
+        let recommended = throughput_multiplier.saturating_mul(lag_multiplier);
+        recommended.max(1).min(32) // Reasonable bounds: 1-32 partitions
+    }
+
+    /// Update consumer lag
+    pub fn set_consumer_lag(&mut self, lag: u64) {
+        self.consumer_lag = lag;
+    }
+
+    /// Get metrics with auto-scaling info
     pub fn metrics(&self) -> KafkaSourceMetrics {
+        let throughput = self.calculate_throughput();
+        let recommended_parallelism = self.calculate_recommended_parallelism();
+
         KafkaSourceMetrics {
             messages_consumed: self.message_count,
             connected: self.connected,
+            consumer_lag: self.consumer_lag,
+            current_throughput_msgs_sec: throughput,
+            recommended_parallelism,
         }
     }
 
@@ -115,11 +157,14 @@ impl KafkaSource {
     }
 }
 
-/// Kafka source metrics
+/// Kafka source metrics with auto-scaling info
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaSourceMetrics {
     pub messages_consumed: u64,
     pub connected: bool,
+    pub consumer_lag: u64,
+    pub current_throughput_msgs_sec: f64,
+    pub recommended_parallelism: u32,
 }
 
 impl super::EventSourceConnector for KafkaSource {
