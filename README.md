@@ -262,6 +262,18 @@ activation = Activation(
 
 See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--context-discovery) for details.
 
+## Observability & Open-Source Stack
+
+PyReverseETL includes full OpenTelemetry integration for observability. Works with any open-source monitoring backend:
+
+- **Metrics:** Prometheus, OpenMetrics
+- **Traces:** Jaeger, Tempo
+- **Logs:** Loki, OpenSearch
+- **Dashboards:** Grafana, custom tools
+- **Alerts:** Alert Manager, native backend support
+
+See [OSS_ALTERNATIVES.md](docs/OSS_ALTERNATIVES.md) for complete open-source stack recommendations and setup guides.
+
 ## Roadmap
 
 ### ✅ Phase 1: Core Foundation (v1.0.0)
