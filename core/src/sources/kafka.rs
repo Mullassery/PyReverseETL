@@ -65,6 +65,7 @@ pub struct KafkaSource {
     consumer: Option<BaseConsumer>,
     connected: bool,
     message_count: u64,
+    polling_config: super::polling::PollingConfig,
 }
 
 impl KafkaSource {
@@ -75,6 +76,18 @@ impl KafkaSource {
             consumer: None,
             connected: false,
             message_count: 0,
+            polling_config: super::polling::PollingConfig::new(super::polling::SyncFrequency::Hourly),
+        }
+    }
+
+    /// Create with polling configuration
+    pub fn with_polling(config: KafkaConfig, polling: super::polling::PollingConfig) -> Self {
+        Self {
+            config,
+            consumer: None,
+            connected: false,
+            message_count: 0,
+            polling_config: polling,
         }
     }
 
@@ -84,6 +97,21 @@ impl KafkaSource {
             messages_consumed: self.message_count,
             connected: self.connected,
         }
+    }
+
+    /// Set sync frequency for polling
+    pub fn set_sync_frequency(&mut self, frequency: super::polling::SyncFrequency) {
+        self.polling_config.frequency = frequency;
+    }
+
+    /// Get polling metrics
+    pub fn polling_metrics(&self) -> super::polling::PollingMetrics {
+        self.polling_config.metrics()
+    }
+
+    /// Check if should poll for changes
+    pub fn should_poll(&self) -> bool {
+        self.polling_config.should_poll()
     }
 }
 
@@ -217,6 +245,28 @@ impl super::EventSourceConnector for KafkaSource {
     }
 }
 
+impl super::polling::ChangePoller for KafkaSource {
+    fn poll_changes(&self) -> crate::Result<Option<u64>> {
+        if !self.connected {
+            return Err(crate::Error::ConnectorError(
+                "Cannot poll: not connected to Kafka".to_string(),
+            ));
+        }
+
+        // For Kafka, polling for changes means checking if there are messages
+        // This is a simplified check - a real implementation might track offset changes
+        Ok(Some(self.message_count))
+    }
+
+    fn polling_config(&self) -> super::polling::PollingConfig {
+        self.polling_config.clone()
+    }
+
+    fn set_polling_config(&mut self, config: super::polling::PollingConfig) {
+        self.polling_config = config;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,5 +335,37 @@ mod tests {
 
         assert!(config.sasl_mechanism.is_some());
         assert_eq!(config.sasl_mechanism.unwrap(), "PLAIN");
+    }
+
+    #[test]
+    fn test_kafka_source_with_polling() {
+        use super::super::polling::SyncFrequency;
+
+        let config = KafkaConfig::default();
+        let polling = super::super::polling::PollingConfig::new(SyncFrequency::FiveMinutes);
+        let source = KafkaSource::with_polling(config, polling);
+
+        assert_eq!(source.polling_metrics().frequency, "every 5 minutes");
+        assert!(source.polling_metrics().enabled);
+    }
+
+    #[test]
+    fn test_kafka_source_set_sync_frequency() {
+        use super::super::polling::SyncFrequency;
+
+        let config = KafkaConfig::default();
+        let mut source = KafkaSource::new(config);
+
+        source.set_sync_frequency(SyncFrequency::Daily);
+        assert_eq!(source.polling_metrics().frequency, "daily");
+    }
+
+    #[test]
+    fn test_kafka_source_should_poll() {
+        let config = KafkaConfig::default();
+        let source = KafkaSource::new(config);
+
+        // First check should return true (no previous polls)
+        assert!(source.should_poll());
     }
 }

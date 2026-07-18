@@ -28,4 +28,7 @@ pub use adapters::{DestinationAdapter, FieldMapping, AuthMethod, OperationResult
 pub use cdc::{Change, ChangeDetector, ChangeType, ChangeLog, ChangeLogEntry, Checkpoint, CheckpointManager};
 pub use pipeline::{ActivationPipeline, PipelineMetrics, PipelineStatus, LatencyTracker, BackpressureManager};
 pub use streaming::{Event, EventType, EventSource, EventProcessor, EventHandler};
-pub use sources::{KafkaSource, KafkaConfig, KafkaMessage, EventSourceConnector};
+pub use sources::{
+    KafkaSource, KafkaConfig, KafkaMessage, EventSourceConnector,
+    SyncFrequency, PollingConfig, ChangePoller, PollingMetrics, PollResult, SharedPollingState,
+};
