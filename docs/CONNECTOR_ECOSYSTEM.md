@@ -1,6 +1,6 @@
 # PyReverseETL Connector Ecosystem
 
-**Built-in connectors for 20+ platforms.**
+**Built-in connectors for 280+ platforms and data sources.**
 
 ---
 
@@ -76,6 +76,18 @@ PyReverseETL's connectors are designed for modern data operations:
 **Analytics:**
 - Mixpanel (events, user profiles)
 - Amplitude (events, users)
+
+**Fitness & Wearables:**
+- Fitbit (wearable fitness tracking, heart rate, sleep)
+- Apple HealthKit (health and fitness data, workouts)
+- Google Fit (activity, steps, heart rate, sleep)
+- Garmin (sports watches, training data)
+- Oura Ring (sleep quality, readiness, activity)
+- Withings (weight, blood pressure, activity)
+- Suunto (sports watches, training)
+- Polar Sports (sports watches, training zones)
+- Strava (activities, performance, segments)
+- MyFitnessPal (nutrition, calories, workouts)
 
 ---
 

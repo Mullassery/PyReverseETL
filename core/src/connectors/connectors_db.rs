@@ -1,6 +1,6 @@
-/// Connector Database - 150+ Built-in Connectors
+/// Connector Database - 280+ Built-in Connectors
 ///
-/// Organized by category: Databases, Cloud, Messaging, SaaS, etc.
+/// Organized by 26 categories: Databases, Cloud, Messaging, SaaS, Analytics, Fitness/Wearables, etc.
 /// Easy to extend with new connectors
 
 use serde::{Deserialize, Serialize};
@@ -1034,17 +1034,105 @@ impl ConnectorRegistry {
                 auth_methods: vec!["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
+            // Fitness & Wearables
             ConnectorInfo {
-                id: "figma".to_string(),
-                name: "Figma".to_string(),
-                description: "Design and prototyping platform".to_string(),
-                category: ConnectorCategory::SaaS,
+                id: "fitbit".to_string(),
+                name: "Fitbit".to_string(),
+                description: "Wearable fitness tracking and health data".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("150/min".to_string()),
+            },
+            ConnectorInfo {
+                id: "apple_healthkit".to_string(),
+                name: "Apple HealthKit".to_string(),
+                description: "Apple's health and fitness data platform".to_string(),
+                category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "google_fit".to_string(),
+                name: "Google Fit".to_string(),
+                description: "Google Fit activity and health metrics".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "write", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("100/sec".to_string()),
+            },
+            ConnectorInfo {
+                id: "garmin".to_string(),
+                name: "Garmin".to_string(),
+                description: "Garmin sports watches and fitness data".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("200/hour".to_string()),
+            },
+            ConnectorInfo {
+                id: "oura_ring".to_string(),
+                name: "Oura Ring".to_string(),
+                description: "Sleep and wellness metrics from Oura Ring".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth", "personal_token"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("60/min".to_string()),
+            },
+            ConnectorInfo {
+                id: "withings".to_string(),
+                name: "Withings (Nokia Health)".to_string(),
+                description: "Health monitoring devices and metrics".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Both,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("1000/day".to_string()),
+            },
+            ConnectorInfo {
+                id: "suunto".to_string(),
+                name: "Suunto".to_string(),
+                description: "Sports watch and diving computer data".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: None,
+            },
+            ConnectorInfo {
+                id: "polar".to_string(),
+                name: "Polar Sports".to_string(),
+                description: "Polar sports watches and training data".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("500/hour".to_string()),
+            },
+            ConnectorInfo {
+                id: "strava".to_string(),
+                name: "Strava".to_string(),
+                description: "Athlete activity and performance tracking".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
+                capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                rate_limit_default: Some("100/15min".to_string()),
+            },
+            ConnectorInfo {
+                id: "myfitnesspal".to_string(),
+                name: "MyFitnessPal".to_string(),
+                description: "Nutrition tracking and fitness data".to_string(),
+                category: ConnectorCategory::Analytics,
+                connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["oauth", "personal_token"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
