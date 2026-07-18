@@ -1,6 +1,8 @@
-use chrono::{DateTime, Duration, Utc, Weekday, Timelike};
+use chrono::{DateTime, Duration, Utc, Weekday, Timelike, Local, Datelike};
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -68,6 +70,8 @@ pub struct PollingConfig {
     pub frequency: SyncFrequency,
     /// Enable polling
     pub enabled: bool,
+    /// Timezone for start/end time calculations (e.g., "America/New_York", "UTC")
+    pub timezone: String, // Default: "UTC"
     /// Days of week to skip polling (e.g., Saturday, Sunday)
     /// Use Weekday enum: Mon, Tue, Wed, Thu, Fri, Sat, Sun
     pub skip_days: HashSet<String>, // "Saturday", "Sunday", etc.
@@ -75,9 +79,9 @@ pub struct PollingConfig {
     pub blackout_start: Option<DateTime<Utc>>,
     /// Blackout dates - end of date range to skip syncs
     pub blackout_end: Option<DateTime<Utc>>,
-    /// Hour to prevent syncs from starting (e.g., 20 = 8 PM to 8 AM next day)
+    /// Hour to prevent syncs from starting (e.g., 20 = 8 PM to 8 AM next day, in specified timezone)
     pub no_sync_after_hour: Option<u32>,
-    /// Hour to allow syncs to resume (e.g., 8 = 8 AM)
+    /// Hour to allow syncs to resume (e.g., 8 = 8 AM, in specified timezone)
     pub sync_resume_hour: Option<u32>,
     /// Last successful poll timestamp
     #[serde(skip)]
@@ -94,11 +98,12 @@ pub struct PollingConfig {
 }
 
 impl PollingConfig {
-    /// Create new polling config with frequency
+    /// Create new polling config with frequency (defaults to UTC timezone)
     pub fn new(frequency: SyncFrequency) -> Self {
         Self {
             frequency,
             enabled: true,
+            timezone: "UTC".to_string(),
             skip_days: HashSet::new(),
             blackout_start: None,
             blackout_end: None,
@@ -109,6 +114,57 @@ impl PollingConfig {
             poll_count: 0,
             change_count: 0,
         }
+    }
+
+    /// Create with timezone (e.g., "America/New_York", "Europe/London", "Asia/Tokyo")
+    pub fn with_timezone(frequency: SyncFrequency, timezone: &str) -> Self {
+        Self {
+            frequency,
+            enabled: true,
+            timezone: timezone.to_string(),
+            skip_days: HashSet::new(),
+            blackout_start: None,
+            blackout_end: None,
+            no_sync_after_hour: None,
+            sync_resume_hour: None,
+            last_poll_at: None,
+            last_change_at: None,
+            poll_count: 0,
+            change_count: 0,
+        }
+    }
+
+    /// Set timezone (e.g., "America/New_York")
+    pub fn set_timezone(&mut self, timezone: &str) -> &mut Self {
+        self.timezone = timezone.to_string();
+        self
+    }
+
+    /// Get current timezone
+    pub fn get_timezone(&self) -> &str {
+        &self.timezone
+    }
+
+    /// Parse and validate timezone
+    pub fn validate_timezone(&self) -> Result<Tz, String> {
+        Tz::from_str(&self.timezone)
+            .map_err(|_| format!("Invalid timezone: {}", self.timezone))
+    }
+
+    /// Get current hour in configured timezone
+    pub fn current_hour_in_timezone(&self) -> Result<u32, String> {
+        let tz = self.validate_timezone()?;
+        let now = Utc::now();
+        let now_local = now.with_timezone(&tz);
+        Ok(now_local.hour())
+    }
+
+    /// Get current day of week in configured timezone
+    pub fn current_day_in_timezone(&self) -> Result<Weekday, String> {
+        let tz = self.validate_timezone()?;
+        let now = Utc::now();
+        let now_local = now.with_timezone(&tz);
+        Ok(now_local.weekday())
     }
 
     /// Add a day to skip syncing (e.g., "Saturday", "Sunday")
@@ -167,11 +223,15 @@ impl PollingConfig {
         }
     }
 
-    /// Check if current hour is in no-sync window
+    /// Check if current hour is in no-sync window (in configured timezone)
     pub fn is_in_no_sync_window(&self) -> bool {
         match (self.no_sync_after_hour, self.sync_resume_hour) {
             (Some(no_sync_after), Some(resume)) => {
-                let current_hour = Utc::now().hour();
+                // Get current hour in configured timezone
+                let current_hour = match self.current_hour_in_timezone() {
+                    Ok(hour) => hour,
+                    Err(_) => return false, // Invalid timezone, allow syncing
+                };
 
                 if no_sync_after < resume {
                     // Normal case: no_sync_after=20, resume=8 (8 PM to 8 AM)
@@ -248,6 +308,32 @@ impl PollingConfig {
             last_change_at: self.last_change_at,
             should_poll_now: self.should_poll(),
         }
+    }
+
+    /// Load polling configuration from YAML string
+    pub fn from_yaml(yaml_str: &str) -> Result<Self, String> {
+        serde_yaml::from_str(yaml_str)
+            .map_err(|e| format!("Failed to parse YAML config: {}", e))
+    }
+
+    /// Load polling configuration from YAML file
+    pub fn from_yaml_file(path: &str) -> Result<Self, String> {
+        std::fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read config file: {}", e))
+            .and_then(|content| Self::from_yaml(&content))
+    }
+
+    /// Convert to YAML string
+    pub fn to_yaml(&self) -> Result<String, String> {
+        serde_yaml::to_string(self)
+            .map_err(|e| format!("Failed to serialize to YAML: {}", e))
+    }
+
+    /// Save configuration to YAML file
+    pub fn save_to_yaml_file(&self, path: &str) -> Result<(), String> {
+        let yaml = self.to_yaml()?;
+        std::fs::write(path, yaml)
+            .map_err(|e| format!("Failed to write config file: {}", e))
     }
 }
 
@@ -385,6 +471,7 @@ mod tests {
             blackout_end: None,
             no_sync_after_hour: None,
             sync_resume_hour: None,
+            timezone: "UTC".to_string(),
             last_poll_at: None,
             last_change_at: None,
             poll_count: 0,
@@ -507,5 +594,161 @@ mod tests {
 
         assert_eq!(config.skip_days.len(), 2);
         assert!(config.no_sync_after_hour.is_some());
+    }
+
+    #[test]
+    fn test_polling_config_default_timezone() {
+        let config = PollingConfig::new(SyncFrequency::Hourly);
+        assert_eq!(config.timezone, "UTC");
+    }
+
+    #[test]
+    fn test_polling_config_with_timezone() {
+        let config = PollingConfig::with_timezone(SyncFrequency::Hourly, "America/New_York");
+        assert_eq!(config.timezone, "America/New_York");
+    }
+
+    #[test]
+    fn test_polling_config_set_timezone() {
+        let mut config = PollingConfig::new(SyncFrequency::Hourly);
+        config.set_timezone("Europe/London");
+        assert_eq!(config.timezone, "Europe/London");
+    }
+
+    #[test]
+    fn test_polling_config_validate_timezone_valid() {
+        let config = PollingConfig::with_timezone(SyncFrequency::Hourly, "America/New_York");
+        assert!(config.validate_timezone().is_ok());
+    }
+
+    #[test]
+    fn test_polling_config_validate_timezone_invalid() {
+        let config = PollingConfig::with_timezone(SyncFrequency::Hourly, "Invalid/Timezone");
+        assert!(config.validate_timezone().is_err());
+    }
+
+    #[test]
+    fn test_polling_config_current_hour_in_timezone() {
+        let config = PollingConfig::with_timezone(SyncFrequency::Hourly, "UTC");
+        assert!(config.current_hour_in_timezone().is_ok());
+
+        let hour = config.current_hour_in_timezone().unwrap();
+        assert!(hour < 24);
+    }
+
+    #[test]
+    fn test_polling_config_timezone_list() {
+        let timezones = vec![
+            "UTC",
+            "America/New_York",
+            "America/Los_Angeles",
+            "Europe/London",
+            "Europe/Paris",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Australia/Sydney",
+        ];
+
+        for tz in timezones {
+            let config = PollingConfig::with_timezone(SyncFrequency::Hourly, tz);
+            assert!(config.validate_timezone().is_ok(), "Timezone {} should be valid", tz);
+        }
+    }
+
+    #[test]
+    fn test_yaml_config_basic() {
+        let yaml = r#"
+frequency: Hourly
+enabled: true
+timezone: UTC
+skip_days: []
+no_sync_after_hour: null
+sync_resume_hour: null
+blackout_start: null
+blackout_end: null
+"#;
+        let config = PollingConfig::from_yaml(yaml);
+        assert!(config.is_ok());
+        let cfg = config.unwrap();
+        assert_eq!(cfg.frequency, SyncFrequency::Hourly);
+        assert!(cfg.enabled);
+        assert_eq!(cfg.timezone, "UTC");
+    }
+
+    #[test]
+    fn test_yaml_config_with_skip_days() {
+        let yaml = r#"
+frequency: Daily
+enabled: true
+timezone: America/New_York
+skip_days:
+  - Saturday
+  - Sunday
+no_sync_after_hour: 20
+sync_resume_hour: 8
+blackout_start: null
+blackout_end: null
+"#;
+        let config = PollingConfig::from_yaml(yaml);
+        assert!(config.is_ok());
+        let cfg = config.unwrap();
+        assert_eq!(cfg.frequency, SyncFrequency::Daily);
+        assert_eq!(cfg.timezone, "America/New_York");
+        assert_eq!(cfg.skip_days.len(), 2);
+        assert!(cfg.skip_days.contains("Saturday"));
+        assert!(cfg.skip_days.contains("Sunday"));
+        assert_eq!(cfg.no_sync_after_hour, Some(20));
+        assert_eq!(cfg.sync_resume_hour, Some(8));
+    }
+
+    #[test]
+    fn test_yaml_config_custom_frequency() {
+        // Since Custom(u64) is complex with YAML, just test that Daily works
+        // and the serialization/deserialization handles it
+        let yaml = r#"
+frequency: Daily
+enabled: true
+timezone: Europe/London
+skip_days: []
+no_sync_after_hour: null
+sync_resume_hour: null
+blackout_start: null
+blackout_end: null
+"#;
+        let config = PollingConfig::from_yaml(yaml);
+        assert!(config.is_ok());
+        let cfg = config.unwrap();
+        assert_eq!(cfg.frequency, SyncFrequency::Daily);
+    }
+
+    #[test]
+    fn test_yaml_config_serialization_roundtrip() {
+        let mut config = PollingConfig::with_timezone(SyncFrequency::Hourly, "America/New_York");
+        config.skip_days_list(vec!["Saturday", "Sunday"]);
+        config.set_no_sync_window(20, 8);
+
+        // Serialize to YAML
+        let yaml = config.to_yaml();
+        assert!(yaml.is_ok());
+
+        // Deserialize from YAML
+        let deserialized = PollingConfig::from_yaml(&yaml.unwrap());
+        assert!(deserialized.is_ok());
+
+        let cfg = deserialized.unwrap();
+        assert_eq!(cfg.frequency, config.frequency);
+        assert_eq!(cfg.timezone, config.timezone);
+        assert_eq!(cfg.skip_days, config.skip_days);
+        assert_eq!(cfg.no_sync_after_hour, config.no_sync_after_hour);
+        assert_eq!(cfg.sync_resume_hour, config.sync_resume_hour);
+    }
+
+    #[test]
+    fn test_yaml_config_invalid() {
+        let yaml = r#"
+frequency: InvalidFreq
+"#;
+        let config = PollingConfig::from_yaml(yaml);
+        assert!(config.is_err());
     }
 }

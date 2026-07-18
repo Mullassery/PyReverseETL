@@ -1,0 +1,26 @@
+# PyReverseETL v2.0.1 - Basic Polling Configuration Example
+# This is the simplest configuration - poll every hour in UTC
+
+# Sync frequency: how often to check for changes
+# Options: FiveMinutes, FifteenMinutes, ThirtyMinutes, Hourly,
+#          FourHourly, TwelveHourly, Daily, Custom(seconds)
+frequency: Hourly
+
+# Enable or disable polling
+enabled: true
+
+# Timezone for start/end times: America/New_York, Europe/London, Asia/Tokyo, UTC, etc.
+timezone: UTC
+
+# Days of week to skip syncing (empty = no skip days)
+skip_days: []
+
+# No-sync time window (optional)
+# Example: no_sync_after_hour: 20, sync_resume_hour: 8 means no syncs 8 PM - 8 AM
+no_sync_after_hour: null
+sync_resume_hour: null
+
+# Blackout date ranges (optional) - UTC dates
+# Example: skip all syncs between Dec 20 - Dec 26 for holiday maintenance
+blackout_start: null
+blackout_end: null

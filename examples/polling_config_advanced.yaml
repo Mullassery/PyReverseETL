@@ -1,0 +1,27 @@
+# PyReverseETL v2.0.1 - Advanced Polling Configuration Example
+# Multi-timezone, business hours, maintenance windows
+
+# Poll every 15 minutes
+frequency: FifteenMinutes
+
+# Enable polling
+enabled: true
+
+# Use New York timezone for all scheduling
+timezone: America/New_York
+
+# Skip syncs on weekends (Saturday, Sunday)
+skip_days:
+  - Saturday
+  - Sunday
+
+# No syncs between 8 PM - 8 AM (overnight maintenance window)
+no_sync_after_hour: 20  # 8 PM in America/New_York
+sync_resume_hour: 8     # 8 AM in America/New_York
+
+# Optional: Blackout dates for holiday maintenance
+# Un-comment and set actual dates:
+# blackout_start: 2026-12-20T00:00:00Z  # Dec 20 - Dec 26 holiday shutdown
+# blackout_end: 2026-12-26T23:59:59Z
+blackout_start: null
+blackout_end: null
