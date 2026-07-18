@@ -9,7 +9,6 @@
 1. [Object Storage (S3, GCS, Azure)](#object-storage)
 2. [Advanced Databases & Warehouses](#advanced-databases)
 3. [Apache Hadoop HDFS](#apache-hadoop-hdfs)
-4. [Comparison with Apache NiFi](#comparison)
 
 ---
 
@@ -456,24 +455,6 @@ destination:
 
 ---
 
-## Comparison with Apache NiFi
-
-| Feature | PyReverseETL | Apache NiFi |
-|---------|-------------|------------|
-| **HDFS Support** | ✅ WebHDFS + Native | ✅ Full |
-| **Object Storage** | ✅ S3, GCS, Azure | ✅ Limited |
-| **Databases** | ✅ 15+ databases | ✅ JDBC only |
-| **Data Warehouses** | ✅ Snowflake, BQ, RS | ✅ Limited |
-| **Multi-format output** | ✅ 7 formats | ✅ 2-3 formats |
-| **Table partitioning** | ✅ Automatic | Manual |
-| **Iceberg support** | ✅ Built-in | Requires custom proc |
-| **Delta Lake** | ✅ Built-in | Requires custom proc |
-| **Rate limiting** | ✅ Core feature | No |
-| **Configuration** | YAML/Python | Web UI |
-
-**PyReverseETL wins on:** Modern formats (Iceberg, Delta), automatic partitioning, configuration-as-code, rate limiting.
-
----
 
 ## Best Practices
 
@@ -527,7 +508,7 @@ PyReverseETL's advanced connectors provide:
 ✅ **Modern data lakes** — Iceberg and Delta Lake  
 ✅ **Efficient operations** — Bulk load, incremental sync, merge  
 
-Better than Apache NiFi for modern data stacks.
+Built for modern data operations.
 
 ---
 

@@ -1,12 +1,12 @@
 # PyReverseETL Connector Ecosystem
 
-**Built-in connectors for 20+ platforms. Better than Apache NiFi.**
+**Built-in connectors for 20+ platforms.**
 
 ---
 
 ## Why Connectors Matter
 
-Apache NiFi is complex and heavy. PyReverseETL's connectors are:
+PyReverseETL's connectors are designed for modern data operations:
 
 - **Simple** — Copy configuration, run
 - **Unified** — Same interface for all sources and destinations
@@ -358,24 +358,6 @@ print(f"Throughput: {metrics.records_per_sec} rec/s")
 
 ---
 
-## Comparison with Apache NiFi
-
-| Feature | PyReverseETL | Apache NiFi |
-|---------|-------------|------------|
-| **Setup time** | 5 minutes | 2+ hours |
-| **Memory usage** | ~150MB | ~1GB |
-| **Startup time** | <1 second | 30+ seconds |
-| **Configuration** | YAML/Python | Web UI |
-| **Built-in connectors** | 25+ | 300+ (many unused) |
-| **Observability** | OpenTelemetry | Web UI + logs |
-| **Custom processors** | Python/Rust | Java only |
-| **Cloud-native** | Yes (Kubernetes ready) | No (UI-first design) |
-| **Scriptable** | Yes (CLI, API, bash) | No (UI-required) |
-| **License** | MIT | Apache 2.0 |
-
-**PyReverseETL wins on:** Speed, simplicity, observability, cloud-native design, scriptability.
-
-**NiFi wins on:** Number of pre-built connectors (though most are rarely used).
 
 ---
 
