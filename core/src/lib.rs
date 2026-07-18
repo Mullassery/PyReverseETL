@@ -14,6 +14,7 @@ pub mod cdc;
 pub mod pipeline;
 pub mod sources;
 pub mod transformers;
+pub mod observability;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -37,4 +38,8 @@ pub use transformers::{
     SparkTransformer, SparkConfig, SparkJobResult, Transformer,
     TransformationConfig, TransformationResult, TransformationStatus,
     TransformationPipeline, TransformationStage,
+};
+pub use observability::{
+    SyncMetrics, MetricsCollector, SyncTracer, TraceSpan, TraceSummary,
+    SyncLogger, SyncContext, init_otel,
 };
