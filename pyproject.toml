@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "PyReverseETL"
-version = "2.0.2"
+version = "2.0.1"
 description = "The Open Operational Data Activation Runtime"
 readme = "README.md"
 license = { text = "MIT" }
