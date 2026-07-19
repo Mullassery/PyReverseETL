@@ -43,13 +43,14 @@ impl TestDataGenerator {
     pub fn generate_orders(&self) -> Vec<Value> {
         (0..self.dataset_size)
             .map(|i| {
+                let statuses = ["pending", "shipped", "delivered"];
                 json!({
                     "order_id": i,
                     "customer_id": i % 100,
                     "amount": (i as f64) * 10.50,
                     "quantity": (i % 100) + 1,
                     "created_at": "2024-01-15T00:00:00Z",
-                    "status": ["pending", "shipped", "delivered"][i % 3],
+                    "status": statuses[i % 3],
                 })
             })
             .collect()
@@ -59,14 +60,16 @@ impl TestDataGenerator {
     pub fn generate_events(&self) -> Vec<Value> {
         (0..self.dataset_size)
             .map(|i| {
+                let event_types = ["click", "view", "purchase"];
+                let sources = ["web", "mobile", "app"];
                 json!({
                     "event_id": format!("event_{}", i),
                     "user_id": i % 1000,
-                    "event_type": ["click", "view", "purchase"][i % 3],
+                    "event_type": event_types[i % 3],
                     "timestamp": "2024-01-15T12:00:00Z",
                     "properties": {
                         "page": format!("/page/{}", i % 50),
-                        "source": ["web", "mobile", "app"][i % 3],
+                        "source": sources[i % 3],
                     }
                 })
             })
@@ -77,13 +80,14 @@ impl TestDataGenerator {
     pub fn generate_products(&self) -> Vec<Value> {
         (0..self.dataset_size.min(1000))
             .map(|i| {
+                let categories = ["electronics", "clothing", "books"];
                 json!({
                     "product_id": i,
                     "name": format!("Product {}", i),
                     "price": (i as f64) * 29.99,
                     "sku": format!("SKU-{:06}", i),
                     "stock": (i % 1000) as i32,
-                    "category": ["electronics", "clothing", "books"][i % 3],
+                    "category": categories[i % 3],
                 })
             })
             .collect()
@@ -93,12 +97,13 @@ impl TestDataGenerator {
     pub fn generate_users(&self) -> Vec<Value> {
         (0..self.dataset_size)
             .map(|i| {
+                let locations = ["US", "EU", "APAC"];
                 json!({
                     "user_id": i,
                     "username": format!("user_{}", i),
                     "email": format!("user{}@example.com", i),
                     "age": 18 + (i % 60),
-                    "location": ["US", "EU", "APAC"][i % 3],
+                    "location": locations[i % 3],
                     "created_at": "2024-01-01T00:00:00Z",
                     "last_login": "2024-01-15T10:00:00Z",
                 })
