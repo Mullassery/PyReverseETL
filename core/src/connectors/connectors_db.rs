@@ -1799,7 +1799,6 @@ impl ConnectorRegistry {
             .filter(|c| c.category == category)
             .collect()
     }
-}
 
     fn finance() -> Vec<ConnectorInfo> {
         vec![
@@ -2318,7 +2317,6 @@ impl ConnectorRegistry {
             },
         ]
     }
-}
 
     fn developer() -> Vec<ConnectorInfo> {
         vec![
