@@ -6,7 +6,9 @@
 ![Version: v2.0.1](https://img.shields.io/badge/Version-v2.0.1-blue)
 ![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
-PyReverseETL automatically syncs your data from source systems to destinations. Set it once, and your data stays current automatically.
+PyReverseETL automatically syncs **quality-validated** data from source systems to destinations with full audit trail, lineage tracking, and compliance records.
+
+**Architectural Role:** Owns data activation and movement. Only moves data that has passed quality validation. Maintains audit trail and compliance for every activation.
 
 ## Simple as 1-2-3
 
