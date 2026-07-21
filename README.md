@@ -20,10 +20,10 @@ That's it. No complex setup. No manual work.
 
 ## What Problems Does It Solve?
 
-- ✅ Data goes stale in your systems - PyReverseETL keeps it current
-- ✅ Manual data syncs are error-prone - PyReverseETL does it automatically
-- ✅ Multiple systems can't talk to each other - PyReverseETL connects them
-- ✅ Syncing on a schedule is complicated - PyReverseETL handles it simply
+- Data goes stale in your systems - PyReverseETL keeps it current
+- Manual data syncs are error-prone - PyReverseETL does it automatically
+- Multiple systems can't talk to each other - PyReverseETL connects them
+- Syncing on a schedule is complicated - PyReverseETL handles it simply
 
 ## Core Capabilities
 
@@ -102,9 +102,9 @@ from pyreverseetl import Workflow, Destination, Activation
 
 # Define a workflow
 workflow = Workflow.from_table(
-    name="LTV to CRM",
-    table="customers",
-    owner="data_team"
+ name="LTV to CRM",
+ table="customers",
+ owner="data_team"
 )
 
 # Add field mappings
@@ -114,16 +114,16 @@ workflow.add_mapping("segment", "segment")
 
 # Define destination
 salesforce = Destination.salesforce(
-    name="Production Salesforce",
-    instance_url="https://yourinstance.salesforce.com",
-    api_version="v60.0"
+ name="Production Salesforce",
+ instance_url="https://yourinstance.salesforce.com",
+ api_version="v60.0"
 )
 
 # Create activation
 activation = Activation(
-    name="Daily LTV Sync",
-    workflow=workflow,
-    destination=salesforce
+ name="Daily LTV Sync",
+ workflow=workflow,
+ destination=salesforce
 )
 
 # Schedule
@@ -141,9 +141,9 @@ from pyreverseetl import KafkaSource, KafkaConfig, SyncFrequency
 
 # Configure Kafka source
 kafka_config = KafkaConfig(
-    brokers="localhost:9092",
-    topic="customer-events",
-    group_id="pyreverseetl-consumer"
+ brokers="localhost:9092",
+ topic="customer-events",
+ group_id="pyreverseetl-consumer"
 )
 
 # Create source with hourly polling
@@ -153,51 +153,51 @@ source.set_sync_frequency(SyncFrequency.Hourly)
 # Connect and poll for events
 source.connect()
 while True:
-    event = source.next_event()
-    if event:
-        print(f"Received: {event.entity_id} from {event.source}")
+ event = source.next_event()
+ if event:
+ print(f"Received: {event.entity_id} from {event.source}")
 ```
 
 ### PySpark Data Transformation Pipeline
 
 ```python
 from pyreverseetl import (
-    SparkTransformer, SparkConfig, TransformationPipeline, TransformationStage
+ SparkTransformer, SparkConfig, TransformationPipeline, TransformationStage
 )
 
 # Define transformation stages
 normalize_stage = TransformationStage(
-    name="normalize",
-    config=SparkConfig(
-        script="/path/to/normalize.py",
-        input_topic="raw-events",
-        output_topic="normalized-events"
-    ),
-    retry_count=3,
-    skip_on_error=False
+ name="normalize",
+ config=SparkConfig(
+ script="/path/to/normalize.py",
+ input_topic="raw-events",
+ output_topic="normalized-events"
+ ),
+ retry_count=3,
+ skip_on_error=False
 )
 
 enrich_stage = TransformationStage(
-    name="enrich",
-    config=SparkConfig(
-        script="/path/to/enrich.py",
-        input_topic="normalized-events",
-        output_topic="enriched-events"
-    ),
-    retry_count=2,
-    skip_on_error=False
+ name="enrich",
+ config=SparkConfig(
+ script="/path/to/enrich.py",
+ input_topic="normalized-events",
+ output_topic="enriched-events"
+ ),
+ retry_count=2,
+ skip_on_error=False
 )
 
 # Create pipeline
 pipeline = TransformationPipeline()\
-    .add_stage(normalize_stage)\
-    .add_stage(enrich_stage)
+ .add_stage(normalize_stage)\
+ .add_stage(enrich_stage)
 
 # Execute pipeline
 for stage in pipeline.stages:
-    transformer = SparkTransformer(stage.config)
-    result = transformer.execute()
-    print(f"{stage.name}: {result.records_output} records output")
+ transformer = SparkTransformer(stage.config)
+ result = transformer.execute()
+ print(f"{stage.name}: {result.records_output} records output")
 ```
 
 ## Core Concepts
@@ -220,7 +220,7 @@ Connect workflows to destinations with policies:
 
 ### Sync Runs
 Track execution:
-- Status (Pending → Running → Success/Failed)
+- Status (Pending  Running  Success/Failed)
 - Row counts
 - Error details
 - Timing information
@@ -245,14 +245,14 @@ from pystreammcp import Agent, Discovery
 
 # Use PyStreamMCP to optimize context discovery
 discovery = Discovery.new(query_id="activation_1")
-sources = discovery.discover_sources()  # Find optimal data
-optimized = discovery.optimize_for_cost()  # Reduce volume
+sources = discovery.discover_sources() # Find optimal data
+optimized = discovery.optimize_for_cost() # Reduce volume
 
 # Activate with optimized context
 activation = Activation(
-    name="Smart LTV Sync",
-    query=optimized,  # Use PyStreamMCP's optimized query
-    destination="salesforce"
+ name="Smart LTV Sync",
+ query=optimized, # Use PyStreamMCP's optimized query
+ destination="salesforce"
 )
 ```
 
@@ -279,32 +279,32 @@ See [OSS_ALTERNATIVES.md](docs/OSS_ALTERNATIVES.md) for complete open-source sta
 
 ## Roadmap
 
-### ✅ Phase 1: Core Foundation (v1.0.0)
+### Phase 1: Core Foundation (v1.0.0)
 - Core data model (Workflow, Activation, Destination, Entity)
 - SQLite persistence with CRUD repositories
 - Builder patterns for ergonomic API
 - 59 tests passing
 
-### ✅ Phase 2: Destination Ecosystem (v1.1.0)
+### Phase 2: Destination Ecosystem (v1.1.0)
 - 4 Production adapters (Webhook, Salesforce, HubSpot, Marketo)
 - YAML-based field mapping configuration
 - Automatic schema detection with type inference
 - OpenTelemetry-compatible alert message structures
 - 48 tests passing
 
-### ✅ Phase 3 Week 1: Resilience & HTTP (v1.1.5)
+### Phase 3 Week 1: Resilience & HTTP (v1.1.5)
 - Exponential backoff retry logic
 - Production HTTP client with connection pooling
 - OAuth token manager with automatic refresh
 - 24 tests passing
 
-### ✅ Phase 3 Weeks 3-4: Real-Time Activation (v1.5.0)
+### Phase 3 Weeks 3-4: Real-Time Activation (v1.5.0)
 - Change Data Capture (CDC) engine with changelog persistence
 - Real-time activation pipeline with latency tracking
 - Backpressure management and checkpoint recovery
 - 36 new tests (178 total)
 
-### ✅ Phase 4: Event Sources & Transformations (v2.0.0 → v2.0.1)
+### Phase 4: Event Sources & Transformations (v2.0.0  v2.0.1)
 - **Event Sources**: Kafka connector with SSL/SASL support
 - **Sync Frequency**: Configurable polling (5min-24hours) with timezone support
 - **Change Detection**: Track changes at preset intervals
