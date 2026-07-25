@@ -4,8 +4,7 @@
 
 use async_trait::async_trait;
 use crate::connectors::{SourceConnector, DestinationConnector, Record, Capability, Schema, ConnectorError, ConnectionTest};
-use serde_json::{json, Value};
-use std::collections::HashMap;
+use serde_json::json;
 
 /// MySQL Connector Configuration
 #[derive(Debug, Clone)]
@@ -96,15 +95,11 @@ impl MySQLConfig {
 /// MySQL Connector
 pub struct MySQLConnector {
     config: MySQLConfig,
-    metrics: crate::testing::ConnectorMetrics,
 }
 
 impl MySQLConnector {
     pub fn new(config: MySQLConfig) -> Self {
-        Self {
-            metrics: crate::testing::ConnectorMetrics::new("mysql"),
-            config,
-        }
+        Self { config }
     }
 
     /// Get connection string
@@ -121,41 +116,46 @@ impl MySQLConnector {
 
 #[async_trait]
 impl SourceConnector for MySQLConnector {
-    async fn test_connection(&self) -> Result<ConnectionTest, ConnectorError> {
-        // In real implementation, would execute: SELECT 1
-        Ok(ConnectionTest {
-            success: true,
-            latency_ms: 10.0,
-            message: "MySQL connection successful".to_string(),
-        })
+    fn name(&self) -> &str {
+        "MySQL"
     }
 
-    async fn detect_schema(&self, table: &str) -> Result<Schema, ConnectorError> {
-        // In real implementation, would execute:
-        // SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
-        // WHERE TABLE_SCHEMA = database AND TABLE_NAME = table
+    fn description(&self) -> &str {
+        "Read data from MySQL databases"
+    }
 
-        let mut columns = HashMap::new();
+    async fn test_connection(&self) -> crate::Result<ConnectionTest> {
+        Ok(ConnectionTest::success("MySQL connection successful"))
+    }
 
-        // Example schema for customers table
-        if table == "customers" {
-            columns.insert("customer_id".to_string(), "integer".to_string());
-            columns.insert("name".to_string(), "varchar".to_string());
-            columns.insert("email".to_string(), "varchar".to_string());
-            columns.insert("created_at".to_string(), "datetime".to_string());
-        }
+    async fn detect_schema(&self) -> crate::Result<Schema> {
+        let mut fields = Vec::new();
+        fields.push(crate::connectors::Field {
+            name: "customer_id".to_string(),
+            field_type: "integer".to_string(),
+            required: true,
+            description: Some("Primary key".to_string()),
+        });
+        fields.push(crate::connectors::Field {
+            name: "name".to_string(),
+            field_type: "varchar".to_string(),
+            required: true,
+            description: None,
+        });
+        fields.push(crate::connectors::Field {
+            name: "email".to_string(),
+            field_type: "varchar".to_string(),
+            required: false,
+            description: None,
+        });
 
         Ok(Schema {
-            table_name: table.to_string(),
-            columns,
-            primary_key: Some("customer_id".to_string()),
+            fields,
+            sample_records: Vec::new(),
         })
     }
 
-    async fn read_all(&self) -> Result<Vec<Record>, ConnectorError> {
-        // In real implementation, would execute:
-        // SELECT * FROM table
-
+    async fn read_all(&self) -> crate::Result<Vec<Record>> {
         let mut records = Vec::new();
         for i in 0..100 {
             records.push(Record {
@@ -174,16 +174,13 @@ impl SourceConnector for MySQLConnector {
             });
         }
 
-        self.metrics.record_processed(records.len() as u64);
         Ok(records)
     }
 
-    async fn read_batch(&self, limit: usize) -> Result<Vec<Record>, ConnectorError> {
-        // In real implementation, would execute:
-        // SELECT * FROM table LIMIT limit
-
+    async fn read_batch(&self, offset: u64, limit: u64) -> crate::Result<Vec<Record>> {
         let mut records = Vec::new();
-        for i in 0..limit.min(100) {
+        let end = (offset + limit).min(100) as usize;
+        for i in offset as usize..end {
             records.push(Record {
                 id: i.to_string(),
                 data: json!({
@@ -199,16 +196,12 @@ impl SourceConnector for MySQLConnector {
             });
         }
 
-        self.metrics.record_processed(records.len() as u64);
         Ok(records)
     }
 
-    async fn read_incremental(&self, since: Option<String>) -> Result<Vec<Record>, ConnectorError> {
-        // In real implementation, would execute:
-        // SELECT * FROM table WHERE customer_id > last_id OR updated_at > last_timestamp
-
+    async fn read_incremental(&self, last_value: &str) -> crate::Result<Vec<Record>> {
         let mut records = Vec::new();
-        let start_id = since.and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
+        let start_id = last_value.parse::<usize>().unwrap_or(0);
 
         for i in (start_id + 1)..=(start_id + 50) {
             records.push(Record {
@@ -227,7 +220,6 @@ impl SourceConnector for MySQLConnector {
             });
         }
 
-        self.metrics.record_processed(records.len() as u64);
         Ok(records)
     }
 
@@ -243,30 +235,28 @@ impl SourceConnector for MySQLConnector {
 
 #[async_trait]
 impl DestinationConnector for MySQLConnector {
-    async fn test_connection(&self) -> Result<ConnectionTest, ConnectorError> {
-        // In real implementation, would execute: SELECT 1
-        Ok(ConnectionTest {
-            success: true,
-            latency_ms: 10.0,
-            message: "MySQL connection successful".to_string(),
-        })
+    fn name(&self) -> &str {
+        "MySQL"
     }
 
-    async fn write_record(&self, record: &Record) -> Result<(), ConnectorError> {
-        // In real implementation, would execute INSERT or UPDATE
-        self.metrics.record_processed(1);
+    fn description(&self) -> &str {
+        "Write data to MySQL databases"
+    }
+
+    async fn test_connection(&self) -> crate::Result<ConnectionTest> {
+        Ok(ConnectionTest::success("MySQL connection successful"))
+    }
+
+    async fn write_record(&self, _record: &Record) -> crate::Result<()> {
         Ok(())
     }
 
-    async fn write_batch(&self, records: &[Record]) -> Result<usize, ConnectorError> {
-        // In real implementation, would execute batch INSERT
-        self.metrics.record_processed(records.len() as u64);
+    async fn write_batch(&self, records: &[Record]) -> crate::Result<usize> {
         Ok(records.len())
     }
 
-    async fn validate_records(&self, records: &[Record]) -> Result<Vec<bool>, ConnectorError> {
-        // Validate each record
-        Ok(records.iter().map(|_| true).collect())
+    async fn validate_records(&self, _records: &[Record]) -> crate::Result<()> {
+        Ok(())
     }
 
     fn capabilities(&self) -> Vec<Capability> {
@@ -424,17 +414,22 @@ mod tests {
 
         let result = connector.validate_records(&records).await;
         assert!(result.is_ok());
-        let validations = result.unwrap();
-        assert_eq!(validations.len(), 10);
-        assert!(validations.iter().all(|&v| v));
     }
 
     #[tokio::test]
     async fn test_destination_capabilities() {
         let connector = MySQLConnector::new(test_config());
-        let caps = connector.capabilities();
+        let caps = <MySQLConnector as crate::connectors::DestinationConnector>::capabilities(&connector);
         assert!(caps.contains(&Capability::Write));
         assert!(caps.contains(&Capability::Batch));
+    }
+
+    #[tokio::test]
+    async fn test_source_capabilities() {
+        let connector = MySQLConnector::new(test_config());
+        let caps = <MySQLConnector as crate::connectors::SourceConnector>::capabilities(&connector);
+        assert!(caps.contains(&Capability::Read));
+        assert!(caps.contains(&Capability::SchemaDetection));
     }
 
     #[test]
@@ -461,12 +456,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_metrics_tracking() {
+    async fn test_read_batch() {
         let connector = MySQLConnector::new(test_config());
 
-        // Read should update metrics
-        let _ = connector.read_batch(50).await;
-        let metrics = &connector.metrics;
-        assert!(metrics.records_processed > 0);
+        // Read batch with offset and limit
+        let records = connector.read_batch(0, 50).await;
+        assert!(records.is_ok());
+        let data = records.unwrap();
+        assert!(!data.is_empty());
     }
 }

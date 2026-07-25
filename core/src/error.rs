@@ -42,6 +42,9 @@ pub enum Error {
 
     #[error("Timeout: {0}")]
     Timeout(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
 // NOTE: We deliberately do NOT have validation errors like:

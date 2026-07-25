@@ -9,6 +9,7 @@
 /// - Automatic schema detection
 /// - Connection pooling and optimization
 
+pub mod error;
 pub mod destination;
 pub mod source;
 pub mod config;
@@ -22,6 +23,7 @@ pub mod connectors_db;
 pub mod mysql;
 pub mod postgres;
 
+pub use error::{ConnectorError, ConnectorResult};
 pub use destination::{DestinationConnector, DestinationConfig, WriteMode};
 pub use source::{SourceConnector, SourceConfig};
 pub use config::{ConnectorConfig, ConnectionPool, ConnectorType};
@@ -97,7 +99,7 @@ impl ConnectionTest {
 }
 
 /// Connector capability
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Capability {
     /// Connector can read data
     Read,

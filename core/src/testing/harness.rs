@@ -138,7 +138,7 @@ impl ConnectorTestHarness {
         let start = std::time::Instant::now();
 
         // Try to establish connection
-        match self.registry.get_descriptor(&test.connector_id) {
+        match self.registry.get_descriptor_by_key(&test.connector_id) {
             Some(_descriptor) => {
                 let duration = start.elapsed().as_millis() as u64;
                 TestResult::success(&test.name, &test.connector_id, test.test_type, duration)
@@ -223,10 +223,10 @@ impl ConnectorTestHarness {
 
     fn get_tests_for_connector(&self, connector_id: &str) -> Vec<ConnectorTest> {
         // Load tests from YAML or generate based on connector capabilities
-        match self.registry.get_descriptor(connector_id) {
+        match self.registry.get_descriptor_by_key(connector_id) {
             Some(descriptor) => {
                 let mut tests = vec![
-                    ConnectorTest::new("connection", connector_id, TestType::Connection, descriptor.capabilities[0].clone()),
+                    ConnectorTest::new("connection", connector_id, TestType::Connection, crate::connectors::Capability::Read),
                 ];
 
                 if descriptor.capabilities.contains(&"read".to_string()) {
@@ -234,13 +234,13 @@ impl ConnectorTestHarness {
                         "schema_detection",
                         connector_id,
                         TestType::SchemaDetection,
-                        descriptor.capabilities[0].clone(),
+                        crate::connectors::Capability::Read,
                     ));
                     tests.push(ConnectorTest::new(
                         "read",
                         connector_id,
                         TestType::Read,
-                        descriptor.capabilities[0].clone(),
+                        crate::connectors::Capability::Read,
                     ));
                 }
 
@@ -249,13 +249,13 @@ impl ConnectorTestHarness {
                         "write",
                         connector_id,
                         TestType::Write,
-                        descriptor.capabilities[0].clone(),
+                        crate::connectors::Capability::Read,
                     ));
                     tests.push(ConnectorTest::new(
                         "batch_write",
                         connector_id,
                         TestType::BatchWrite,
-                        descriptor.capabilities[0].clone(),
+                        crate::connectors::Capability::Read,
                     ));
                 }
 

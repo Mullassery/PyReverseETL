@@ -244,10 +244,15 @@ impl ConnectorRegistry {
         }
     }
 
-    /// Get connector descriptor
+    /// Get connector descriptor by type and id
     pub fn get_descriptor(&self, connector_type: &str, id: &str) -> Option<ConnectorDescriptor> {
         let key = format!("{}:{}", connector_type, id);
         self.descriptors.get(&key).cloned()
+    }
+
+    /// Get connector descriptor by full key (e.g., "source:postgres")
+    pub fn get_descriptor_by_key(&self, key: &str) -> Option<ConnectorDescriptor> {
+        self.descriptors.get(key).cloned()
     }
 
     /// List all available source connectors
@@ -275,6 +280,11 @@ impl ConnectorRegistry {
             .filter(|d| d.capabilities.contains(&capability.to_string()))
             .cloned()
             .collect()
+    }
+
+    /// List all available connector IDs
+    pub fn list_all_connectors(&self) -> Vec<String> {
+        self.descriptors.keys().cloned().collect()
     }
 
     /// Get the connection pool

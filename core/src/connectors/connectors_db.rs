@@ -1043,7 +1043,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("150/min".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(3)),
             },
             ConnectorInfo {
                 id: "apple_healthkit".to_string(),
@@ -1063,7 +1063,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("100/sec".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
                 id: "garmin".to_string(),
@@ -1073,7 +1073,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("200/hour".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
                 id: "oura_ring".to_string(),
@@ -1083,7 +1083,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth", "personal_token"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("60/min".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
                 id: "withings".to_string(),
@@ -1093,7 +1093,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("1000/day".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
                 id: "suunto".to_string(),
@@ -1113,7 +1113,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("500/hour".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
                 id: "strava".to_string(),
@@ -1123,7 +1123,7 @@ impl ConnectorRegistry {
                 connector_type: ConnectorTypeInfo::Source,
                 capabilities: vec!["read", "incremental_read"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
-                rate_limit_default: Some("100/15min".to_string()),
+                rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
                 id: "myfitnesspal".to_string(),
@@ -1725,7 +1725,7 @@ impl ConnectorRegistry {
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![],
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1758,7 +1758,7 @@ impl ConnectorRegistry {
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![],
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1768,7 +1768,7 @@ impl ConnectorRegistry {
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![],
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1781,7 +1781,7 @@ impl ConnectorRegistry {
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![],
                 rate_limit_default: None,
             },
         ]
@@ -2470,7 +2470,7 @@ impl ConnectorRegistry {
                 category: ConnectorCategory::Other,
                 connector_type: ConnectorTypeInfo::Both,
                 capabilities: vec!["read", "write"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec![].iter().map(|s| s.to_string()).collect(),
+                auth_methods: vec![],
                 rate_limit_default: None,
             },
         ]
