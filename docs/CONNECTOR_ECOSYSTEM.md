@@ -36,7 +36,7 @@ PyReverseETL's connectors are designed for modern data operations:
 
 #### Cloud Storage
 - **Amazon S3** — Direct file access, Glue catalog integration
-- **Google Cloud Storage** — Seamless file streaming
+- **Cloud Services Storage** — Seamless file streaming
 - **Azure Blob Storage** — Direct blob operations
 
 ### Destinations (Write Data To)
@@ -56,7 +56,7 @@ PyReverseETL's connectors are designed for modern data operations:
 
 #### Cloud Storage
 - **Amazon S3** — Partitioned writes, format selection
-- **Google Cloud Storage** — Directory and object writes
+- **Cloud Services Storage** — Directory and object writes
 - **Azure Blob Storage** — Managed storage
 
 #### SaaS Platforms

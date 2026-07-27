@@ -65,7 +65,7 @@
 - Vertica, Greenplum, Teradata
 
 ✅ **Cloud Storage**
-- Amazon S3, Google Cloud Storage, Azure Blob
+- Amazon S3, Cloud Services Storage, Azure Blob
 - Dropbox, Box, OneDrive
 - FTP/SFTP file systems
 - HDFS (Apache Hadoop)
