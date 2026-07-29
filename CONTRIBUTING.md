@@ -51,4 +51,8 @@ Open a [GitHub Discussion](https://github.com/Mullassery/PyReverseETL/discussion
 
 ---
 
+<<<<<<< HEAD
 **License:** Proprietary — By contributing, you agree your work is proprietary and all rights belong to the maintainer.
+=======
+**License:** Proprietary — By contributing, you agree your work is licensed under the same terms.
+>>>>>>> origin/main

@@ -1,0 +1,19 @@
+# Mark Rust/C code as vendored (don't count toward language stats)
+crates/** linguist-vendored=true
+*.rs linguist-vendored=true
+src/c/** linguist-vendored=true
+src/cpp/** linguist-vendored=true
+
+# Mark build artifacts as generated
+*.so linguist-generated=true
+*.pyd linguist-generated=true
+*.dylib linguist-generated=true
+*.dll linguist-generated=true
+build/** linguist-generated=true
+dist/** linguist-generated=true
+*.egg-info/** linguist-generated=true
+
+# Force Python as primary language
+*.py linguist-language=Python
+pyproject.toml linguist-language=Python
+setup.py linguist-language=Python

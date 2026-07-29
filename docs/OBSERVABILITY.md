@@ -473,13 +473,13 @@ print(mp.metric_readers)  # Should not be empty
 curl http://localhost:6831/
 ```
 
-### Problem: Logs not in Datadog
+# Monitoring system
 
 **Cause:** API key not configured or incorrect
 
 **Solution:** Verify configuration:
 ```python
-# Check Datadog exporter
+# Monitoring system exporter
 datadog_exporter = DatadogExporter()
 print(datadog_exporter.agent_host)  # Should be valid
 ```
@@ -515,7 +515,7 @@ Suitable for production deployments.
 
 ## Next Steps
 
-1. [Set up backend](#setup-by-backend) (Prometheus, Jaeger, Datadog)
+1. [Set up backend](# Monitoring system)
 2. [Create dashboard](https://grafana.com/docs/grafana/latest/dashboards/)
 3. [Configure alerts](#alerting-examples)
 4. [Review metrics](#metrics) in dashboard
