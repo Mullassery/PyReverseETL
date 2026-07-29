@@ -2,8 +2,8 @@
 
 **Move your data automatically to where it's needed.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version: v2.0.1](https://img.shields.io/badge/Version-v2.0.1-blue)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+![Version: v2.1.1](https://img.shields.io/badge/Version-v2.1.1-blue)
 ![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 
 PyReverseETL automatically syncs **quality-validated** data from source systems to destinations with full audit trail, lineage tracking, and compliance records.
@@ -66,6 +66,14 @@ That's it. No complex setup. No manual work.
 - **Audiences** — Segmented groups (VIP Customers, Churn Risk, etc.)
 - **Metrics** — Business measurements (MRR, ARR, NPS, etc.)
 - **Events** — Business events (Subscription Renewed, Payment Failed, etc.)
+
+### Monitoring & Observability (NEW in v2.1)
+- **Real-Time Dashboard** — CLI stats dashboard with live metrics
+- **Throughput Monitoring** — Events per second tracking
+- **Latency Metrics** — Average and P99 latency measurements
+- **Quality Gates** — Quality check pass/fail monitoring
+- **Error Tracking** — Comprehensive error aggregation
+- **Platform Support** — macOS (Terminal.app) and Linux (terminator/xterm)
 
 ## Architecture
 
@@ -358,7 +366,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Proprietary License. See [LICENSE](LICENSE) for details. All rights reserved.
 
 ## Support
 

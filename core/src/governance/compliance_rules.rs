@@ -153,20 +153,20 @@ impl ComplianceEngine for DefaultComplianceEngine {
             for field in &rule.target_fields {
                 match &rule.action {
                     RuleAction::Mask(pattern) => {
-                        // In production, would mask the field in entity.data
-                        if let Some(obj) = entity.data.as_object_mut() {
+                        // Mask the field in entity.attributes
+                        if let Some(obj) = entity.attributes.as_object_mut() {
                             if obj.contains_key(field) {
                                 obj[field] = serde_json::Value::String(pattern.clone());
                             }
                         }
                     }
                     RuleAction::Remove => {
-                        if let Some(obj) = entity.data.as_object_mut() {
+                        if let Some(obj) = entity.attributes.as_object_mut() {
                             obj.remove(field);
                         }
                     }
                     RuleAction::Truncate(len) => {
-                        if let Some(obj) = entity.data.as_object_mut() {
+                        if let Some(obj) = entity.attributes.as_object_mut() {
                             if let Some(val) = obj.get_mut(field) {
                                 if let Some(s) = val.as_str() {
                                     obj[field] = serde_json::Value::String(
@@ -225,12 +225,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_compliance_check() {
+        use crate::entity::EntityType;
         let engine = MockComplianceEngine::no_rules();
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let result = engine.check_compliance(&entity).await.unwrap();
         assert!(result.compliant);

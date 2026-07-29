@@ -4,10 +4,14 @@
 pub mod metrics;
 pub mod traces;
 pub mod logs;
+pub mod metrics_server;
+pub mod dashboard_launcher;
 
 pub use metrics::{SyncMetrics, MetricsCollector};
 pub use traces::{SyncTracer, TraceSpan, TraceSummary};
 pub use logs::SyncLogger;
+pub use metrics_server::{MetricsServer, MetricsSnapshot, MetricsHistory};
+pub use dashboard_launcher::{launch_dashboard, DashboardConfig, Platform};
 
 use std::sync::Arc;
 

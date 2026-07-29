@@ -137,12 +137,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_quality_gate_passes() {
+        use crate::entity::EntityType;
         let gate = MockQualityGate::new(true, 0.95);
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let result = gate.validate(&entity).await.unwrap();
         assert!(result.passed);
@@ -151,12 +148,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_quality_gate_fails() {
+        use crate::entity::EntityType;
         let gate = MockQualityGate::new(false, 0.5);
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let result = gate.validate(&entity).await.unwrap();
         assert!(!result.passed);
@@ -166,12 +160,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_drift_detection() {
+        use crate::entity::EntityType;
         let gate = MockQualityGate::new(true, 0.95);
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let drift = gate.check_drift(&entity).await.unwrap();
         assert!(!drift.detected);

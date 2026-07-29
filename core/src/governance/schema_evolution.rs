@@ -110,12 +110,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_schema_changes() {
+        use crate::entity::EntityType;
         let evolution = MockSchemaEvolution::no_changes();
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let changes = evolution.detect_changes(&entity).await.unwrap();
         assert!(changes.is_empty());
@@ -123,6 +120,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_schema_changes_detected() {
+        use crate::entity::EntityType;
         let changes = vec![SchemaChange {
             field_name: "created_at".to_string(),
             change_type: SchemaChangeType::Added,
@@ -132,11 +130,7 @@ mod tests {
         }];
 
         let evolution = MockSchemaEvolution::new(changes.clone());
-        let entity = Entity {
-            id: "test".to_string(),
-            data: serde_json::json!({}),
-            metadata: Default::default(),
-        };
+        let entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
 
         let detected = evolution.detect_changes(&entity).await.unwrap();
         assert_eq!(detected.len(), 1);

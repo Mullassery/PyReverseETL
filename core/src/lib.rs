@@ -17,6 +17,7 @@ pub mod transformers;
 pub mod observability;
 pub mod connectors;
 pub mod testing;
+pub mod governance;
 
 pub use error::{Error, Result};
 pub use activation::Activation;
@@ -43,5 +44,6 @@ pub use transformers::{
 };
 pub use observability::{
     SyncMetrics, MetricsCollector, SyncTracer, TraceSpan, TraceSummary,
-    SyncLogger, SyncContext, init_otel,
+    SyncLogger, SyncContext, init_otel, MetricsServer, MetricsSnapshot, MetricsHistory,
+    launch_dashboard, DashboardConfig, Platform,
 };

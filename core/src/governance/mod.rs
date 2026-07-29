@@ -9,10 +9,25 @@
 pub mod quality_gate;
 pub mod schema_evolution;
 pub mod compliance_rules;
+pub mod statguardian_client;
+pub mod credentials;
+pub mod retry_policy;
+pub mod cached_gate;
 
 pub use quality_gate::{QualityGate, ValidationResult, StatGuardianGate};
 pub use schema_evolution::{SchemaEvolution, SchemaChange, SchemaChangeType};
 pub use compliance_rules::{ComplianceRule, ComplianceEngine, RuleType, RuleAction};
+pub use statguardian_client::{StatGuardianClient, ValidateRequest, ValidateResponse, SchemaCheckRequest, SchemaCheckResponse};
+pub use credentials::{GovernanceCredentials, AuthMethod};
+pub use retry_policy::{RetryPolicy, RateLimiter};
+pub use cached_gate::{CachedQualityGate, CacheStats};
+
+#[cfg(test)]
+pub use quality_gate::MockQualityGate;
+#[cfg(test)]
+pub use schema_evolution::MockSchemaEvolution;
+#[cfg(test)]
+pub use compliance_rules::MockComplianceEngine;
 
 use crate::{Entity, Error, Result};
 use serde::{Deserialize, Serialize};
