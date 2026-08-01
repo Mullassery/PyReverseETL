@@ -101,6 +101,8 @@ That's it. No complex setup. No manual work.
 
 ```bash
 pip install pyreverseetl
+# or with uv
+uv pip install reverseetl
 
 # Verify installation
 reverseetl --version
