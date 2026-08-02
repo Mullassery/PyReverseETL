@@ -270,7 +270,7 @@ activation = Activation(
 ```
 
 **Do NOT rebuild query optimization in PyReverseETL.** PyStreamMCP provides:
-- Query planning and optimization (60-75% token reduction)
+- Query planning and optimization (60-75% reduction in context usage)
 - Intelligent source discovery
 - Cost estimation
 - Progressive streaming retrieval
