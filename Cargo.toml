@@ -3,7 +3,7 @@ members = ["core", "python"]
 resolver = "2"
 
 [workspace.package]
-version = "2.1.1"
+version = "2.2.0"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
 license = "Proprietary"
 repository = "https://github.com/Mullassery/PyReverseETL"
