@@ -11,4 +11,4 @@ except ImportError:
     pass
 
 __version__ = "2.1.1"
-__all__ = ['Reverse', 'ETL', 'activate']
+__all__ = ["Reverse", "ETL", "activate"]

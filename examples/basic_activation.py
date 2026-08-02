@@ -10,14 +10,11 @@ This example shows how to:
 from pyre import Warehouse, Activation, ActivationTarget
 
 # Connect to warehouse
-warehouse = Warehouse(
-    connection_string="postgres://user:pass@localhost/warehouse"
-)
+warehouse = Warehouse(connection_string="postgres://user:pass@localhost/warehouse")
 
 # Define activation target
 salesforce = ActivationTarget(
-    provider="salesforce",
-    credentials={"client_id": "...", "client_secret": "..."}
+    provider="salesforce", credentials={"client_id": "...", "client_secret": "..."}
 )
 
 # Define activation: Send high-value customers to Salesforce
@@ -29,8 +26,8 @@ activation = Activation(
     mapping={
         "customer_id": "external_id",
         "email": "email",
-        "lifetime_value": "custom_field_revenue"
-    }
+        "lifetime_value": "custom_field_revenue",
+    },
 )
 
 # Execute activation

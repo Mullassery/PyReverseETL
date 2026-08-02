@@ -14,7 +14,9 @@ class PyReverseETLServer:
         self.activations: Dict[str, Dict[str, Any]] = {}
         self.runs: Dict[str, Dict[str, Any]] = {}
 
-    def create_workflow(self, workflow_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_workflow(
+        self, workflow_id: str, config: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create a workflow."""
         self.workflows[workflow_id] = {
             "id": workflow_id,
@@ -50,10 +52,15 @@ class PyReverseETLServer:
             "message": "Activation created",
         }
 
-    def execute_activation(self, activation_id: str, limit: Optional[int] = None) -> Dict[str, Any]:
+    def execute_activation(
+        self, activation_id: str, limit: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Execute an activation."""
         if activation_id not in self.activations:
-            return {"status": "error", "message": f"Activation '{activation_id}' not found"}
+            return {
+                "status": "error",
+                "message": f"Activation '{activation_id}' not found",
+            }
 
         activation = self.activations[activation_id]
         run_id = f"run_{activation_id}_{id(limit or 0)}"
@@ -107,7 +114,9 @@ class PyReverseETLServer:
     def get_metrics(self, activation_id: Optional[str] = None) -> Dict[str, Any]:
         """Get metrics."""
         if activation_id:
-            runs = [r for r in self.runs.values() if r["activation_id"] == activation_id]
+            runs = [
+                r for r in self.runs.values() if r["activation_id"] == activation_id
+            ]
         else:
             runs = list(self.runs.values())
 

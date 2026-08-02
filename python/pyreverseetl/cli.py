@@ -183,7 +183,9 @@ class CLIInterface:
             JSON response with metrics
         """
         if activation_id:
-            runs = [r for r in self.runs.values() if r["activation_id"] == activation_id]
+            runs = [
+                r for r in self.runs.values() if r["activation_id"] == activation_id
+            ]
         else:
             runs = list(self.runs.values())
 
@@ -214,7 +216,9 @@ def main():
     try:
         if command == "create-workflow":
             if len(sys.argv) < 5:
-                print(json.dumps({"error": "Missing workflow_id, name, source, or table"}))
+                print(
+                    json.dumps({"error": "Missing workflow_id, name, source, or table"})
+                )
                 sys.exit(1)
 
             workflow_id = sys.argv[2]
@@ -227,7 +231,11 @@ def main():
 
         elif command == "create-activation":
             if len(sys.argv) < 5:
-                print(json.dumps({"error": "Missing activation_id, workflow_id, or destination"}))
+                print(
+                    json.dumps(
+                        {"error": "Missing activation_id, workflow_id, or destination"}
+                    )
+                )
                 sys.exit(1)
 
             activation_id = sys.argv[2]
@@ -235,7 +243,9 @@ def main():
             destination = sys.argv[4]
             sync_mode = sys.argv[5] if len(sys.argv) > 5 else "incremental"
 
-            result = cli.create_activation(activation_id, workflow_id, destination, sync_mode)
+            result = cli.create_activation(
+                activation_id, workflow_id, destination, sync_mode
+            )
             print(json.dumps(result))
 
         elif command == "execute":
