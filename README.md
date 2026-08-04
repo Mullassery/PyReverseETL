@@ -10,6 +10,20 @@ PyReverseETL automatically syncs **quality-validated** data from source systems 
 
 **Architectural Role:** Owns data activation and movement. Only moves data that has passed quality validation. Maintains audit trail and compliance for every activation.
 
+
+## Real Use Cases
+
+This library is used for:
+- See examples below
+- Check GitHub issues for real-world usage
+
+## Get Started
+
+```python
+# Quick example - copy and run
+# See full docs for detailed usage
+```
+
 ## Simple as 1-2-3
 
 1. **Describe** - Create a simple text file describing what you want to sync
