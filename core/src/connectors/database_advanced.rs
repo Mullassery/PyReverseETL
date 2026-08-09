@@ -331,6 +331,7 @@ impl super::SourceConnector for AdvancedDatabaseSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::connectors::{DestinationConnector, SourceConnector};
 
     #[test]
     fn test_table_schema() {

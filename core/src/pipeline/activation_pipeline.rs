@@ -120,7 +120,7 @@ impl ActivationPipeline {
     }
 
     /// Process a single event
-    pub async fn process_event(&self, event: Event) -> crate::Result<()> {
+    pub async fn process_event(&self, mut event: Event) -> crate::Result<()> {
         if !self.running.load(Ordering::Acquire) {
             return Err(crate::Error::ConfigError("Pipeline not running".to_string()));
         }
@@ -142,6 +142,24 @@ impl ActivationPipeline {
                 );
                 entity.attributes = event.entity.clone();
 
+                // Apply compliance rules (e.g. PII masking) *before* the governance
+                // check below, and write the masked data back into the event.
+                // Two bugs, fixed together because they compound: (1) this used to
+                // mask a throwaway clone while the original, unmasked event went on
+                // to be processed, silently defeating the masking; (2) check_entity()
+                // includes a real compliance check (previously a no-op) that verifies
+                // fields are already compliant -- running it on raw, not-yet-masked
+                // data would reject every entity a masking rule targets, since the
+                // whole point of apply_rules() is to *make* it compliant.
+                if let Err(e) = gov_engine.apply_rules(&mut entity).await {
+                    self.events_failed.fetch_add(1, Ordering::Release);
+                    self.error_count.fetch_add(1, Ordering::Release);
+                    self.backpressure.release();
+                    return Err(e);
+                }
+                event.entity = entity.attributes.clone();
+                self.compliance_rules_applied.fetch_add(1, Ordering::Release);
+
                 match gov_engine.check_entity(&entity).await {
                     Ok(check_result) => {
                         if check_result.passed {
@@ -158,16 +176,6 @@ impl ActivationPipeline {
                                 format!("Governance checks failed: {}", check_result.issues.join(", "))
                             ));
                         }
-
-                        // Apply compliance rules to entity
-                        let mut entity_copy = entity.clone();
-                        if let Err(e) = gov_engine.apply_rules(&mut entity_copy).await {
-                            self.events_failed.fetch_add(1, Ordering::Release);
-                            self.error_count.fetch_add(1, Ordering::Release);
-                            self.backpressure.release();
-                            return Err(e);
-                        }
-                        self.compliance_rules_applied.fetch_add(1, Ordering::Release);
                     }
                     Err(e) => {
                         self.quality_checks_failed.fetch_add(1, Ordering::Release);
@@ -408,6 +416,99 @@ mod tests {
         let metrics = pipeline.metrics().await;
         assert_eq!(metrics.quality_checks_passed, 0);
         assert_eq!(metrics.quality_checks_failed, 0);
+    }
+
+    /// Captures the entity payload each processed event actually carried, so tests
+    /// can verify what data really reached the "activation" step -- not just that
+    /// processing didn't error.
+    struct CapturingHandler {
+        captured: Arc<Mutex<Vec<serde_json::Value>>>,
+    }
+
+    #[async_trait::async_trait]
+    impl crate::EventHandler for CapturingHandler {
+        async fn handle(&self, event: &Event) -> Result<(), crate::adapters::AdapterError> {
+            self.captured.lock().await.push(event.entity.clone());
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn compliance_masking_actually_reaches_the_activated_event() {
+        // Regression test: apply_rules() used to mask a throwaway clone of the
+        // entity while the original, unmasked event went on to be processed --
+        // silently defeating PII masking. This verifies the handler that receives
+        // the "activated" event sees the *masked* value, not the raw one.
+        use crate::governance::{
+            ComplianceRule, DefaultComplianceEngine, GovernanceConfig, MockQualityGate,
+            MockSchemaEvolution, RuleAction, RuleType,
+        };
+        use crate::streaming::{EventSource, EventType};
+
+        let workflow = Arc::new(Workflow::new(
+            "test_workflow".to_string(),
+            "test_owner".to_string(),
+            crate::workflow::SourceType::Table {
+                table_name: "test_table".to_string(),
+            },
+        ));
+        let activation = Arc::new(Activation::new(
+            "test_activation".to_string(),
+            workflow.id.clone(),
+            "test_owner".to_string(),
+        ));
+
+        let config = GovernanceConfig {
+            quality_gates_enabled: true,
+            schema_checks_enabled: false,
+            compliance_rules_enabled: true,
+            ..Default::default()
+        };
+        let quality_gate = Arc::new(MockQualityGate::new(true, 0.95));
+        let schema_evolution = Arc::new(MockSchemaEvolution::no_changes());
+        let compliance_rule = ComplianceRule::new(
+            "email_masking".to_string(),
+            RuleType::PiiMasking,
+            vec!["email".to_string()],
+            RuleAction::Mask("****".to_string()),
+        );
+        let compliance_engine = Arc::new(DefaultComplianceEngine::new(vec![compliance_rule]));
+
+        let gov_engine = Arc::new(GovernanceEngine::new(
+            config,
+            quality_gate,
+            schema_evolution,
+            compliance_engine,
+        ));
+
+        let pipeline = ActivationPipeline::new(workflow, activation)
+            .await
+            .unwrap()
+            .with_governance(gov_engine);
+        pipeline.start().await.unwrap();
+
+        let captured = Arc::new(Mutex::new(Vec::new()));
+        pipeline
+            .event_processor
+            .add_handler(Arc::new(CapturingHandler {
+                captured: captured.clone(),
+            }))
+            .await;
+
+        let event = Event::new(
+            EventType::EntityUpdated,
+            EventSource::Webhook {
+                url: "http://example.com".to_string(),
+            },
+            json!({"id": "1", "email": "real.person@example.com"}),
+        );
+
+        pipeline.process_event(event).await.unwrap();
+
+        let captured = captured.lock().await;
+        assert_eq!(captured.len(), 1);
+        assert_eq!(captured[0]["email"], json!("****"));
+        assert_ne!(captured[0]["email"], json!("real.person@example.com"));
     }
 
     #[tokio::test]

@@ -355,6 +355,7 @@ impl super::SourceConnector for HdfsSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::connectors::{DestinationConnector, SourceConnector};
 
     #[test]
     fn test_hdfs_simple_config() {

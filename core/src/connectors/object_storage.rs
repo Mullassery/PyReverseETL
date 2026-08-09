@@ -326,6 +326,7 @@ impl super::SourceConnector for ObjectStorageSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::connectors::{DestinationConnector, SourceConnector};
 
     #[test]
     fn test_table_formats() {

@@ -289,7 +289,7 @@ mod tests {
     #[tokio::test]
     async fn test_connection() {
         let connector = MySQLConnector::new(test_config());
-        let result = connector.test_connection().await;
+        let result = SourceConnector::test_connection(&connector).await;
         assert!(result.is_ok());
         assert!(result.unwrap().success);
     }
@@ -349,7 +349,7 @@ mod tests {
     #[tokio::test]
     async fn test_source_capabilities() {
         let connector = MySQLConnector::new(test_config());
-        let caps = connector.capabilities();
+        let caps = SourceConnector::capabilities(&connector);
         assert!(caps.contains(&Capability::Read));
         assert!(caps.contains(&Capability::SchemaDetection));
         assert!(caps.contains(&Capability::IncrementalRead));
