@@ -3,8 +3,8 @@
 **Move your data automatically to where it's needed.**
 
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-![Version: v2.1.1](https://img.shields.io/badge/Version-v2.1.1-blue)
-![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+![Version: v2.2.1](https://img.shields.io/badge/Version-v2.2.1-blue)
+[![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
 
 PyReverseETL automatically syncs **quality-validated** data from source systems to destinations with full audit trail, lineage tracking, and compliance records.
 
