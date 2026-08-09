@@ -202,7 +202,7 @@ impl PySyncRun {
 }
 
 #[pymodule]
-fn pyreverseetl(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _core(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyWorkflow>()?;
     m.add_class::<PyDestination>()?;
