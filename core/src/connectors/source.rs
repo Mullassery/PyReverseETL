@@ -1,8 +1,7 @@
 /// Source Connectors - Read data from various sources
 ///
 /// Unified interface for: Databases, APIs, Files, Event Streams, Data Warehouses
-
-use super::{Record, Schema, ConnectionTest, Capability};
+use super::{Capability, ConnectionTest, Record, Schema};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -152,7 +151,11 @@ impl SourceConnector for FileSource {
     }
 
     fn capabilities(&self) -> Vec<Capability> {
-        vec![Capability::Read, Capability::SchemaDetection, Capability::Batch]
+        vec![
+            Capability::Read,
+            Capability::SchemaDetection,
+            Capability::Batch,
+        ]
     }
 }
 
@@ -249,7 +252,11 @@ impl SourceConnector for CloudStorageSource {
     }
 
     fn capabilities(&self) -> Vec<Capability> {
-        vec![Capability::Read, Capability::SchemaDetection, Capability::Batch]
+        vec![
+            Capability::Read,
+            Capability::SchemaDetection,
+            Capability::Batch,
+        ]
     }
 }
 
@@ -266,7 +273,9 @@ mod tests {
             batch_size: Some(1000),
             incremental_column: None,
         };
-        config.params.insert("host".to_string(), "localhost".to_string());
+        config
+            .params
+            .insert("host".to_string(), "localhost".to_string());
 
         let source = DatabaseSource {
             connector_type: "postgres".to_string(),
@@ -311,7 +320,9 @@ mod tests {
             batch_size: Some(100),
             incremental_column: Some("updated_at".to_string()),
         };
-        config.params.insert("auth_type".to_string(), "bearer".to_string());
+        config
+            .params
+            .insert("auth_type".to_string(), "bearer".to_string());
 
         let source = ApiSource { config };
 

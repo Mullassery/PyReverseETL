@@ -2,12 +2,11 @@
 ///
 /// Handles communication with StatGuardian service for quality validation,
 /// schema change detection, and compliance rule retrieval.
-
-use crate::{Entity, Result, Error};
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use std::sync::Arc;
+use crate::{Entity, Error, Result};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Duration;
 
 /// Request to validate entity against quality contract
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,24 +94,20 @@ impl StatGuardianClient {
 
         let url = format!("{}/validate", self.base_url);
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .bearer_auth(&self.api_key)
             .json(&request)
             .timeout(self.timeout)
             .send()
             .await
-            .map_err(|e| Error::ConfigError(
-                format!("StatGuardian API request failed: {}", e)
-            ))?;
+            .map_err(|e| Error::ConfigError(format!("StatGuardian API request failed: {}", e)))?;
 
         if response.status().is_success() {
-            let validate_response: ValidateResponse = response
-                .json()
-                .await
-                .map_err(|e| Error::ConfigError(
-                    format!("Failed to parse StatGuardian response: {}", e)
-                ))?;
+            let validate_response: ValidateResponse = response.json().await.map_err(|e| {
+                Error::ConfigError(format!("Failed to parse StatGuardian response: {}", e))
+            })?;
 
             Ok(crate::governance::ValidationResult {
                 passed: validate_response.passed,
@@ -123,14 +118,18 @@ impl StatGuardianClient {
         } else {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            Err(Error::ConfigError(
-                format!("StatGuardian API error {}: {}", status, error_text)
-            ))
+            Err(Error::ConfigError(format!(
+                "StatGuardian API error {}: {}",
+                status, error_text
+            )))
         }
     }
 
     /// Detect schema changes in entity
-    pub async fn detect_schema_changes(&self, entity: &Entity) -> Result<Vec<crate::governance::SchemaChange>> {
+    pub async fn detect_schema_changes(
+        &self,
+        entity: &Entity,
+    ) -> Result<Vec<crate::governance::SchemaChange>> {
         let request = SchemaCheckRequest {
             entity: entity.clone(),
             current_version: "v1.0.0".to_string(),
@@ -138,26 +137,23 @@ impl StatGuardianClient {
 
         let url = format!("{}/detect-changes", self.base_url);
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .bearer_auth(&self.api_key)
             .json(&request)
             .timeout(self.timeout)
             .send()
             .await
-            .map_err(|e| Error::ConfigError(
-                format!("Schema check request failed: {}", e)
-            ))?;
+            .map_err(|e| Error::ConfigError(format!("Schema check request failed: {}", e)))?;
 
         if response.status().is_success() {
-            let schema_response: SchemaCheckResponse = response
-                .json()
-                .await
-                .map_err(|e| Error::ConfigError(
-                    format!("Failed to parse schema response: {}", e)
-                ))?;
+            let schema_response: SchemaCheckResponse = response.json().await.map_err(|e| {
+                Error::ConfigError(format!("Failed to parse schema response: {}", e))
+            })?;
 
-            let changes = schema_response.changes
+            let changes = schema_response
+                .changes
                 .into_iter()
                 .map(|detail| {
                     let change_type = match detail.change_type.as_str() {
@@ -181,9 +177,10 @@ impl StatGuardianClient {
             Ok(changes)
         } else {
             let status = response.status();
-            Err(Error::ConfigError(
-                format!("Schema check failed with status {}", status)
-            ))
+            Err(Error::ConfigError(format!(
+                "Schema check failed with status {}",
+                status
+            )))
         }
     }
 
@@ -191,12 +188,7 @@ impl StatGuardianClient {
     pub async fn health_check(&self) -> Result<bool> {
         let url = format!("{}/health", self.base_url);
 
-        match self.client
-            .get(&url)
-            .timeout(self.timeout)
-            .send()
-            .await
-        {
+        match self.client.get(&url).timeout(self.timeout).send().await {
             Ok(response) => Ok(response.status().is_success()),
             Err(_) => Ok(false),
         }
@@ -217,11 +209,7 @@ mod tests {
     #[test]
     fn test_client_with_custom_timeout() {
         let timeout = Duration::from_secs(10);
-        let client = StatGuardianClient::with_timeout(
-            "http://localhost:8080",
-            "test-key",
-            timeout,
-        );
+        let client = StatGuardianClient::with_timeout("http://localhost:8080", "test-key", timeout);
         assert_eq!(client.timeout, timeout);
     }
 

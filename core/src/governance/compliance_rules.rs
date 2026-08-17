@@ -5,7 +5,6 @@
 /// - Retention policies
 /// - Compliance rules (GDPR, CCPA)
 /// - Custom governance rules
-
 use crate::{Entity, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -132,15 +131,13 @@ impl DefaultComplianceEngine {
     }
 
     pub fn with_default_rules() -> Self {
-        let rules = vec![
-            ComplianceRule::new(
-                "pii_masking".to_string(),
-                RuleType::PiiMasking,
-                vec!["email".to_string(), "phone".to_string()],
-                RuleAction::Mask("****".to_string()),
-            )
-            .with_description("Mask PII fields".to_string()),
-        ];
+        let rules = vec![ComplianceRule::new(
+            "pii_masking".to_string(),
+            RuleType::PiiMasking,
+            vec!["email".to_string(), "phone".to_string()],
+            RuleAction::Mask("****".to_string()),
+        )
+        .with_description("Mask PII fields".to_string())];
         Self { rules }
     }
 }
@@ -169,9 +166,8 @@ impl ComplianceEngine for DefaultComplianceEngine {
                         if let Some(obj) = entity.attributes.as_object_mut() {
                             if let Some(val) = obj.get_mut(field) {
                                 if let Some(s) = val.as_str() {
-                                    obj[field] = serde_json::Value::String(
-                                        s.chars().take(*len).collect()
-                                    );
+                                    obj[field] =
+                                        serde_json::Value::String(s.chars().take(*len).collect());
                                 }
                             }
                         }
@@ -195,10 +191,7 @@ impl ComplianceEngine for DefaultComplianceEngine {
 
         for rule in &self.rules {
             for field in &rule.target_fields {
-                let current_value = entity
-                    .attributes
-                    .as_object()
-                    .and_then(|obj| obj.get(field));
+                let current_value = entity.attributes.as_object().and_then(|obj| obj.get(field));
 
                 match &rule.action {
                     RuleAction::Mask(pattern) => {
@@ -352,7 +345,8 @@ mod tests {
             RuleAction::Truncate(5),
         );
         let engine = DefaultComplianceEngine::new(vec![rule]);
-        let mut entity = entity_with_attributes(serde_json::json!({"bio": "a very long biography"}));
+        let mut entity =
+            entity_with_attributes(serde_json::json!({"bio": "a very long biography"}));
 
         engine.apply_rules(&mut entity).await.unwrap();
 

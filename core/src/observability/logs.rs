@@ -1,7 +1,6 @@
 /// Structured logging for sync operations
 /// Integrates with tracing crate for OTel compatibility
-
-use tracing::{info, warn, error, debug};
+use tracing::{debug, error, info, warn};
 
 /// Logger for sync operations
 pub struct SyncLogger;
@@ -216,12 +215,7 @@ impl SyncLogger {
     }
 
     /// Log performance metrics
-    pub fn performance_metrics(
-        sync_name: &str,
-        throughput: f64,
-        latency_ms: f64,
-        error_rate: f64,
-    ) {
+    pub fn performance_metrics(sync_name: &str, throughput: f64, latency_ms: f64, error_rate: f64) {
         info!(
             sync_name = sync_name,
             throughput_events_per_sec = throughput,

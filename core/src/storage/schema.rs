@@ -91,7 +91,7 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
         CREATE INDEX IF NOT EXISTS idx_sync_records_sync_run ON sync_records(sync_run_id);
         CREATE INDEX IF NOT EXISTS idx_sync_records_entity ON sync_records(entity_id);
         CREATE INDEX IF NOT EXISTS idx_sync_records_destination ON sync_records(destination_id);
-        "
+        ",
     )?;
 
     Ok(())

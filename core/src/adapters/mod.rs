@@ -2,21 +2,21 @@ use crate::Entity;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub mod error;
-pub mod mapping;
-pub mod schema_detect;
 pub mod alert_compat;
-pub mod retry_policy;
+pub mod error;
 pub mod http_client;
-pub mod oauth_manager;
-pub mod webhook;
-pub mod salesforce;
 pub mod hubspot;
+pub mod mapping;
 pub mod marketo;
+pub mod oauth_manager;
+pub mod retry_policy;
+pub mod salesforce;
+pub mod schema_detect;
+pub mod webhook;
 
 pub use error::AdapterError;
-pub use retry_policy::RetryPolicy;
 pub use http_client::HttpClient;
+pub use retry_policy::RetryPolicy;
 
 /// Field transformation operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,10 +77,7 @@ pub enum AuthMethod {
         refresh_token: Option<String>,
     },
     /// Basic HTTP authentication
-    Basic {
-        username: String,
-        password: String,
-    },
+    Basic { username: String, password: String },
     /// Bearer token
     Bearer { token: String },
 }
@@ -121,10 +118,18 @@ pub trait DestinationAdapter: Send + Sync {
     fn authenticate(&self) -> Result<(), AdapterError>;
 
     /// Upsert a single entity to destination
-    fn upsert(&self, entity: &Entity, mappings: &[FieldMapping]) -> Result<OperationResult, AdapterError>;
+    fn upsert(
+        &self,
+        entity: &Entity,
+        mappings: &[FieldMapping],
+    ) -> Result<OperationResult, AdapterError>;
 
     /// Batch upsert multiple entities
-    fn batch_upsert(&self, entities: Vec<Entity>, mappings: &[FieldMapping]) -> Result<BatchResult, AdapterError>;
+    fn batch_upsert(
+        &self,
+        entities: Vec<Entity>,
+        mappings: &[FieldMapping],
+    ) -> Result<BatchResult, AdapterError>;
 
     /// Delete entity by ID
     fn delete(&self, id: &str) -> Result<(), AdapterError>;
@@ -173,7 +178,9 @@ impl AdapterFactory {
                 let adapter = marketo::MarketoAdapter::new(config, auth.clone())?;
                 Ok(Box::new(adapter))
             }
-            _ => Err(AdapterError::UnsupportedDestination(destination_type.to_string())),
+            _ => Err(AdapterError::UnsupportedDestination(
+                destination_type.to_string(),
+            )),
         }
     }
 }

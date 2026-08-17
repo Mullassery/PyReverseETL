@@ -1,8 +1,7 @@
+use chrono::{DateTime, Utc};
 /// OpenTelemetry traces for distributed tracing
 /// Track execution flow from source through transformation to destination
-
 use std::time::Instant;
-use chrono::{DateTime, Utc};
 
 /// Span for tracing a specific operation
 #[derive(Debug, Clone)]
@@ -209,7 +208,10 @@ mod tests {
         span.add_attribute("source_type", "kafka");
         span.add_attribute("topic", "orders");
 
-        assert_eq!(span.attributes.get("source_type"), Some(&"kafka".to_string()));
+        assert_eq!(
+            span.attributes.get("source_type"),
+            Some(&"kafka".to_string())
+        );
         assert_eq!(span.attributes.get("topic"), Some(&"orders".to_string()));
     }
 }

@@ -36,7 +36,9 @@ impl fmt::Display for AdapterError {
         match self {
             AdapterError::AuthenticationFailed(msg) => write!(f, "Authentication failed: {}", msg),
             AdapterError::ConnectionError(msg) => write!(f, "Connection error: {}", msg),
-            AdapterError::UnsupportedDestination(dtype) => write!(f, "Unsupported destination: {}", dtype),
+            AdapterError::UnsupportedDestination(dtype) => {
+                write!(f, "Unsupported destination: {}", dtype)
+            }
             AdapterError::InvalidConfiguration(msg) => write!(f, "Invalid configuration: {}", msg),
             AdapterError::FieldMappingError(msg) => write!(f, "Field mapping error: {}", msg),
             AdapterError::OperationFailed(msg) => write!(f, "Operation failed: {}", msg),
@@ -47,8 +49,15 @@ impl fmt::Display for AdapterError {
             AdapterError::NetworkError(msg) => write!(f, "Network error: {}", msg),
             AdapterError::Timeout => write!(f, "Operation timed out"),
             AdapterError::SchemaNotAvailable => write!(f, "Destination schema not available"),
-            AdapterError::BatchSizeExceeded { max_size, requested } => {
-                write!(f, "Batch size exceeded: max {}, requested {}", max_size, requested)
+            AdapterError::BatchSizeExceeded {
+                max_size,
+                requested,
+            } => {
+                write!(
+                    f,
+                    "Batch size exceeded: max {}, requested {}",
+                    max_size, requested
+                )
             }
             AdapterError::NotImplemented(msg) => write!(f, "Not implemented: {}", msg),
         }
@@ -81,7 +90,9 @@ mod tests {
 
     #[test]
     fn test_rate_limit_error() {
-        let err = AdapterError::RateLimitExceeded { retry_after_ms: 5000 };
+        let err = AdapterError::RateLimitExceeded {
+            retry_after_ms: 5000,
+        };
         assert_eq!(err.to_string(), "Rate limit exceeded, retry after 5000ms");
     }
 

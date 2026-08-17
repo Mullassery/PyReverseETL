@@ -1,9 +1,8 @@
+use chrono::{DateTime, Utc};
 /// OpenTelemetry metrics for sync operations
 /// Track throughput, latency, errors, and other KPIs
-
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use chrono::{DateTime, Utc};
 
 /// Metrics collector for a sync operation
 #[derive(Debug, Clone)]
@@ -174,10 +173,7 @@ mod tests {
 
     #[test]
     fn test_metrics_collector_creation() {
-        let collector = MetricsCollector::new(
-            "run-123".to_string(),
-            "test_sync".to_string(),
-        );
+        let collector = MetricsCollector::new("run-123".to_string(), "test_sync".to_string());
         assert_eq!(collector.status, "Running");
         assert_eq!(collector.events_processed, 0);
         assert_eq!(collector.events_failed, 0);
@@ -185,10 +181,7 @@ mod tests {
 
     #[test]
     fn test_metrics_collector_processing() {
-        let mut collector = MetricsCollector::new(
-            "run-123".to_string(),
-            "test_sync".to_string(),
-        );
+        let mut collector = MetricsCollector::new("run-123".to_string(), "test_sync".to_string());
 
         collector.add_events_processed(1000, 50000);
         assert_eq!(collector.events_processed, 1000);
@@ -200,10 +193,7 @@ mod tests {
 
     #[test]
     fn test_error_rate_calculation() {
-        let mut collector = MetricsCollector::new(
-            "run-123".to_string(),
-            "test_sync".to_string(),
-        );
+        let mut collector = MetricsCollector::new("run-123".to_string(), "test_sync".to_string());
 
         collector.add_events_processed(900, 0);
         collector.add_events_failed(100);
@@ -214,10 +204,7 @@ mod tests {
 
     #[test]
     fn test_metrics_summary() {
-        let mut collector = MetricsCollector::new(
-            "run-123".to_string(),
-            "test_sync".to_string(),
-        );
+        let mut collector = MetricsCollector::new("run-123".to_string(), "test_sync".to_string());
 
         collector.add_events_processed(1000, 50000);
         collector.mark_success();
@@ -230,10 +217,7 @@ mod tests {
 
     #[test]
     fn test_sync_metrics_snapshot() {
-        let mut collector = MetricsCollector::new(
-            "run-456".to_string(),
-            "orders_sync".to_string(),
-        );
+        let mut collector = MetricsCollector::new("run-456".to_string(), "orders_sync".to_string());
 
         collector.add_events_processed(5000, 250000);
         collector.add_events_failed(50);

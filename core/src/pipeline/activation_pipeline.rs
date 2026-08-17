@@ -1,7 +1,7 @@
 use super::{BackpressureManager, LatencyTracker};
 use crate::{
-    Activation, Event, EventProcessor, Workflow, CheckpointManager, Checkpoint,
-    governance::GovernanceEngine,
+    governance::GovernanceEngine, Activation, Checkpoint, CheckpointManager, Event, EventProcessor,
+    Workflow,
 };
 use chrono::{DateTime, Utc};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -70,10 +70,7 @@ pub struct ActivationPipeline {
 
 impl ActivationPipeline {
     /// Create a new activation pipeline
-    pub async fn new(
-        workflow: Arc<Workflow>,
-        activation: Arc<Activation>,
-    ) -> crate::Result<Self> {
+    pub async fn new(workflow: Arc<Workflow>, activation: Arc<Activation>) -> crate::Result<Self> {
         let event_processor = Arc::new(EventProcessor::new(1000));
         let latency_tracker = Arc::new(LatencyTracker::new(10000));
         let backpressure = Arc::new(BackpressureManager::new(10000));
@@ -122,7 +119,9 @@ impl ActivationPipeline {
     /// Process a single event
     pub async fn process_event(&self, mut event: Event) -> crate::Result<()> {
         if !self.running.load(Ordering::Acquire) {
-            return Err(crate::Error::ConfigError("Pipeline not running".to_string()));
+            return Err(crate::Error::ConfigError(
+                "Pipeline not running".to_string(),
+            ));
         }
 
         // Check backpressure
@@ -158,23 +157,26 @@ impl ActivationPipeline {
                     return Err(e);
                 }
                 event.entity = entity.attributes.clone();
-                self.compliance_rules_applied.fetch_add(1, Ordering::Release);
+                self.compliance_rules_applied
+                    .fetch_add(1, Ordering::Release);
 
                 match gov_engine.check_entity(&entity).await {
                     Ok(check_result) => {
                         if check_result.passed {
                             self.quality_checks_passed.fetch_add(1, Ordering::Release);
                             if !check_result.issues.is_empty() {
-                                self.schema_changes_detected.fetch_add(check_result.issues.len() as u64, Ordering::Release);
+                                self.schema_changes_detected
+                                    .fetch_add(check_result.issues.len() as u64, Ordering::Release);
                             }
                         } else {
                             self.quality_checks_failed.fetch_add(1, Ordering::Release);
                             self.events_failed.fetch_add(1, Ordering::Release);
                             self.error_count.fetch_add(1, Ordering::Release);
                             self.backpressure.release();
-                            return Err(crate::Error::ValidationGateFailed(
-                                format!("Governance checks failed: {}", check_result.issues.join(", "))
-                            ));
+                            return Err(crate::Error::ValidationGateFailed(format!(
+                                "Governance checks failed: {}",
+                                check_result.issues.join(", ")
+                            )));
                         }
                     }
                     Err(e) => {
@@ -199,7 +201,10 @@ impl ActivationPipeline {
                 self.events_failed.fetch_add(1, Ordering::Release);
                 self.error_count.fetch_add(1, Ordering::Release);
                 self.backpressure.release();
-                return Err(crate::Error::ConfigError(format!("Event processing failed: {}", e)));
+                return Err(crate::Error::ConfigError(format!(
+                    "Event processing failed: {}",
+                    e
+                )));
             }
         }
 
@@ -212,7 +217,9 @@ impl ActivationPipeline {
     /// Process a batch of events
     pub async fn process_batch(&self, events: Vec<Event>) -> crate::Result<usize> {
         if !self.running.load(Ordering::Acquire) {
-            return Err(crate::Error::ConfigError("Pipeline not running".to_string()));
+            return Err(crate::Error::ConfigError(
+                "Pipeline not running".to_string(),
+            ));
         }
 
         let mut successful = 0;
@@ -354,7 +361,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_pipeline_not_running_error() {
-        use crate::streaming::{EventType, EventSource};
+        use crate::streaming::{EventSource, EventType};
 
         let pipeline = create_test_pipeline().await;
 
@@ -373,8 +380,8 @@ mod tests {
     #[tokio::test]
     async fn test_pipeline_with_governance() {
         use crate::governance::{
-            GovernanceConfig, QualityGate, SchemaEvolution, ComplianceEngine,
-            MockQualityGate, MockSchemaEvolution, MockComplianceEngine,
+            ComplianceEngine, GovernanceConfig, MockComplianceEngine, MockQualityGate,
+            MockSchemaEvolution, QualityGate, SchemaEvolution,
         };
 
         let workflow = Arc::new(Workflow::new(
@@ -514,10 +521,10 @@ mod tests {
     #[tokio::test]
     async fn test_governance_metrics_tracking() {
         use crate::governance::{
-            GovernanceConfig, QualityGate, SchemaEvolution, ComplianceEngine,
-            MockQualityGate, MockSchemaEvolution, MockComplianceEngine,
+            ComplianceEngine, GovernanceConfig, MockComplianceEngine, MockQualityGate,
+            MockSchemaEvolution, QualityGate, SchemaEvolution,
         };
-        use crate::streaming::{EventType, EventSource};
+        use crate::streaming::{EventSource, EventType};
 
         let workflow = Arc::new(Workflow::new(
             "test_workflow".to_string(),

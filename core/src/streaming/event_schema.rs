@@ -182,7 +182,10 @@ mod tests {
         .with_metadata("priority", "high");
 
         assert_eq!(event.metadata.len(), 2);
-        assert_eq!(event.metadata.get("source_version"), Some(&"2.0".to_string()));
+        assert_eq!(
+            event.metadata.get("source_version"),
+            Some(&"2.0".to_string())
+        );
     }
 
     #[test]

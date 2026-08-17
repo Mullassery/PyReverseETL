@@ -43,7 +43,10 @@ impl SchemaDetector {
             for (name, value) in attrs {
                 let field_key = name.clone();
                 let detected_type = Self::infer_type(value);
-                field_types.entry(field_key.clone()).or_insert_with(Vec::new).push(detected_type);
+                field_types
+                    .entry(field_key.clone())
+                    .or_insert_with(Vec::new)
+                    .push(detected_type);
                 *field_counts.entry(field_key).or_insert(0) += 1;
             }
         }
@@ -53,7 +56,10 @@ impl SchemaDetector {
             for (name, value) in traits {
                 let field_key = format!("trait_{}", name);
                 let detected_type = Self::infer_type(value);
-                field_types.entry(field_key.clone()).or_insert_with(Vec::new).push(detected_type);
+                field_types
+                    .entry(field_key.clone())
+                    .or_insert_with(Vec::new)
+                    .push(detected_type);
                 *field_counts.entry(field_key).or_insert(0) += 1;
             }
         }
@@ -140,7 +146,12 @@ impl SchemaDetector {
         // Reconstruct types with counts (note: this is simplified)
         types
             .iter()
-            .map(|t| (t.clone(), *type_strings.get(&format!("{:?}", t)).unwrap_or(&1)))
+            .map(|t| {
+                (
+                    t.clone(),
+                    *type_strings.get(&format!("{:?}", t)).unwrap_or(&1),
+                )
+            })
             .collect()
     }
 
@@ -262,7 +273,9 @@ fn is_valid_url(s: &str) -> bool {
 
 // ISO 8601 datetime validation (basic)
 fn is_iso8601_datetime(s: &str) -> bool {
-    (s.len() >= 10) && s.chars().nth(4).map(|c| c == '-').unwrap_or(false) && (s.contains('T') || s.contains(' '))
+    (s.len() >= 10)
+        && s.chars().nth(4).map(|c| c == '-').unwrap_or(false)
+        && (s.contains('T') || s.contains(' '))
 }
 
 #[cfg(test)]

@@ -123,8 +123,7 @@ mod tests {
 
     #[test]
     fn test_destination_disabled() {
-        let dest = Destination::new("Test", DestinationType::Webhook)
-            .set_enabled(false);
+        let dest = Destination::new("Test", DestinationType::Webhook).set_enabled(false);
         assert!(!dest.enabled);
     }
 

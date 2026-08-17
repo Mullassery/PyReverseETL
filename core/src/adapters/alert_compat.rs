@@ -109,7 +109,10 @@ impl SchemaDriftAlert {
         let mut context = HashMap::new();
         context.insert("adapter".to_string(), self.adapter.clone());
         context.insert("missing_fields".to_string(), self.missing_fields.join(", "));
-        context.insert("unexpected_fields".to_string(), self.unexpected_fields.join(", "));
+        context.insert(
+            "unexpected_fields".to_string(),
+            self.unexpected_fields.join(", "),
+        );
         context.insert(
             "type_mismatches".to_string(),
             self.type_mismatches
@@ -133,7 +136,11 @@ impl SchemaDriftAlert {
             context,
             timestamp: chrono::Utc::now().to_rfc3339(),
             resource: format!("adapter/{}", self.adapter),
-            tags: vec!["schema".to_string(), "drift".to_string(), "adapter".to_string()],
+            tags: vec![
+                "schema".to_string(),
+                "drift".to_string(),
+                "adapter".to_string(),
+            ],
         }
     }
 }
@@ -156,7 +163,11 @@ impl TypeMismatchAlert {
         context.insert("entity_id".to_string(), self.entity_id.clone());
 
         AlertMessage {
-            alert_id: format!("mismatch-{}-{}", self.entity_id, chrono::Utc::now().timestamp()),
+            alert_id: format!(
+                "mismatch-{}-{}",
+                self.entity_id,
+                chrono::Utc::now().timestamp()
+            ),
             severity: AlertSeverity::Error,
             category: AlertCategory::TypeMismatch,
             message: format!(
@@ -193,7 +204,11 @@ impl RateLimitAlert {
         }
 
         AlertMessage {
-            alert_id: format!("rate-limit-{}-{}", self.adapter, chrono::Utc::now().timestamp()),
+            alert_id: format!(
+                "rate-limit-{}-{}",
+                self.adapter,
+                chrono::Utc::now().timestamp()
+            ),
             severity: AlertSeverity::Warning,
             category: AlertCategory::RateLimitExceeded,
             message: format!(

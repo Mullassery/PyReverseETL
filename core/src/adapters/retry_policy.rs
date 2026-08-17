@@ -184,7 +184,9 @@ mod tests {
                 let cc = call_count_clone.clone();
                 async move {
                     *cc.lock().unwrap() += 1;
-                    Err::<i32, AdapterError>(AdapterError::AuthenticationFailed("invalid key".to_string()))
+                    Err::<i32, AdapterError>(AdapterError::AuthenticationFailed(
+                        "invalid key".to_string(),
+                    ))
                 }
             })
             .await;

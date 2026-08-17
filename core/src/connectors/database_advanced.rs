@@ -3,8 +3,7 @@
 /// Support for: create tables, partitioning, incremental loads, bulk operations
 /// Databases: PostgreSQL, MySQL, MariaDB, SQLite, Oracle
 /// Warehouses: Snowflake, BigQuery, Redshift, DuckDB
-
-use super::{Record, ConnectionTest, Capability};
+use super::{Capability, ConnectionTest, Record};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

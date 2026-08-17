@@ -1,6 +1,5 @@
 /// Comprehensive sync configuration with detailed status messages
 /// Handles separate source and destination polling configurations
-
 use crate::sources::polling::PollingConfig;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -168,7 +167,7 @@ impl TransformationConfig {
             intermediate_topic: None,
             max_retries: 3,
             retry_delay_secs: 5,
-            timeout_secs: 60,  // Shorter timeout for local execution
+            timeout_secs: 60, // Shorter timeout for local execution
             skip_on_error: false,
             dead_letter_topic: None,
             enable_caching: false,
@@ -282,7 +281,10 @@ impl SyncConfiguration {
                 );
             }
 
-            if transformation.dead_letter_topic.is_none() && !transformation.skip_on_error && !transformation.enable_caching {
+            if transformation.dead_letter_topic.is_none()
+                && !transformation.skip_on_error
+                && !transformation.enable_caching
+            {
                 recommendations.push(
                     "⚠️  Transformation: Consider adding dead_letter_topic, enabling skip_on_error, or enabling caching for failure handling".to_string(),
                 );
@@ -345,41 +347,53 @@ impl SyncConfiguration {
         };
 
         // Determine status
-        let (status, message) = match (self.source_polling.is_some(), self.destination_polling.is_some(), source_ok, dest_ok) {
+        let (status, message) = match (
+            self.source_polling.is_some(),
+            self.destination_polling.is_some(),
+            source_ok,
+            dest_ok,
+        ) {
             // Both configured
             (true, true, true, true) => {
                 let msg = self.success_message();
                 (ConfigStatus::Success, msg)
             }
-            (true, true, false, true) => {
-                (ConfigStatus::SourceProblem, "❌ Source polling configuration has errors".to_string())
-            }
-            (true, true, true, false) => {
-                (ConfigStatus::DestinationProblem, "❌ Destination polling configuration has errors".to_string())
-            }
-            (true, true, false, false) => {
-                (ConfigStatus::BothHaveProblem, "❌ Both source and destination have configuration errors".to_string())
-            }
+            (true, true, false, true) => (
+                ConfigStatus::SourceProblem,
+                "❌ Source polling configuration has errors".to_string(),
+            ),
+            (true, true, true, false) => (
+                ConfigStatus::DestinationProblem,
+                "❌ Destination polling configuration has errors".to_string(),
+            ),
+            (true, true, false, false) => (
+                ConfigStatus::BothHaveProblem,
+                "❌ Both source and destination have configuration errors".to_string(),
+            ),
             // Only source configured
             (true, false, true, _) => {
                 let msg = self.success_message();
                 (ConfigStatus::Success, msg)
             }
-            (true, false, false, _) => {
-                (ConfigStatus::SourceProblem, "❌ Source polling configuration has errors".to_string())
-            }
+            (true, false, false, _) => (
+                ConfigStatus::SourceProblem,
+                "❌ Source polling configuration has errors".to_string(),
+            ),
             // Only destination configured
             (false, true, _, true) => {
                 let msg = self.success_message();
                 (ConfigStatus::Success, msg)
             }
-            (false, true, _, false) => {
-                (ConfigStatus::DestinationProblem, "❌ Destination polling configuration has errors".to_string())
-            }
+            (false, true, _, false) => (
+                ConfigStatus::DestinationProblem,
+                "❌ Destination polling configuration has errors".to_string(),
+            ),
             // Neither configured
-            (false, false, _, _) => {
-                (ConfigStatus::Incomplete, "❌ At least one polling configuration (source or destination) is required".to_string())
-            }
+            (false, false, _, _) => (
+                ConfigStatus::Incomplete,
+                "❌ At least one polling configuration (source or destination) is required"
+                    .to_string(),
+            ),
         };
 
         if status == ConfigStatus::Success && recommendations.is_empty() {
@@ -407,9 +421,21 @@ impl SyncConfiguration {
         }
 
         if let Some(source) = &self.source_polling {
-            parts.push(format!("   📤 Source: {} polling in {} timezone", source.frequency.label(), source.timezone));
+            parts.push(format!(
+                "   📤 Source: {} polling in {} timezone",
+                source.frequency.label(),
+                source.timezone
+            ));
             if !source.skip_days.is_empty() {
-                parts.push(format!("      Skip days: {}", source.skip_days.iter().cloned().collect::<Vec<_>>().join(", ")));
+                parts.push(format!(
+                    "      Skip days: {}",
+                    source
+                        .skip_days
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
             }
             if source.no_sync_after_hour.is_some() && source.sync_resume_hour.is_some() {
                 parts.push(format!(
@@ -425,7 +451,10 @@ impl SyncConfiguration {
         if let Some(transform) = &self.transformation {
             parts.push(format!(
                 "   ⚙️  Transformation: {} (engine: {}, retries: {}, timeout: {}s)",
-                transform.script_path, transform.engine, transform.max_retries, transform.timeout_secs
+                transform.script_path,
+                transform.engine,
+                transform.max_retries,
+                transform.timeout_secs
             ));
             if let Some(intermediate) = &transform.intermediate_topic {
                 parts.push(format!("      Staging topic: {}", intermediate));
@@ -434,7 +463,10 @@ impl SyncConfiguration {
                 parts.push(format!("      Dead letter topic: {}", dlt));
             }
             if transform.enable_caching {
-                parts.push(format!("      Caching: Enabled ({} MB max)", transform.max_cache_size_mb.unwrap_or(0)));
+                parts.push(format!(
+                    "      Caching: Enabled ({} MB max)",
+                    transform.max_cache_size_mb.unwrap_or(0)
+                ));
             }
             if transform.skip_on_error {
                 parts.push("      Error handling: Skip on error (continue pipeline)".to_string());
@@ -448,7 +480,14 @@ impl SyncConfiguration {
                 dest.timezone
             ));
             if !dest.skip_days.is_empty() {
-                parts.push(format!("      Skip days: {}", dest.skip_days.iter().cloned().collect::<Vec<_>>().join(", ")));
+                parts.push(format!(
+                    "      Skip days: {}",
+                    dest.skip_days
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
             }
             if dest.no_sync_after_hour.is_some() && dest.sync_resume_hour.is_some() {
                 parts.push(format!(
@@ -473,7 +512,8 @@ impl SyncConfiguration {
 
     /// Load from YAML string
     pub fn from_yaml(yaml_str: &str) -> Result<Self, String> {
-        serde_yaml::from_str(yaml_str).map_err(|e| format!("Failed to parse YAML sync config: {}", e))
+        serde_yaml::from_str(yaml_str)
+            .map_err(|e| format!("Failed to parse YAML sync config: {}", e))
     }
 
     /// Save to YAML file
@@ -639,8 +679,7 @@ mod tests {
 
     #[test]
     fn test_transformation_config_with_caching() {
-        let transform = TransformationConfig::new("script.py")
-            .with_caching("/tmp/cache", 512);
+        let transform = TransformationConfig::new("script.py").with_caching("/tmp/cache", 512);
 
         assert!(transform.enable_caching);
         assert_eq!(transform.cache_dir, Some("/tmp/cache".to_string()));
@@ -653,7 +692,7 @@ mod tests {
 
         assert_eq!(transform.engine, TransformationEngine::Python);
         assert!(transform.enabled);
-        assert_eq!(transform.timeout_secs, 60);  // Shorter timeout for Python
+        assert_eq!(transform.timeout_secs, 60); // Shorter timeout for Python
         assert_eq!(transform.script_path, "transform.py");
     }
 
@@ -663,7 +702,7 @@ mod tests {
 
         assert_eq!(transform.engine, TransformationEngine::PySpark);
         assert!(transform.enabled);
-        assert_eq!(transform.timeout_secs, 300);  // Longer timeout for PySpark
+        assert_eq!(transform.timeout_secs, 300); // Longer timeout for PySpark
     }
 
     #[test]

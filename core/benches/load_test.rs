@@ -2,8 +2,8 @@
 // Tests: throughput, latency, memory usage under sustained high load
 
 use criterion::black_box;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// Metrics collected during load test
@@ -216,7 +216,10 @@ mod tests {
         println!("{}", metrics);
 
         // Heavy load (1M EPS) - targets
-        assert!(metrics.throughput_eps >= 1_000_000.0, "Should achieve 1M+ EPS");
+        assert!(
+            metrics.throughput_eps >= 1_000_000.0,
+            "Should achieve 1M+ EPS"
+        );
         assert!(metrics.p50_latency_ms < 100.0, "P50 should be < 100ms");
         assert!(metrics.p99_latency_ms < 1000.0, "P99 should be < 1000ms");
         assert!(metrics.events_failed == 0, "Should have no failures");

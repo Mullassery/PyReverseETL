@@ -1,8 +1,8 @@
 // Connector test harness - orchestrates testing for all connectors
 use super::connector_test::{ConnectorTest, TestResult, TestType};
 use crate::connectors::ConnectorRegistry;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectorTestReport {
@@ -101,9 +101,7 @@ impl ConnectorTestHarness {
         let total_passed = connector_reports.iter().map(|r| r.passed).sum();
         let total_failed = connector_reports.iter().map(|r| r.failed).sum();
 
-        let duration = Utc::now()
-            .signed_duration_since(start_time)
-            .num_seconds() as f64;
+        let duration = Utc::now().signed_duration_since(start_time).num_seconds() as f64;
 
         FullTestReport {
             total_connectors: connector_reports.len(),
@@ -225,9 +223,12 @@ impl ConnectorTestHarness {
         // Load tests from YAML or generate based on connector capabilities
         match self.registry.get_descriptor_by_key(connector_id) {
             Some(descriptor) => {
-                let mut tests = vec![
-                    ConnectorTest::new("connection", connector_id, TestType::Connection, crate::connectors::Capability::Read),
-                ];
+                let mut tests = vec![ConnectorTest::new(
+                    "connection",
+                    connector_id,
+                    TestType::Connection,
+                    crate::connectors::Capability::Read,
+                )];
 
                 if descriptor.capabilities.contains(&"read".to_string()) {
                     tests.push(ConnectorTest::new(
@@ -287,7 +288,11 @@ impl FullTestReport {
     pub fn summary(&self) -> String {
         format!(
             "Full Test Report: {}/{} connectors passing, {}/{} tests passed in {:.2}s",
-            self.passed_connectors, self.total_connectors, self.total_passed, self.total_tests, self.duration_seconds
+            self.passed_connectors,
+            self.total_connectors,
+            self.total_passed,
+            self.total_tests,
+            self.duration_seconds
         )
     }
 }

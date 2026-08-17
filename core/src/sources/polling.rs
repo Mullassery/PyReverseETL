@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc, Weekday, Timelike, Local, Datelike};
+use chrono::{DateTime, Datelike, Duration, Local, Timelike, Utc, Weekday};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -147,8 +147,7 @@ impl PollingConfig {
 
     /// Parse and validate timezone
     pub fn validate_timezone(&self) -> Result<Tz, String> {
-        Tz::from_str(&self.timezone)
-            .map_err(|_| format!("Invalid timezone: {}", self.timezone))
+        Tz::from_str(&self.timezone).map_err(|_| format!("Invalid timezone: {}", self.timezone))
     }
 
     /// Get current hour in configured timezone
@@ -312,8 +311,7 @@ impl PollingConfig {
 
     /// Load polling configuration from YAML string
     pub fn from_yaml(yaml_str: &str) -> Result<Self, String> {
-        serde_yaml::from_str(yaml_str)
-            .map_err(|e| format!("Failed to parse YAML config: {}", e))
+        serde_yaml::from_str(yaml_str).map_err(|e| format!("Failed to parse YAML config: {}", e))
     }
 
     /// Load polling configuration from YAML file
@@ -325,15 +323,13 @@ impl PollingConfig {
 
     /// Convert to YAML string
     pub fn to_yaml(&self) -> Result<String, String> {
-        serde_yaml::to_string(self)
-            .map_err(|e| format!("Failed to serialize to YAML: {}", e))
+        serde_yaml::to_string(self).map_err(|e| format!("Failed to serialize to YAML: {}", e))
     }
 
     /// Save configuration to YAML file
     pub fn save_to_yaml_file(&self, path: &str) -> Result<(), String> {
         let yaml = self.to_yaml()?;
-        std::fs::write(path, yaml)
-            .map_err(|e| format!("Failed to write config file: {}", e))
+        std::fs::write(path, yaml).map_err(|e| format!("Failed to write config file: {}", e))
     }
 }
 
@@ -651,7 +647,11 @@ mod tests {
 
         for tz in timezones {
             let config = PollingConfig::with_timezone(SyncFrequency::Hourly, tz);
-            assert!(config.validate_timezone().is_ok(), "Timezone {} should be valid", tz);
+            assert!(
+                config.validate_timezone().is_ok(),
+                "Timezone {} should be valid",
+                tz
+            );
         }
     }
 

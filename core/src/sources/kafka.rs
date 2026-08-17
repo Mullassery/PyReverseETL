@@ -1,5 +1,5 @@
 use crate::{Event, EventSource, EventType};
-use rdkafka::consumer::{Consumer, BaseConsumer};
+use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::message::Message;
 use rdkafka::ClientConfig;
 use serde::{Deserialize, Serialize};
@@ -79,7 +79,9 @@ impl KafkaSource {
             consumer: None,
             connected: false,
             message_count: 0,
-            polling_config: super::polling::PollingConfig::new(super::polling::SyncFrequency::Hourly),
+            polling_config: super::polling::PollingConfig::new(
+                super::polling::SyncFrequency::Hourly,
+            ),
             consumer_lag: 0,
             last_message_time: None,
             start_time: std::time::Instant::now(),
@@ -183,7 +185,10 @@ impl super::EventSourceConnector for KafkaSource {
             .set("bootstrap.servers", &self.config.brokers)
             .set("group.id", &self.config.group_id)
             .set("auto.offset.reset", &self.config.auto_offset_reset)
-            .set("session.timeout.ms", (self.config.session_timeout_sec * 1000).to_string())
+            .set(
+                "session.timeout.ms",
+                (self.config.session_timeout_sec * 1000).to_string(),
+            )
             .set("fetch.max.bytes", self.config.max_bytes.to_string());
 
         // Configure SSL if enabled
@@ -204,14 +209,14 @@ impl super::EventSourceConnector for KafkaSource {
                 .set("sasl.password", password);
         }
 
-        let consumer: BaseConsumer = client_config
-            .create()
-            .map_err(|e| crate::Error::ConnectorError(format!("Failed to create Kafka consumer: {}", e)))?;
+        let consumer: BaseConsumer = client_config.create().map_err(|e| {
+            crate::Error::ConnectorError(format!("Failed to create Kafka consumer: {}", e))
+        })?;
 
         // Subscribe to topic
-        consumer
-            .subscribe(&[&self.config.topic])
-            .map_err(|e| crate::Error::ConnectorError(format!("Failed to subscribe to topic: {}", e)))?;
+        consumer.subscribe(&[&self.config.topic]).map_err(|e| {
+            crate::Error::ConnectorError(format!("Failed to subscribe to topic: {}", e))
+        })?;
 
         self.consumer = Some(consumer);
         self.connected = true;
@@ -244,15 +249,17 @@ impl super::EventSourceConnector for KafkaSource {
                     .and_then(|k| std::str::from_utf8(k).ok())
                     .map(|s| s.to_string());
 
-                let payload_bytes = borrowed_message
-                    .payload()
-                    .ok_or_else(|| crate::Error::ConnectorError("Empty message payload".to_string()))?;
+                let payload_bytes = borrowed_message.payload().ok_or_else(|| {
+                    crate::Error::ConnectorError("Empty message payload".to_string())
+                })?;
 
-                let value_str = std::str::from_utf8(payload_bytes)
-                    .map_err(|e| crate::Error::ConnectorError(format!("Invalid UTF-8 in message: {}", e)))?;
+                let value_str = std::str::from_utf8(payload_bytes).map_err(|e| {
+                    crate::Error::ConnectorError(format!("Invalid UTF-8 in message: {}", e))
+                })?;
 
-                let payload: serde_json::Value = serde_json::from_str(value_str)
-                    .map_err(|e| crate::Error::ConnectorError(format!("Failed to parse message JSON: {}", e)))?;
+                let payload: serde_json::Value = serde_json::from_str(value_str).map_err(|e| {
+                    crate::Error::ConnectorError(format!("Failed to parse message JSON: {}", e))
+                })?;
 
                 let message = KafkaMessage {
                     key,
@@ -314,8 +321,8 @@ impl super::polling::ChangePoller for KafkaSource {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::EventSourceConnector;
+    use super::*;
 
     #[test]
     fn test_kafka_config_default() {

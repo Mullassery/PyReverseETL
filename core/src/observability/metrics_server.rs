@@ -1,11 +1,10 @@
 /// Metrics server for dashboard communication
 /// Provides HTTP endpoint to stream pipeline metrics in real-time
-
 use crate::pipeline::PipelineMetrics;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono::{DateTime, Utc};
 
 /// Snapshot of metrics at a point in time
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,10 +143,15 @@ impl MetricsServer {
         }
 
         let count = filtered.len() as f64;
-        let avg_events_processed = filtered.iter().map(|s| s.events_processed).sum::<u64>() as f64 / count;
+        let avg_events_processed =
+            filtered.iter().map(|s| s.events_processed).sum::<u64>() as f64 / count;
         let avg_throughput = filtered.iter().map(|s| s.throughput_eps).sum::<f64>() / count;
         let avg_latency = filtered.iter().map(|s| s.average_latency_ms).sum::<f64>() / count;
-        let avg_p99_latency = filtered.iter().map(|s| s.p99_latency_ms as f64).sum::<f64>() / count;
+        let avg_p99_latency = filtered
+            .iter()
+            .map(|s| s.p99_latency_ms as f64)
+            .sum::<f64>()
+            / count;
 
         Some(MetricsSnapshot {
             timestamp: now,

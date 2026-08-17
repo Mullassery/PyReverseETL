@@ -26,9 +26,9 @@ pub struct StreamXLConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StreamXLAccessMethod {
-    Direct,     // Read sheet directly
-    Query,      // Execute query
-    Model,      // Use StreamXL model
+    Direct, // Read sheet directly
+    Query,  // Execute query
+    Model,  // Use StreamXL model
 }
 
 impl StreamXLSource {
@@ -46,8 +46,13 @@ impl StreamXLSource {
         self
     }
 
-    pub fn add_column_mapping(mut self, excel_column: impl Into<String>, field: impl Into<String>) -> Self {
-        self.column_mapping.insert(excel_column.into(), field.into());
+    pub fn add_column_mapping(
+        mut self,
+        excel_column: impl Into<String>,
+        field: impl Into<String>,
+    ) -> Self {
+        self.column_mapping
+            .insert(excel_column.into(), field.into());
         self
     }
 }

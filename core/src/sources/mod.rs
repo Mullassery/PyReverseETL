@@ -2,9 +2,11 @@ pub mod kafka;
 pub mod polling;
 pub mod sync_config;
 
-pub use kafka::{KafkaSource, KafkaConfig, KafkaMessage};
-pub use polling::{SyncFrequency, PollingConfig, ChangePoller, PollingMetrics, PollResult, SharedPollingState};
-pub use sync_config::{SyncConfiguration, ConfigurationResult, ConfigStatus, ConfigurationDetails};
+pub use kafka::{KafkaConfig, KafkaMessage, KafkaSource};
+pub use polling::{
+    ChangePoller, PollResult, PollingConfig, PollingMetrics, SharedPollingState, SyncFrequency,
+};
+pub use sync_config::{ConfigStatus, ConfigurationDetails, ConfigurationResult, SyncConfiguration};
 
 /// Trait for event sources (Kafka, CDC, API, etc.)
 pub trait EventSourceConnector: Send + Sync {

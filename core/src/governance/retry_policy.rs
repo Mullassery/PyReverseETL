@@ -1,12 +1,11 @@
+use crate::Error;
+use backoff::future::retry;
+use backoff::ExponentialBackoff;
 /// Retry Policy for StatGuardian API Requests
 ///
 /// Implements exponential backoff retry logic for transient failures.
 /// Handles network errors, timeouts, and rate limiting.
-
 use std::time::Duration;
-use backoff::future::retry;
-use backoff::ExponentialBackoff;
-use crate::Error;
 
 /// Retry policy configuration
 #[derive(Debug, Clone)]
@@ -47,11 +46,11 @@ impl RetryPolicy {
         match error {
             Error::ConfigError(msg) => {
                 // Retry on network/timeout errors
-                msg.contains("timeout") ||
-                msg.contains("request failed") ||
-                msg.contains("connection") ||
-                msg.contains("temporary") ||
-                msg.contains("429") // Rate limit
+                msg.contains("timeout")
+                    || msg.contains("request failed")
+                    || msg.contains("connection")
+                    || msg.contains("temporary")
+                    || msg.contains("429") // Rate limit
             }
             _ => false,
         }
@@ -60,8 +59,8 @@ impl RetryPolicy {
     /// Calculate backoff delay for attempt
     pub fn backoff_delay(&self, attempt: u32) -> Duration {
         let base_ms = self.initial_backoff_ms as f64;
-        let delay_ms = (base_ms * self.multiplier.powi(attempt as i32))
-            .min(self.max_backoff_ms as f64) as u64;
+        let delay_ms =
+            (base_ms * self.multiplier.powi(attempt as i32)).min(self.max_backoff_ms as f64) as u64;
         Duration::from_millis(delay_ms)
     }
 
@@ -69,7 +68,7 @@ impl RetryPolicy {
     pub fn backoff_config(&self) -> ExponentialBackoff {
         ExponentialBackoff {
             max_elapsed_time: Some(Duration::from_millis(
-                self.initial_backoff_ms + (self.max_backoff_ms * self.max_retries as u64)
+                self.initial_backoff_ms + (self.max_backoff_ms * self.max_retries as u64),
             )),
             initial_interval: Duration::from_millis(self.initial_backoff_ms),
             max_interval: Duration::from_millis(self.max_backoff_ms),
