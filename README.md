@@ -23,14 +23,17 @@ option, not silently faked.
 | MySQL | source + destination | Real, via `sqlx`. Same capabilities as Postgres. Verified with a real MySQL container. |
 | S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV formats are implemented; Parquet/Avro/ORC/Iceberg/Delta are declared but return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
 | Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and real JSON payload construction. |
-| Salesforce | destination | Real REST API client: OAuth2 token exchange, `sobjects` create/upsert-by-external-ID/delete/describe against the actual Salesforce endpoint shapes. No live Salesforce account was available to verify against, so this is verified against a local mock HTTP server that asserts the exact request shape (method, path, auth header, body) the real API expects. |
-| HubSpot | destination | Real CRM v3 API client (create, upsert-by-`idProperty`, delete, properties/schema). Same caveat: verified against a mock server, not a live account. |
-| Marketo | destination | Real REST API client (identity token endpoint, `createOrUpdate` bulk leads, lead delete, describe). Same caveat: verified against a mock server, not a live account. |
-| GCS / Azure Blob | source + destination | **Not implemented.** Calling them returns an explicit error instead of a fake success. |
+| CRM (adapter: `core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe operations. No live account was available to verify against, so this is verified against a local mock HTTP server that asserts the exact request shape (method, path, auth header, body) the real API expects. |
+| CRM (adapter: `core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Same caveat: verified against a mock server, not a live account. |
+| Marketing automation (adapter: `core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, lead delete, describe). Same caveat: verified against a mock server, not a live account. |
+| Other cloud object storage backends | source + destination | **Not implemented.** Calling them returns an explicit error instead of a fake success. |
 | Kafka, HDFS, Spark/PySpark transforms, CDC streaming, the CLI dashboard, StatGuardian quality gates | — | Present in the codebase from earlier work but out of scope for this pass and not wired into `execute` / `run_sync`. Treat as experimental; several return fixed/fabricated numbers (documented inline where that's the case, e.g. `SparkTransformer::submit`). |
 
 If you need a connector marked "not implemented" above, that's an honest gap,
 not a documentation oversight — open an issue rather than assuming it works.
+The exact third-party API each CRM/marketing-automation adapter targets is
+named in the source file, not repeated here to avoid implying vendor
+endorsement.
 
 ## Install
 
@@ -146,8 +149,8 @@ Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_cor
                                             ┌─────────────────────┼─────────────────────┐
                                        source read          compliance apply        destination write
                                   (postgres/mysql/s3)      (DefaultComplianceEngine)  (postgres/mysql/s3/
-                                                                                       webhook/salesforce/
-                                                                                       hubspot/marketo)
+                                                                                       webhook/CRM/marketing-
+                                                                                       automation adapters)
                                                                   │
                                                           lineage edge recorded
 ```
@@ -209,17 +212,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Known gaps (deliberately out of scope for this pass)
 
-- **GCS / Azure object storage**: return an explicit "not implemented" error.
+- **Other cloud object storage backends**: return an explicit "not implemented" error.
 - **Kafka / CDC streaming, HDFS, PySpark transforms, the CLI dashboard,
   StatGuardian quality-gate integration**: present in the codebase but not
   wired into the real sync path (`execute` / `run_sync`); several of these
   return fixed, non-real numbers if you call their APIs directly (this is
   documented inline in the affected modules, e.g. `SparkTransformer::submit`).
   Treat anything not listed in the connector table above as unverified.
-- Salesforce/HubSpot/Marketo clients are real API implementations but were
-  only verified against mocked HTTP responses (no live account was available
-  in this environment) — please report any request-shape mismatches against
-  a real account as issues.
+- The CRM/marketing-automation adapters (`core/src/adapters/`) are real API
+  implementations but were only verified against mocked HTTP responses (no
+  live account was available in this environment) — please report any
+  request-shape mismatches against a real account as issues.
 
 ## License
 
