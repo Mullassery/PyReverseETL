@@ -27,7 +27,7 @@ reqwest = { version = "0.11", features = ["json", "blocking"] }
 backoff = { version = "0.4", features = ["tokio"] }
 # StatGuardian integration (HTTP API client)
 opentelemetry = "0.22"
-opentelemetry-http = "0.11"
+opentelemetry-http = "0.32"
 rdkafka = { version = "0.36", features = ["cmake-build", "ssl", "gssapi", "libz"] }
 # Real database connectors (PostgreSQL / MySQL)
 sqlx = { version = "=0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "mysql", "chrono", "json"] }
