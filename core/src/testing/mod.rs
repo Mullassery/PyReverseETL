@@ -3,10 +3,12 @@
 
 pub mod connector_test;
 pub mod harness;
-pub mod test_data;
 pub mod metrics;
+pub mod mock_http;
+pub mod test_data;
 
-pub use connector_test::{ConnectorTest, TestType, TestResult, Assertion};
+pub use connector_test::{Assertion, ConnectorTest, TestResult, TestType};
 pub use harness::{ConnectorTestHarness, ConnectorTestReport};
-pub use test_data::{TestDatabase, TestDataGenerator};
 pub use metrics::ConnectorMetrics;
+pub use mock_http::{MockHttpServer, RecordedRequest};
+pub use test_data::{TestDataGenerator, TestDatabase};

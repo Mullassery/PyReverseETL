@@ -13,7 +13,7 @@ serde_yaml = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.8", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
-rusqlite = { version = "0.31", features = ["bundled", "chrono", "uuid"] }
+rusqlite = { version = "0.30", features = ["bundled", "chrono", "uuid"] }
 thiserror = "1.0"
 tokio = { version = "1.0", features = ["full"] }
 async-trait = "0.1"
@@ -21,13 +21,21 @@ tracing = "0.1"
 parking_lot = "0.12"
 # Adapter support
 base64 = "0.22"
-# HTTP client
-reqwest = { version = "0.11", features = ["json"] }
+# HTTP client (json feature for async connectors, blocking feature for the
+# synchronous DestinationAdapter trait used by webhook/salesforce/hubspot/marketo)
+reqwest = { version = "0.11", features = ["json", "blocking"] }
 backoff = { version = "0.4", features = ["tokio"] }
 # StatGuardian integration (HTTP API client)
 opentelemetry = "0.22"
 opentelemetry-http = "0.11"
 rdkafka = { version = "0.36", features = ["cmake-build", "ssl", "gssapi", "libz"] }
+# Real database connectors (PostgreSQL / MySQL)
+sqlx = { version = "=0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "mysql", "chrono", "json"] }
+# Real S3-compatible object storage connector (also used against MinIO in tests)
+aws-sdk-s3 = "1"
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-credential-types = "1"
+bytes = "1"
 
 [[bin]]
 name = "pyreverseetl-dashboard"
