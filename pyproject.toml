@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "PyReverseETL"
-version = "2.2.1"
+version = "3.0.0"
 description = "The Open Operational Data Activation Runtime"
 readme = "README.md"
 license = { text = "Proprietary" }
@@ -20,6 +20,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+pyreverseetl = "pyreverseetl.cli:main"
 
 [tool.maturin]
 module-name = "pyreverseetl._core"

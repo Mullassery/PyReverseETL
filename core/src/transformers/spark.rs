@@ -129,7 +129,10 @@ impl SparkTransformer {
 
         // Memory settings
         cmd.push_str(&format!(" --driver-memory {}", self.config.driver_memory));
-        cmd.push_str(&format!(" --executor-memory {}", self.config.executor_memory));
+        cmd.push_str(&format!(
+            " --executor-memory {}",
+            self.config.executor_memory
+        ));
 
         // Number of executors (if not local)
         if !self.config.master.starts_with("local") {
@@ -157,10 +160,7 @@ impl SparkTransformer {
             " --batch-interval {}",
             self.config.batch_interval_seconds
         ));
-        cmd.push_str(&format!(
-            " --num-partitions {}",
-            self.config.num_partitions
-        ));
+        cmd.push_str(&format!(" --num-partitions {}", self.config.num_partitions));
 
         if let Some(checkpoint_dir) = &self.config.checkpoint_dir {
             cmd.push_str(&format!(" --checkpoint-dir {}", checkpoint_dir));
@@ -193,10 +193,17 @@ impl SparkTransformer {
         })
     }
 
-    /// Submit job to Spark cluster
+    /// Submit job to a Spark cluster.
+    ///
+    /// **Not implemented against a real cluster.** This scope pass deliberately
+    /// left PySpark/distributed transformation out (it needs a live Spark
+    /// cluster or at least a local `spark-submit` binary, neither of which is
+    /// available or meaningfully testable here) in favor of building real
+    /// reverse-ETL connectors, lineage, and compliance. It currently delegates
+    /// to [`Self::execute_local`], which returns **fixed, fabricated** numbers
+    /// (1000 processed / 950 output) regardless of `self.config` -- do not
+    /// treat its `SparkJobResult` as real job telemetry.
     pub async fn submit(&self) -> crate::Result<SparkJobResult> {
-        // For now, use local execution
-        // In production, this would use spark-submit or Spark REST API
         self.execute_local()
     }
 
@@ -219,7 +226,11 @@ impl SparkTransformer {
     }
 
     /// Calculate optimal executor count based on latency target
-    pub fn calculate_executors_for_latency(&self, current_latency_ms: u64, target_latency_ms: u64) -> u32 {
+    pub fn calculate_executors_for_latency(
+        &self,
+        current_latency_ms: u64,
+        target_latency_ms: u64,
+    ) -> u32 {
         if current_latency_ms <= target_latency_ms {
             return self.config.num_executors; // No scaling needed
         }
@@ -239,14 +250,12 @@ impl SparkTransformer {
     ) -> u32 {
         match self.config.scaling_policy {
             ScalingPolicy::Static => self.config.num_executors,
-            ScalingPolicy::DataSize => {
-                data_size_mb.map(|size| self.calculate_executors_for_data_size(size))
-                    .unwrap_or(self.config.num_executors)
-            }
-            ScalingPolicy::Latency => {
-                current_latency_ms.map(|latency| self.calculate_executors_for_latency(latency, 5000))
-                    .unwrap_or(self.config.num_executors)
-            }
+            ScalingPolicy::DataSize => data_size_mb
+                .map(|size| self.calculate_executors_for_data_size(size))
+                .unwrap_or(self.config.num_executors),
+            ScalingPolicy::Latency => current_latency_ms
+                .map(|latency| self.calculate_executors_for_latency(latency, 5000))
+                .unwrap_or(self.config.num_executors),
             ScalingPolicy::ResourceUtilization => {
                 // Default to 70% of max for balanced resource utilization
                 ((self.config.max_executors as f64 * 0.7) as u32)
@@ -266,27 +275,40 @@ impl SparkTransformer {
         data_size_mb: Option<u64>,
         current_latency_ms: Option<u64>,
     ) -> String {
-        let scaled_executors = self.get_auto_scaled_executor_count(data_size_mb, current_latency_ms);
+        let scaled_executors =
+            self.get_auto_scaled_executor_count(data_size_mb, current_latency_ms);
 
         let mut cmd = String::from("spark-submit");
         cmd.push_str(&format!(" --master {}", self.config.master));
         cmd.push_str(&format!(" --name {}", self.config.app_name));
         cmd.push_str(&format!(" --driver-memory {}", self.config.driver_memory));
-        cmd.push_str(&format!(" --executor-memory {}", self.config.executor_memory));
+        cmd.push_str(&format!(
+            " --executor-memory {}",
+            self.config.executor_memory
+        ));
 
         if !self.config.master.starts_with("local") {
             cmd.push_str(&format!(" --num-executors {}", scaled_executors));
 
             // Add dynamic allocation for YARN/K8s
             if self.config.master == "yarn" || self.config.master.contains("k8s") {
-                cmd.push_str(&format!(" --conf spark.dynamicAllocation.minExecutors={}", self.config.min_executors));
-                cmd.push_str(&format!(" --conf spark.dynamicAllocation.maxExecutors={}", self.config.max_executors));
+                cmd.push_str(&format!(
+                    " --conf spark.dynamicAllocation.minExecutors={}",
+                    self.config.min_executors
+                ));
+                cmd.push_str(&format!(
+                    " --conf spark.dynamicAllocation.maxExecutors={}",
+                    self.config.max_executors
+                ));
                 cmd.push_str(" --conf spark.dynamicAllocation.enabled=true");
             }
 
             // Add auto-shutdown
             if let Some(shutdown_secs) = self.config.auto_shutdown_seconds {
-                cmd.push_str(&format!(" --conf spark.dynamicAllocation.executorIdleTimeout={}s", shutdown_secs));
+                cmd.push_str(&format!(
+                    " --conf spark.dynamicAllocation.executorIdleTimeout={}s",
+                    shutdown_secs
+                ));
             }
         }
 
@@ -302,7 +324,10 @@ impl SparkTransformer {
         cmd.push_str(&format!(" {}", self.config.script));
         cmd.push_str(&format!(" --input-topic {}", self.config.input_topic));
         cmd.push_str(&format!(" --output-topic {}", self.config.output_topic));
-        cmd.push_str(&format!(" --batch-interval {}", self.config.batch_interval_seconds));
+        cmd.push_str(&format!(
+            " --batch-interval {}",
+            self.config.batch_interval_seconds
+        ));
         cmd.push_str(&format!(" --num-partitions {}", self.config.num_partitions));
 
         if let Some(checkpoint_dir) = &self.config.checkpoint_dir {
@@ -377,8 +402,8 @@ impl super::Transformer for SparkTransformer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::Transformer;
+    use super::*;
 
     #[test]
     fn test_spark_config_default() {
@@ -507,8 +532,12 @@ mod tests {
     #[test]
     fn test_spark_config_with_custom_params() {
         let mut config = SparkConfig::default();
-        config.script_parameters.insert("version".to_string(), "v1".to_string());
-        config.script_parameters.insert("env".to_string(), "prod".to_string());
+        config
+            .script_parameters
+            .insert("version".to_string(), "v1".to_string());
+        config
+            .script_parameters
+            .insert("env".to_string(), "prod".to_string());
 
         let transformer = SparkTransformer::new(config);
         let cmd = transformer.build_spark_submit_command();

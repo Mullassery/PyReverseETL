@@ -27,6 +27,11 @@ dist/
 build/
 .pytest_cache/
 
+# Compiled PyO3 extension (produced locally by `maturin develop`)
+python/pyreverseetl/_core*.so
+python/pyreverseetl/_core*.pyd
+python/pyreverseetl/_core*.dylib
+
 # Virtual environments
 venv/
 env/

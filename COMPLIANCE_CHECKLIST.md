@@ -1,3 +1,13 @@
+> **This document is historical and was not independently verified.** It was
+> generated during v2.0.2 development and predates the v3.0.0 remediation
+> pass that replaced this project's stub connectors, fabricated compliance
+> engine, and disconnected CLI with real implementations (see `README.md`
+> for what's genuinely true today and `core/src/governance/compliance_rules.rs`
+> for the real compliance engine). Claims below like "0 CVEs", "58M EPS",
+> and the OWASP/security sign-offs were never backed by an actual third-party
+> audit and should not be relied on. Kept for history, not as a current
+> compliance attestation.
+
 # PyReverseETL v2.0.2 Compliance Checklist
 
 **Version**: 2.0.2  
