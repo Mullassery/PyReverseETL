@@ -1,49 +1,56 @@
-pub mod error;
 pub mod activation;
-pub mod workflow;
+pub mod adapters;
+pub mod cdc;
+pub mod connectors;
 pub mod destination;
 pub mod entity;
-pub mod sync;
-pub mod storage;
-pub mod statguardian;
-pub mod streamxl;
-pub mod streampdf;
-pub mod adapters;
-pub mod streaming;
-pub mod cdc;
+pub mod error;
+pub mod executor;
+pub mod governance;
+pub mod lineage;
+pub mod observability;
 pub mod pipeline;
 pub mod sources;
-pub mod transformers;
-pub mod observability;
-pub mod connectors;
+pub mod statguardian;
+pub mod storage;
+pub mod streaming;
+pub mod streampdf;
+pub mod streamxl;
+pub mod sync;
 pub mod testing;
-pub mod governance;
+pub mod transformers;
+pub mod workflow;
 
-pub use error::{Error, Result};
 pub use activation::Activation;
-pub use workflow::Workflow;
+pub use adapters::{AuthMethod, BatchResult, DestinationAdapter, FieldMapping, OperationResult};
+pub use cdc::{
+    Change, ChangeDetector, ChangeLog, ChangeLogEntry, ChangeType, Checkpoint, CheckpointManager,
+};
 pub use destination::Destination;
 pub use entity::Entity;
-pub use sync::{SyncEngine, SyncRun, SyncRecord, SyncStatus};
-pub use storage::Repository;
-pub use statguardian::{ValidationGate, ValidationResult, ValidationStatus, StatGuardianConfig};
-pub use streamxl::{StreamXLSource, StreamXLConfig, StreamXLAccessMethod};
-pub use streampdf::{StreamPDFSource, StreamPDFConfig, ExtractionMode, ExtractedData};
-pub use adapters::{DestinationAdapter, FieldMapping, AuthMethod, OperationResult, BatchResult};
-pub use cdc::{Change, ChangeDetector, ChangeType, ChangeLog, ChangeLogEntry, Checkpoint, CheckpointManager};
-pub use pipeline::{ActivationPipeline, PipelineMetrics, PipelineStatus, LatencyTracker, BackpressureManager};
-pub use streaming::{Event, EventType, EventSource, EventProcessor, EventHandler};
-pub use sources::{
-    KafkaSource, KafkaConfig, KafkaMessage, EventSourceConnector,
-    SyncFrequency, PollingConfig, ChangePoller, PollingMetrics, PollResult, SharedPollingState,
-};
-pub use transformers::{
-    SparkTransformer, SparkConfig, SparkJobResult, Transformer,
-    TransformationConfig, TransformationResult, TransformationStatus,
-    TransformationPipeline, TransformationStage,
-};
+pub use error::{Error, Result};
+pub use executor::{execute_sync, DestinationSpec, ExecuteOptions, ExecutionResult, SourceSpec};
+pub use lineage::{LineageEdge, LineageGraph, LineageNode, LineageNodeKind, LineageStore};
 pub use observability::{
-    SyncMetrics, MetricsCollector, SyncTracer, TraceSpan, TraceSummary,
-    SyncLogger, SyncContext, init_otel, MetricsServer, MetricsSnapshot, MetricsHistory,
-    launch_dashboard, DashboardConfig, Platform,
+    init_otel, launch_dashboard, DashboardConfig, MetricsCollector, MetricsHistory, MetricsServer,
+    MetricsSnapshot, Platform, SyncContext, SyncLogger, SyncMetrics, SyncTracer, TraceSpan,
+    TraceSummary,
 };
+pub use pipeline::{
+    ActivationPipeline, BackpressureManager, LatencyTracker, PipelineMetrics, PipelineStatus,
+};
+pub use sources::{
+    ChangePoller, EventSourceConnector, KafkaConfig, KafkaMessage, KafkaSource, PollResult,
+    PollingConfig, PollingMetrics, SharedPollingState, SyncFrequency,
+};
+pub use statguardian::{StatGuardianConfig, ValidationGate, ValidationResult, ValidationStatus};
+pub use storage::Repository;
+pub use streaming::{Event, EventHandler, EventProcessor, EventSource, EventType};
+pub use streampdf::{ExtractedData, ExtractionMode, StreamPDFConfig, StreamPDFSource};
+pub use streamxl::{StreamXLAccessMethod, StreamXLConfig, StreamXLSource};
+pub use sync::{SyncEngine, SyncRecord, SyncRun, SyncStatus};
+pub use transformers::{
+    SparkConfig, SparkJobResult, SparkTransformer, TransformationConfig, TransformationPipeline,
+    TransformationResult, TransformationStage, TransformationStatus, Transformer,
+};
+pub use workflow::Workflow;
