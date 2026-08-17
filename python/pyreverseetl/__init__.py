@@ -9,8 +9,12 @@ from ._core import (
     PyActivation,
     PyDestination,
     PyEntity,
+    PySyncResult,
     PySyncRun,
     PyWorkflow,
+    lineage_dot,
+    lineage_json,
+    run_sync,
 )
 
 __all__ = [
@@ -18,6 +22,10 @@ __all__ = [
     "PyActivation",
     "PyDestination",
     "PyEntity",
+    "PySyncResult",
     "PySyncRun",
     "PyWorkflow",
+    "lineage_dot",
+    "lineage_json",
+    "run_sync",
 ]
