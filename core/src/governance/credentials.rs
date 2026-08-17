@@ -2,7 +2,6 @@
 ///
 /// Securely handles authentication credentials for StatGuardian API access.
 /// Supports multiple authentication methods and environment-based credential loading.
-
 use crate::Result;
 use serde::{Deserialize, Serialize};
 
@@ -12,15 +11,9 @@ pub enum AuthMethod {
     /// Bearer token authentication
     Bearer(String),
     /// API Key in header
-    ApiKey {
-        header_name: String,
-        key: String,
-    },
+    ApiKey { header_name: String, key: String },
     /// Basic authentication
-    BasicAuth {
-        username: String,
-        password: String,
-    },
+    BasicAuth { username: String, password: String },
 }
 
 /// Credentials for StatGuardian API access
@@ -73,9 +66,11 @@ impl GovernanceCredentials {
     pub fn from_env() -> Result<Self> {
         let token = std::env::var("STATGUARDIAN_TOKEN")
             .or_else(|_| std::env::var("STATGUARDIAN_API_KEY"))
-            .map_err(|_| crate::Error::ConfigError(
-                "STATGUARDIAN_TOKEN or STATGUARDIAN_API_KEY not set".to_string()
-            ))?;
+            .map_err(|_| {
+                crate::Error::ConfigError(
+                    "STATGUARDIAN_TOKEN or STATGUARDIAN_API_KEY not set".to_string(),
+                )
+            })?;
 
         Ok(Self::bearer(token))
     }
@@ -94,7 +89,7 @@ impl GovernanceCredentials {
     pub fn validate(&self) -> Result<()> {
         if self.api_key.is_empty() {
             return Err(crate::Error::ConfigError(
-                "API key cannot be empty".to_string()
+                "API key cannot be empty".to_string(),
             ));
         }
         Ok(())

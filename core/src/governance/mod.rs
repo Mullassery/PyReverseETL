@@ -1,3 +1,6 @@
+pub mod cached_gate;
+pub mod compliance_rules;
+pub mod credentials;
 /// Governance Layer - Quality Gates & Compliance Rules
 ///
 /// Integrates StatGuardian validation into activation pipeline:
@@ -5,29 +8,30 @@
 /// - Schema evolution detection and migration
 /// - Compliance rules enforcement (PII masking, retention, etc.)
 /// - Audit trail for all governance decisions
-
 pub mod quality_gate;
-pub mod schema_evolution;
-pub mod compliance_rules;
-pub mod statguardian_client;
-pub mod credentials;
 pub mod retry_policy;
-pub mod cached_gate;
+pub mod schema_evolution;
+pub mod statguardian_client;
 
-pub use quality_gate::{QualityGate, ValidationResult, StatGuardianGate};
-pub use schema_evolution::{SchemaEvolution, SchemaChange, SchemaChangeType};
-pub use compliance_rules::{ComplianceRule, ComplianceEngine, RuleType, RuleAction};
-pub use statguardian_client::{StatGuardianClient, ValidateRequest, ValidateResponse, SchemaCheckRequest, SchemaCheckResponse};
-pub use credentials::{GovernanceCredentials, AuthMethod};
-pub use retry_policy::{RetryPolicy, RateLimiter};
-pub use cached_gate::{CachedQualityGate, CacheStats};
+pub use cached_gate::{CacheStats, CachedQualityGate};
+pub use compliance_rules::{
+    ComplianceCheckResult, ComplianceEngine, ComplianceRule, DefaultComplianceEngine, RuleAction,
+    RuleType,
+};
+pub use credentials::{AuthMethod, GovernanceCredentials};
+pub use quality_gate::{QualityGate, StatGuardianGate, ValidationResult};
+pub use retry_policy::{RateLimiter, RetryPolicy};
+pub use schema_evolution::{SchemaChange, SchemaChangeType, SchemaEvolution};
+pub use statguardian_client::{
+    SchemaCheckRequest, SchemaCheckResponse, StatGuardianClient, ValidateRequest, ValidateResponse,
+};
 
+#[cfg(test)]
+pub use compliance_rules::MockComplianceEngine;
 #[cfg(test)]
 pub use quality_gate::MockQualityGate;
 #[cfg(test)]
 pub use schema_evolution::MockSchemaEvolution;
-#[cfg(test)]
-pub use compliance_rules::MockComplianceEngine;
 
 use crate::{Entity, Error, Result};
 use serde::{Deserialize, Serialize};
@@ -101,10 +105,10 @@ impl GovernanceEngine {
             if !quality_result.passed {
                 issues.extend(quality_result.issues);
                 if quality_score < self.config.quality_threshold {
-                    return Err(Error::ValidationGateFailed(
-                        format!("Quality score {} below threshold {}",
-                            quality_score, self.config.quality_threshold)
-                    ));
+                    return Err(Error::ValidationGateFailed(format!(
+                        "Quality score {} below threshold {}",
+                        quality_score, self.config.quality_threshold
+                    )));
                 }
             }
         }
@@ -113,14 +117,19 @@ impl GovernanceEngine {
         if self.config.schema_checks_enabled {
             let schema_changes = self.schema_evolution.detect_changes(entity).await?;
             if !schema_changes.is_empty() {
-                issues.push(format!("Schema changes detected: {} modifications", schema_changes.len()));
+                issues.push(format!(
+                    "Schema changes detected: {} modifications",
+                    schema_changes.len()
+                ));
             }
         }
 
         // Check 3: Compliance Rules
         if self.config.compliance_rules_enabled {
-            // Rules are applied, not just validated
-            // Errors are captured if rules cannot be applied
+            let compliance_result = self.compliance_engine.check_compliance(entity).await?;
+            if !compliance_result.compliant {
+                issues.extend(compliance_result.violations);
+            }
         }
 
         Ok(GovernanceCheckResult {
@@ -174,5 +183,70 @@ mod tests {
         assert_eq!(config.timeout_ms, 5000);
         assert_eq!(config.quality_threshold, 0.9);
         assert!(config.quality_gates_enabled);
+    }
+
+    // -- check_entity()'s compliance-rules check used to be a comment-only no-op
+    // (`compliance_rules_enabled` was checked but nothing was actually done), so
+    // real ComplianceEngine violations never affected `passed`. These use the real
+    // DefaultComplianceEngine (not MockComplianceEngine, which always says "compliant")
+    // to prove the wiring actually runs and actually affects the result.
+
+    fn entity_with_attributes(attrs: serde_json::Value) -> Entity {
+        use crate::entity::EntityType;
+        let mut entity = Entity::new(EntityType::Custom("test".to_string()), "id", "test");
+        entity.attributes = attrs;
+        entity
+    }
+
+    #[tokio::test]
+    async fn check_entity_fails_when_real_compliance_engine_finds_a_violation() {
+        let config = GovernanceConfig::default();
+        let quality_gate = Arc::new(MockQualityGate::new(true, 0.95));
+        let schema_evolution = Arc::new(MockSchemaEvolution::no_changes());
+        let compliance_engine = Arc::new(DefaultComplianceEngine::with_default_rules());
+
+        let engine =
+            GovernanceEngine::new(config, quality_gate, schema_evolution, compliance_engine);
+        let entity = entity_with_attributes(serde_json::json!({"email": "unmasked@example.com"}));
+
+        let result = engine.check_entity(&entity).await.unwrap();
+
+        assert!(!result.passed);
+        assert!(result.issues.iter().any(|i| i.contains("email")));
+    }
+
+    #[tokio::test]
+    async fn check_entity_passes_when_real_compliance_engine_finds_no_violation() {
+        let config = GovernanceConfig::default();
+        let quality_gate = Arc::new(MockQualityGate::new(true, 0.95));
+        let schema_evolution = Arc::new(MockSchemaEvolution::no_changes());
+        let compliance_engine = Arc::new(DefaultComplianceEngine::with_default_rules());
+
+        let engine =
+            GovernanceEngine::new(config, quality_gate, schema_evolution, compliance_engine);
+        let entity = entity_with_attributes(serde_json::json!({"email": "****"}));
+
+        let result = engine.check_entity(&entity).await.unwrap();
+
+        assert!(result.passed);
+        assert!(result.issues.is_empty());
+    }
+
+    #[tokio::test]
+    async fn check_entity_skips_compliance_check_when_disabled() {
+        let mut config = GovernanceConfig::default();
+        config.compliance_rules_enabled = false;
+        let quality_gate = Arc::new(MockQualityGate::new(true, 0.95));
+        let schema_evolution = Arc::new(MockSchemaEvolution::no_changes());
+        let compliance_engine = Arc::new(DefaultComplianceEngine::with_default_rules());
+
+        let engine =
+            GovernanceEngine::new(config, quality_gate, schema_evolution, compliance_engine);
+        // Would be a real violation if compliance checking ran.
+        let entity = entity_with_attributes(serde_json::json!({"email": "unmasked@example.com"}));
+
+        let result = engine.check_entity(&entity).await.unwrap();
+
+        assert!(result.passed);
     }
 }

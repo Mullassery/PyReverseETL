@@ -97,8 +97,12 @@ impl HttpClient {
                 match response.status().as_u16() {
                     200..=299 => Ok(()),
                     404 => Ok(()), // Already deleted
-                    401 => Err(AdapterError::AuthenticationFailed("Invalid credentials".to_string())),
-                    429 => Err(AdapterError::RateLimitExceeded { retry_after_ms: 5000 }),
+                    401 => Err(AdapterError::AuthenticationFailed(
+                        "Invalid credentials".to_string(),
+                    )),
+                    429 => Err(AdapterError::RateLimitExceeded {
+                        retry_after_ms: 5000,
+                    }),
                     status => Err(AdapterError::OperationFailed(format!("HTTP {}", status))),
                 }
             })
@@ -125,10 +129,7 @@ impl HttpClient {
     }
 
     /// Add authentication header to request
-    fn add_auth_header(
-        &self,
-        mut req: reqwest::RequestBuilder,
-    ) -> reqwest::RequestBuilder {
+    fn add_auth_header(&self, mut req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         match &self.auth {
             AuthMethod::Bearer { token } => {
                 req = req.header("Authorization", format!("Bearer {}", token));
@@ -149,14 +150,16 @@ impl HttpClient {
     /// Handle HTTP response
     async fn handle_response(&self, response: reqwest::Response) -> Result<Value, AdapterError> {
         match response.status().as_u16() {
-            200..=299 => {
-                response
-                    .json::<Value>()
-                    .await
-                    .map_err(|e| AdapterError::OperationFailed(e.to_string()))
-            }
-            401 => Err(AdapterError::AuthenticationFailed("Invalid credentials".to_string())),
-            429 => Err(AdapterError::RateLimitExceeded { retry_after_ms: 5000 }),
+            200..=299 => response
+                .json::<Value>()
+                .await
+                .map_err(|e| AdapterError::OperationFailed(e.to_string())),
+            401 => Err(AdapterError::AuthenticationFailed(
+                "Invalid credentials".to_string(),
+            )),
+            429 => Err(AdapterError::RateLimitExceeded {
+                retry_after_ms: 5000,
+            }),
             500..=599 => Err(AdapterError::ConnectionError("Server error".to_string())),
             status => Err(AdapterError::OperationFailed(format!("HTTP {}", status))),
         }

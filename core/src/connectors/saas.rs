@@ -2,8 +2,7 @@
 ///
 /// Pre-built connectors for popular SaaS platforms:
 /// CRM, Marketing, Support, Analytics, Communication
-
-use super::{Record, ConnectionTest, Capability};
+use super::{Capability, ConnectionTest, Record};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

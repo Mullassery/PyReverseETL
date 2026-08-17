@@ -10,6 +10,7 @@ import time
 import random
 from datetime import datetime
 
+
 def setup_database(db_path):
     """Create test database and table"""
     conn = sqlite3.connect(db_path)
@@ -19,7 +20,8 @@ def setup_database(db_path):
     cursor.execute("DROP TABLE IF EXISTS customers")
 
     # Create table
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE customers (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
@@ -27,7 +29,8 @@ def setup_database(db_path):
             phone TEXT NOT NULL,
             created_at TEXT NOT NULL
         )
-    """)
+    """
+    )
 
     conn.commit()
     conn.close()
@@ -37,21 +40,23 @@ def generate_test_data(count=1000):
     """Generate test customer records"""
     customers = []
     for i in range(count):
-        customers.append({
-            'id': i,
-            'name': f"Customer {i}",
-            'email': f"customer{i}@example.com",
-            'phone': f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
-            'created_at': datetime.now().isoformat(),
-        })
+        customers.append(
+            {
+                "id": i,
+                "name": f"Customer {i}",
+                "email": f"customer{i}@example.com",
+                "phone": f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
+                "created_at": datetime.now().isoformat(),
+            }
+        )
     return customers
 
 
 def test_without_transformation(db_path, records=1000):
     """Test: Direct sync without transformation"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 1: Direct Sync to Database (No Transformation)")
-    print("="*60)
+    print("=" * 60)
     print(f"Syncing {records:,} customer records...")
 
     # Setup
@@ -69,11 +74,19 @@ def test_without_transformation(db_path, records=1000):
 
     for customer in customers:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO customers (id, name, email, phone, created_at)
                 VALUES (?, ?, ?, ?, ?)
-            """, (customer['id'], customer['name'], customer['email'],
-                  customer['phone'], customer['created_at']))
+            """,
+                (
+                    customer["id"],
+                    customer["name"],
+                    customer["email"],
+                    customer["phone"],
+                    customer["created_at"],
+                ),
+            )
             synced += 1
         except Exception as e:
             errors += 1
@@ -96,20 +109,20 @@ def test_without_transformation(db_path, records=1000):
     print(f"  Avg latency: {latency_ms:.2f}ms per record")
 
     return {
-        'test': 'no_transformation',
-        'duration': duration,
-        'synced': synced,
-        'errors': errors,
-        'throughput': throughput,
-        'latency_ms': latency_ms,
+        "test": "no_transformation",
+        "duration": duration,
+        "synced": synced,
+        "errors": errors,
+        "throughput": throughput,
+        "latency_ms": latency_ms,
     }
 
 
 def test_with_transformation(db_path, records=1000):
     """Test: Sync with data transformation"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 2: Sync to Database (With Transformation)")
-    print("="*60)
+    print("=" * 60)
     print(f"Transforming and syncing {records:,} customer records...")
 
     # Setup
@@ -119,11 +132,11 @@ def test_with_transformation(db_path, records=1000):
     # Transform function
     def normalize_customer(customer):
         return {
-            'id': customer['id'],
-            'name': customer['name'].strip(),
-            'email': customer['email'].lower(),
-            'phone': customer['phone'].replace('-', ''),
-            'created_at': customer['created_at'],
+            "id": customer["id"],
+            "name": customer["name"].strip(),
+            "email": customer["email"].lower(),
+            "phone": customer["phone"].replace("-", ""),
+            "created_at": customer["created_at"],
         }
 
     # Sync with transformation
@@ -140,11 +153,19 @@ def test_with_transformation(db_path, records=1000):
             # Transform
             transformed = normalize_customer(customer)
             # Insert
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO customers (id, name, email, phone, created_at)
                 VALUES (?, ?, ?, ?, ?)
-            """, (transformed['id'], transformed['name'], transformed['email'],
-                  transformed['phone'], transformed['created_at']))
+            """,
+                (
+                    transformed["id"],
+                    transformed["name"],
+                    transformed["email"],
+                    transformed["phone"],
+                    transformed["created_at"],
+                ),
+            )
             synced += 1
         except Exception as e:
             errors += 1
@@ -167,12 +188,12 @@ def test_with_transformation(db_path, records=1000):
     print(f"  Avg latency: {latency_ms:.2f}ms per record")
 
     return {
-        'test': 'with_transformation',
-        'duration': duration,
-        'synced': synced,
-        'errors': errors,
-        'throughput': throughput,
-        'latency_ms': latency_ms,
+        "test": "with_transformation",
+        "duration": duration,
+        "synced": synced,
+        "errors": errors,
+        "throughput": throughput,
+        "latency_ms": latency_ms,
     }
 
 
@@ -190,17 +211,29 @@ def main():
     results_with_transform = test_with_transformation(db_path, records=1000)
 
     # Comparison
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("COMPARISON: No Transform vs With Transform")
-    print("="*60)
+    print("=" * 60)
 
-    overhead = results_with_transform['duration'] - results_no_transform['duration']
-    overhead_pct = (overhead / results_no_transform['duration'] * 100) if results_no_transform['duration'] > 0 else 0
+    overhead = results_with_transform["duration"] - results_no_transform["duration"]
+    overhead_pct = (
+        (overhead / results_no_transform["duration"] * 100)
+        if results_no_transform["duration"] > 0
+        else 0
+    )
 
-    throughput_diff = results_no_transform['throughput'] - results_with_transform['throughput']
-    throughput_pct = (throughput_diff / results_with_transform['throughput'] * 100) if results_with_transform['throughput'] > 0 else 0
+    throughput_diff = (
+        results_no_transform["throughput"] - results_with_transform["throughput"]
+    )
+    throughput_pct = (
+        (throughput_diff / results_with_transform["throughput"] * 100)
+        if results_with_transform["throughput"] > 0
+        else 0
+    )
 
-    latency_overhead = results_with_transform['latency_ms'] - results_no_transform['latency_ms']
+    latency_overhead = (
+        results_with_transform["latency_ms"] - results_no_transform["latency_ms"]
+    )
 
     print(f"\nTiming Comparison:")
     print(f"  No transform duration: {results_no_transform['duration']:.3f}s")
@@ -222,7 +255,9 @@ def main():
     print(f"  Transformation adds ~{overhead_pct:.1f}% overhead")
     print(f"  Still processes {results_with_transform['throughput']:.0f} records/sec")
     print(f"  Suitable for production reverse ETL at scale")
-    print(f"  Can sync 1 million records in ~{1000000/results_with_transform['throughput']/60:.1f} minutes")
+    print(
+        f"  Can sync 1 million records in ~{1000000/results_with_transform['throughput']/60:.1f} minutes"
+    )
 
 
 if __name__ == "__main__":

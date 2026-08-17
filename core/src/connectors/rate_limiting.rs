@@ -1,12 +1,11 @@
+use parking_lot::Mutex;
 /// Rate Limiting for Destinations
 ///
 /// Prevent overwhelming external systems with configurable rate limits.
 /// Supports token bucket, leaky bucket, and quota-based strategies.
-
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::Mutex;
 
 /// Rate limiting strategy
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -182,7 +181,8 @@ impl RateLimiter {
             successful_requests: state.success_count,
             failed_requests: state.error_count,
             success_rate: if (state.success_count + state.error_count) > 0 {
-                (state.success_count as f64 / (state.success_count + state.error_count) as f64) * 100.0
+                (state.success_count as f64 / (state.success_count + state.error_count) as f64)
+                    * 100.0
             } else {
                 100.0
             },
@@ -192,7 +192,10 @@ impl RateLimiter {
     /// Reset rate limiter
     pub fn reset(&self) {
         let mut state = self.state.lock();
-        state.tokens = self.config.max_burst.unwrap_or(self.config.requests_per_interval) as f64;
+        state.tokens = self
+            .config
+            .max_burst
+            .unwrap_or(self.config.requests_per_interval) as f64;
         state.last_refill = Instant::now();
         state.error_count = 0;
         state.success_count = 0;
@@ -203,11 +206,15 @@ impl RateLimiter {
         let elapsed = now.duration_since(state.last_refill);
 
         // Refill tokens
-        let refill_rate = self.config.requests_per_interval as f64 / self.config.interval.as_secs_f64();
+        let refill_rate =
+            self.config.requests_per_interval as f64 / self.config.interval.as_secs_f64();
         let tokens_to_add = elapsed.as_secs_f64() * refill_rate;
         state.tokens += tokens_to_add;
 
-        let max_tokens = self.config.max_burst.unwrap_or(self.config.requests_per_interval) as f64;
+        let max_tokens = self
+            .config
+            .max_burst
+            .unwrap_or(self.config.requests_per_interval) as f64;
         state.tokens = state.tokens.min(max_tokens);
         state.last_refill = now;
 

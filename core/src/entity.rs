@@ -48,7 +48,11 @@ pub struct Audience {
 }
 
 impl Entity {
-    pub fn new(entity_type: EntityType, key_field: impl Into<String>, id: impl Into<String>) -> Self {
+    pub fn new(
+        entity_type: EntityType,
+        key_field: impl Into<String>,
+        id: impl Into<String>,
+    ) -> Self {
         let now = chrono::Utc::now();
         Entity {
             id: id.into(),
@@ -151,7 +155,10 @@ mod tests {
             .add_attribute("segment", json!("premium"))
             .add_attribute("region", json!("us-west"));
 
-        assert_eq!(entity.attributes.get("segment").and_then(|v| v.as_str()), Some("premium"));
+        assert_eq!(
+            entity.attributes.get("segment").and_then(|v| v.as_str()),
+            Some("premium")
+        );
     }
 
     #[test]

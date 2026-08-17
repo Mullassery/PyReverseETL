@@ -1,6 +1,6 @@
+use crate::statguardian::ValidationGate;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::statguardian::ValidationGate;
 
 /// Activation defines WHERE and HOW to sync data to operational systems.
 ///
@@ -37,7 +37,11 @@ pub struct Activation {
 }
 
 impl Activation {
-    pub fn new(name: impl Into<String>, workflow_id: impl Into<String>, owner: impl Into<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        workflow_id: impl Into<String>,
+        owner: impl Into<String>,
+    ) -> Self {
         let now = chrono::Utc::now();
         Activation {
             id: uuid::Uuid::new_v4().to_string(),
@@ -48,7 +52,7 @@ impl Activation {
             owner: owner.into(),
             destinations: Vec::new(),
             policies: HashMap::new(),
-            validation_gates: Vec::new(),  // Start with no gates, can be added
+            validation_gates: Vec::new(), // Start with no gates, can be added
             enabled: true,
             created_at: now,
             updated_at: now,
@@ -133,8 +137,7 @@ mod tests {
     #[test]
     fn test_activation_with_validation_gates() {
         let gate = ValidationGate::new("customers_dataset");
-        let activation = Activation::new("LTV Sync", "wf_1", "owner")
-            .add_validation_gate(gate);
+        let activation = Activation::new("LTV Sync", "wf_1", "owner").add_validation_gate(gate);
 
         assert!(activation.requires_validation());
         assert_eq!(activation.validation_gates.len(), 1);
@@ -145,8 +148,8 @@ mod tests {
         let gate1 = ValidationGate::new("customers").block_on_failure(true);
         let gate2 = ValidationGate::new("transactions").block_on_failure(false);
 
-        let activation = Activation::new("Test", "wf_1", "owner")
-            .with_validation_gates(vec![gate1, gate2]);
+        let activation =
+            Activation::new("Test", "wf_1", "owner").with_validation_gates(vec![gate1, gate2]);
 
         assert_eq!(activation.validation_gates.len(), 2);
         assert!(activation.requires_validation());
@@ -161,15 +164,18 @@ mod tests {
 
         assert_eq!(activation.policies.len(), 3);
         assert_eq!(
-            activation.get_policy("batch_size").unwrap().as_i64().unwrap(),
+            activation
+                .get_policy("batch_size")
+                .unwrap()
+                .as_i64()
+                .unwrap(),
             1000
         );
     }
 
     #[test]
     fn test_activation_disabled() {
-        let activation = Activation::new("Test", "wf_1", "owner")
-            .set_enabled(false);
+        let activation = Activation::new("Test", "wf_1", "owner").set_enabled(false);
 
         assert!(!activation.enabled);
     }

@@ -1,8 +1,7 @@
+use std::env;
 /// Dashboard launcher for spawning stats dashboard in separate terminal window
 /// Platform-aware: uses appropriate terminal for macOS/Linux
-
 use std::process::{Command, Stdio};
-use std::env;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
@@ -79,7 +78,9 @@ EOF
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|e| crate::Error::ConfigError(format!("Failed to launch dashboard on macOS: {}", e)))?;
+        .map_err(|e| {
+            crate::Error::ConfigError(format!("Failed to launch dashboard on macOS: {}", e))
+        })?;
 
     Ok(child)
 }
@@ -101,7 +102,12 @@ fn launch_dashboard_linux(config: DashboardConfig) -> crate::Result<std::process
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| crate::Error::ConfigError(format!("Failed to launch dashboard with terminator: {}", e)))?
+            .map_err(|e| {
+                crate::Error::ConfigError(format!(
+                    "Failed to launch dashboard with terminator: {}",
+                    e
+                ))
+            })?
     } else if is_command_available("xterm") {
         Command::new("xterm")
             .arg("-hold")
@@ -110,7 +116,9 @@ fn launch_dashboard_linux(config: DashboardConfig) -> crate::Result<std::process
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| crate::Error::ConfigError(format!("Failed to launch dashboard with xterm: {}", e)))?
+            .map_err(|e| {
+                crate::Error::ConfigError(format!("Failed to launch dashboard with xterm: {}", e))
+            })?
     } else if is_command_available("gnome-terminal") {
         Command::new("gnome-terminal")
             .arg("--")
@@ -120,10 +128,16 @@ fn launch_dashboard_linux(config: DashboardConfig) -> crate::Result<std::process
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| crate::Error::ConfigError(format!("Failed to launch dashboard with gnome-terminal: {}", e)))?
+            .map_err(|e| {
+                crate::Error::ConfigError(format!(
+                    "Failed to launch dashboard with gnome-terminal: {}",
+                    e
+                ))
+            })?
     } else {
         return Err(crate::Error::ConfigError(
-            "No terminal emulator found (terminator, xterm, or gnome-terminal required)".to_string(),
+            "No terminal emulator found (terminator, xterm, or gnome-terminal required)"
+                .to_string(),
         ));
     };
 

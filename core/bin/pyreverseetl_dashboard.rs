@@ -1,8 +1,7 @@
+use std::thread;
 /// PyReverseETL CLI Stats Dashboard
 /// Real-time monitoring of activation pipeline metrics
-
 use std::time::Duration;
-use std::thread;
 
 #[derive(Debug, Clone)]
 struct DashboardArgs {

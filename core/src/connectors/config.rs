@@ -1,6 +1,5 @@
 /// Connector Configuration and Connection Pool Management
-
-use super::{SourceConnector, DestinationConnector};
+use super::{DestinationConnector, SourceConnector};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -78,7 +77,8 @@ impl ConnectorConfig {
 pub struct ConnectionPool {
     configs: Arc<std::sync::Mutex<HashMap<String, ConnectorConfig>>>,
     source_instances: Arc<std::sync::Mutex<HashMap<String, Arc<dyn std::any::Any + Send + Sync>>>>,
-    destination_instances: Arc<std::sync::Mutex<HashMap<String, Arc<dyn std::any::Any + Send + Sync>>>>,
+    destination_instances:
+        Arc<std::sync::Mutex<HashMap<String, Arc<dyn std::any::Any + Send + Sync>>>>,
 }
 
 impl ConnectionPool {
@@ -93,26 +93,32 @@ impl ConnectionPool {
 
     /// Register connector configuration
     pub fn register(&self, config: ConnectorConfig) -> crate::Result<()> {
-        let mut configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+        let mut configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
         configs.insert(config.id.clone(), config);
         Ok(())
     }
 
     /// Get connector configuration
     pub fn get_config(&self, id: &str) -> crate::Result<Option<ConnectorConfig>> {
-        let configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+        let configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
         Ok(configs.get(id).cloned())
     }
 
     /// List all configurations
-    pub fn list_configs(&self, connector_type: Option<ConnectorType>) -> crate::Result<Vec<ConnectorConfig>> {
-        let configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+    pub fn list_configs(
+        &self,
+        connector_type: Option<ConnectorType>,
+    ) -> crate::Result<Vec<ConnectorConfig>> {
+        let configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
 
         let result = configs
             .values()
@@ -125,9 +131,10 @@ impl ConnectionPool {
 
     /// Find configs by tag
     pub fn find_by_tag(&self, tag: &str) -> crate::Result<Vec<ConnectorConfig>> {
-        let configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+        let configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
 
         let result = configs
             .values()
@@ -140,9 +147,10 @@ impl ConnectionPool {
 
     /// Get default source connector
     pub fn get_default_source(&self) -> crate::Result<Option<ConnectorConfig>> {
-        let configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+        let configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
 
         Ok(configs
             .values()
@@ -152,9 +160,10 @@ impl ConnectionPool {
 
     /// Get default destination connector
     pub fn get_default_destination(&self) -> crate::Result<Option<ConnectorConfig>> {
-        let configs = self.configs.lock().map_err(|e| {
-            crate::Error::Internal(format!("Failed to acquire config lock: {}", e))
-        })?;
+        let configs = self
+            .configs
+            .lock()
+            .map_err(|e| crate::Error::Internal(format!("Failed to acquire config lock: {}", e)))?;
 
         Ok(configs
             .values()
@@ -211,8 +220,7 @@ mod tests {
             .as_default();
         pool.register(source_config.clone())?;
 
-        let dest_config = ConnectorConfig::destination("bq1", "bigquery")
-            .with_tag("prod");
+        let dest_config = ConnectorConfig::destination("bq1", "bigquery").with_tag("prod");
         pool.register(dest_config)?;
 
         // Get specific config

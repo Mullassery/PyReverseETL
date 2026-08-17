@@ -1,137 +1,101 @@
-"""REST API server for PyReverseETL - integrates with workflow tools."""
+"""REST API server for PyReverseETL - integrates with workflow tools.
 
-from typing import Dict, Any, Optional, List
+Thin REST wrapper around `CLIInterface` (see `cli.py`), which is what
+actually drives the real Rust sync engine. This file used to have its own,
+separate in-memory dict simulator with the exact same problem the CLI had --
+`execute_activation()` fabricated `rows_synced = limit or 1000` without doing
+anything. It now delegates to `CLIInterface` so both entry points share one
+real code path instead of two divergent fake ones.
+"""
+
+from typing import Any, Dict, Optional
+
+from .cli import CLIInterface
 
 
 class PyReverseETLServer:
-    """REST API server for workflow integration."""
+    """REST API server for workflow integration, backed by the real sync engine."""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8000):
         """Initialize server."""
         self.host = host
         self.port = port
-        self.workflows: Dict[str, Dict[str, Any]] = {}
-        self.activations: Dict[str, Dict[str, Any]] = {}
-        self.runs: Dict[str, Dict[str, Any]] = {}
+        self._cli = CLIInterface()
 
     def create_workflow(self, workflow_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a workflow."""
-        self.workflows[workflow_id] = {
-            "id": workflow_id,
-            "name": config.get("name", workflow_id),
-            "source": config.get("source"),
-            "table": config.get("table", "data"),
-            "status": "active",
-        }
-        return {
-            "status": "success",
-            "workflow_id": workflow_id,
-            "message": f"Workflow '{config.get('name')}' created",
-        }
+        """Create a workflow.
 
-    def create_activation(
-        self, activation_id: str, config: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Create an activation."""
+        `config` supports: name, source (postgres/mysql/s3 to actually run),
+        table, source_config (real connector connection details).
+        """
+        return self._cli.create_workflow(
+            workflow_id,
+            config.get("name", workflow_id),
+            config.get("source"),
+            config.get("table", "data"),
+            config.get("source_config"),
+        )
+
+    def create_activation(self, activation_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Create an activation.
+
+        `config` supports: workflow_id, destination (postgres/mysql/s3/
+        webhook/salesforce/hubspot/marketo to actually run), sync_mode,
+        destination_config (real connector connection + auth details).
+        """
         workflow_id = config.get("workflow_id")
-        if workflow_id not in self.workflows:
-            return {"status": "error", "message": f"Workflow '{workflow_id}' not found"}
+        return self._cli.create_activation(
+            activation_id,
+            workflow_id,
+            config.get("destination"),
+            config.get("sync_mode", "incremental"),
+            config.get("destination_config"),
+        )
 
-        self.activations[activation_id] = {
-            "id": activation_id,
-            "workflow_id": workflow_id,
-            "destination": config.get("destination"),
-            "sync_mode": config.get("sync_mode", "incremental"),
-            "status": "active",
-        }
-        return {
-            "status": "success",
-            "activation_id": activation_id,
-            "message": "Activation created",
-        }
-
-    def execute_activation(self, activation_id: str, limit: Optional[int] = None) -> Dict[str, Any]:
-        """Execute an activation."""
-        if activation_id not in self.activations:
-            return {"status": "error", "message": f"Activation '{activation_id}' not found"}
-
-        activation = self.activations[activation_id]
-        run_id = f"run_{activation_id}_{id(limit or 0)}"
-
-        self.runs[run_id] = {
-            "run_id": run_id,
-            "activation_id": activation_id,
-            "status": "running",
-            "rows_synced": limit or 1000,
-            "destination": activation["destination"],
-        }
-
-        return {
-            "status": "success",
-            "run_id": run_id,
-            "rows_synced": limit or 1000,
-            "message": "Activation executed",
-        }
+    def execute_activation(
+        self,
+        activation_id: str,
+        limit: Optional[int] = None,
+        compliance_rules: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        """Execute an activation: a real sync through the Rust engine (see
+        `CLIInterface.execute_activation`). `rows_synced` is the real number
+        of records the destination connector/adapter actually wrote.
+        """
+        return self._cli.execute_activation(activation_id, limit, compliance_rules)
 
     def get_run_status(self, run_id: str) -> Dict[str, Any]:
         """Get run status."""
-        if run_id not in self.runs:
-            return {"status": "error", "message": f"Run '{run_id}' not found"}
-
-        run = self.runs[run_id]
-        return {
-            "status": "success",
-            "run_id": run_id,
-            "activation_id": run["activation_id"],
-            "sync_status": run["status"],
-            "rows_synced": run["rows_synced"],
-            "destination": run["destination"],
-        }
+        return self._cli.get_run_status(run_id)
 
     def list_workflows(self) -> Dict[str, Any]:
         """List workflows."""
-        return {
-            "status": "success",
-            "workflows": list(self.workflows.values()),
-            "count": len(self.workflows),
-        }
+        return self._cli.list_workflows()
 
     def list_activations(self) -> Dict[str, Any]:
         """List activations."""
-        return {
-            "status": "success",
-            "activations": list(self.activations.values()),
-            "count": len(self.activations),
-        }
+        return self._cli.list_activations()
 
     def get_metrics(self, activation_id: Optional[str] = None) -> Dict[str, Any]:
-        """Get metrics."""
-        if activation_id:
-            runs = [r for r in self.runs.values() if r["activation_id"] == activation_id]
-        else:
-            runs = list(self.runs.values())
+        """Get metrics computed from real recorded runs."""
+        return self._cli.get_metrics(activation_id)
 
-        total_runs = len(runs)
-        total_rows = sum(r.get("rows_synced", 0) for r in runs)
-        successful = sum(1 for r in runs if r.get("status") == "success")
-
-        return {
-            "status": "success",
-            "activation_id": activation_id,
-            "total_runs": total_runs,
-            "successful_runs": successful,
-            "total_rows_synced": total_rows,
-            "success_rate": ((successful / total_runs * 100) if total_runs > 0 else 0),
-        }
+    def get_lineage(self, fmt: str = "json") -> Dict[str, Any]:
+        """Get the real data-lineage graph accumulated from every sync run."""
+        return self._cli.get_lineage(fmt)
 
     def health_check(self) -> Dict[str, Any]:
         """Health check endpoint."""
+        try:
+            from . import __version__
+        except ImportError:
+            __version__ = "unknown"
         return {
             "status": "healthy",
             "service": "pyreverseetl",
-            "version": "0.1.0",
-            "workflows_count": len(self.workflows),
-            "active_activations": len(self.activations),
+            "version": __version__,
+            "workflows_count": len(self._cli.workflows),
+            "active_activations": len(self._cli.activations),
         }
 
 
@@ -194,10 +158,11 @@ def create_flask_app(server: Optional[PyReverseETLServer] = None):
 
     @app.route("/activations/<activation_id>/execute", methods=["POST"])
     def execute_activation(activation_id):
-        """Execute activation."""
+        """Execute activation (real sync via the Rust engine)."""
         data = request.get_json() or {}
         limit = data.get("limit")
-        return jsonify(srv.execute_activation(activation_id, limit))
+        compliance_rules = data.get("compliance_rules")
+        return jsonify(srv.execute_activation(activation_id, limit, compliance_rules))
 
     @app.route("/runs/<run_id>", methods=["GET"])
     def get_status(run_id):
@@ -209,6 +174,15 @@ def create_flask_app(server: Optional[PyReverseETLServer] = None):
         """Get metrics."""
         activation_id = request.args.get("activation_id")
         return jsonify(srv.get_metrics(activation_id))
+
+    @app.route("/lineage", methods=["GET"])
+    def lineage():
+        """Get the real data-lineage graph."""
+        fmt = request.args.get("format", "json")
+        result = srv.get_lineage(fmt)
+        if fmt == "dot":
+            return result.get("lineage", ""), 200, {"Content-Type": "text/vnd.graphviz"}
+        return jsonify(result)
 
     return app
 

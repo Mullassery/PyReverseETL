@@ -1,7 +1,7 @@
 // Individual connector test definitions and results
+use crate::connectors::Capability;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
-use crate::connectors::Capability;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectorTest {

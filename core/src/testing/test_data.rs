@@ -112,10 +112,7 @@ impl TestDataGenerator {
     }
 
     /// Generate random records with schema
-    pub fn generate_schema(
-        &self,
-        schema: HashMap<String, String>,
-    ) -> Vec<Value> {
+    pub fn generate_schema(&self, schema: HashMap<String, String>) -> Vec<Value> {
         (0..self.dataset_size)
             .map(|i| {
                 let mut record = json!({});
@@ -156,8 +153,9 @@ impl TestDatabase {
 
     /// Create test connection string
     pub fn postgres_url() -> String {
-        std::env::var("TEST_POSTGRES_URL")
-            .unwrap_or_else(|_| "postgresql://postgres:password@localhost/test_pyreverseetl".to_string())
+        std::env::var("TEST_POSTGRES_URL").unwrap_or_else(|_| {
+            "postgresql://postgres:password@localhost/test_pyreverseetl".to_string()
+        })
     }
 
     pub fn mysql_url() -> String {
@@ -171,13 +169,11 @@ impl TestDatabase {
     }
 
     pub fn redis_url() -> String {
-        std::env::var("TEST_REDIS_URL")
-            .unwrap_or_else(|_| "redis://localhost:6379".to_string())
+        std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string())
     }
 
     pub fn s3_bucket() -> String {
-        std::env::var("TEST_S3_BUCKET")
-            .unwrap_or_else(|_| "test-pyreverseetl".to_string())
+        std::env::var("TEST_S3_BUCKET").unwrap_or_else(|_| "test-pyreverseetl".to_string())
     }
 
     pub fn kafka_brokers() -> Vec<String> {

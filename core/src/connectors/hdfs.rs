@@ -2,8 +2,7 @@
 ///
 /// Read from and write to HDFS like Apache NiFi
 /// Support for: WebHDFS, Native HDFS, Secure Kerberos authentication
-
-use super::{Record, ConnectionTest, Capability};
+use super::{Capability, ConnectionTest, Record};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -71,12 +70,7 @@ impl HdfsConfig {
     }
 
     /// Create Kerberos-secured HDFS configuration
-    pub fn kerberos(
-        host: &str,
-        path: &str,
-        principal: &str,
-        keytab_path: &str,
-    ) -> Self {
+    pub fn kerberos(host: &str, path: &str, principal: &str, keytab_path: &str) -> Self {
         Self {
             namenode_host: host.to_string(),
             namenode_port: 8020,
@@ -355,6 +349,7 @@ impl super::SourceConnector for HdfsSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::connectors::{DestinationConnector, SourceConnector};
 
     #[test]
     fn test_hdfs_simple_config() {

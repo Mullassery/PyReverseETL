@@ -176,8 +176,14 @@ mod tests {
             manager.save(checkpoint).await.unwrap();
         }
 
-        let sync_1_checkpoints = manager.list_by_sync_run("sync_1".to_string(), 10).await.unwrap();
-        let sync_2_checkpoints = manager.list_by_sync_run("sync_2".to_string(), 10).await.unwrap();
+        let sync_1_checkpoints = manager
+            .list_by_sync_run("sync_1".to_string(), 10)
+            .await
+            .unwrap();
+        let sync_2_checkpoints = manager
+            .list_by_sync_run("sync_2".to_string(), 10)
+            .await
+            .unwrap();
 
         assert_eq!(sync_1_checkpoints.len(), 5);
         assert_eq!(sync_2_checkpoints.len(), 3);

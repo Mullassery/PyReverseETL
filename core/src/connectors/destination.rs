@@ -1,8 +1,7 @@
 /// Destination Connectors - Write data to various destinations
 ///
 /// Unified interface for: Databases, Data Warehouses, APIs, Cloud Storage, SaaS platforms
-
-use super::{Record, ConnectionTest, Capability};
+use super::{Capability, ConnectionTest, Record};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -262,7 +261,9 @@ mod tests {
             batch_size: Some(1000),
             key_column: Some("id".to_string()),
         };
-        config.params.insert("host".to_string(), "localhost".to_string());
+        config
+            .params
+            .insert("host".to_string(), "localhost".to_string());
 
         let dest = DatabaseDestination {
             connector_type: "postgres".to_string(),

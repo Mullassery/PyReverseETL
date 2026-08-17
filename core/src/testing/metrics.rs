@@ -74,7 +74,7 @@ impl MetricsCollector {
             connector_id: self.connector_id.clone(),
             records_processed: records,
             bytes_transferred: bytes,
-            latency_ms: 0.0, // Would be calculated from timing
+            latency_ms: 0.0,     // Would be calculated from timing
             throughput_rps: 0.0, // Would be calculated
             error_rate,
             memory_used_mb: 0.0, // Would be measured
@@ -246,8 +246,7 @@ mod tests {
 
     #[test]
     fn test_calc_throughput() {
-        let metrics = ConnectorMetrics::new("test")
-            .with_records(1000);
+        let metrics = ConnectorMetrics::new("test").with_records(1000);
 
         let throughput = metrics.calc_throughput(10.0);
         assert_eq!(throughput, 100.0); // 1000 records / 10 seconds
@@ -255,8 +254,7 @@ mod tests {
 
     #[test]
     fn test_calc_avg_latency() {
-        let metrics = ConnectorMetrics::new("test")
-            .with_records(100);
+        let metrics = ConnectorMetrics::new("test").with_records(100);
 
         let avg_latency = metrics.calc_avg_latency(10000.0);
         assert_eq!(avg_latency, 100.0); // 10000 ms / 100 records

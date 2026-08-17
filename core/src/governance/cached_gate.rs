@@ -1,16 +1,15 @@
+use super::quality_gate::{DriftReport, QualityGate, ValidationResult};
+use super::statguardian_client::StatGuardianClient;
 /// Cached Quality Gate Implementation
 ///
 /// Wraps StatGuardianGate with response caching to reduce API calls
 /// while maintaining fresh data with configurable TTL.
-
 use crate::{Entity, Result};
 use async_trait::async_trait;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use std::collections::HashMap;
-use super::quality_gate::{QualityGate, ValidationResult, DriftReport};
-use super::statguardian_client::StatGuardianClient;
 
 /// Cached validation result
 #[derive(Clone, Debug)]
@@ -136,10 +135,7 @@ impl QualityGate for CachedQualityGate {
             .map(|changes| DriftReport {
                 detected: !changes.is_empty(),
                 drift_percentage: if changes.is_empty() { 0.0 } else { 25.0 },
-                affected_fields: changes
-                    .iter()
-                    .map(|c| c.field_name.clone())
-                    .collect(),
+                affected_fields: changes.iter().map(|c| c.field_name.clone()).collect(),
             })
     }
 
@@ -188,10 +184,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_cache_stats() {
-        let client = Arc::new(StatGuardianClient::new(
-            "http://localhost:8080",
-            "test-key",
-        ));
+        let client = Arc::new(StatGuardianClient::new("http://localhost:8080", "test-key"));
         let gate = CachedQualityGate::new(client, Duration::from_secs(60));
 
         let stats = gate.cache_stats().await;
@@ -201,10 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_cache_clear() {
-        let client = Arc::new(StatGuardianClient::new(
-            "http://localhost:8080",
-            "test-key",
-        ));
+        let client = Arc::new(StatGuardianClient::new("http://localhost:8080", "test-key"));
         let gate = CachedQualityGate::new(client, Duration::from_secs(60));
 
         gate.clear_cache().await;

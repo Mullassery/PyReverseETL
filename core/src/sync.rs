@@ -94,7 +94,10 @@ impl SyncRun {
     }
 
     pub fn is_completed(&self) -> bool {
-        matches!(self.status, SyncStatus::Success | SyncStatus::Failed | SyncStatus::Cancelled)
+        matches!(
+            self.status,
+            SyncStatus::Success | SyncStatus::Failed | SyncStatus::Cancelled
+        )
     }
 
     pub fn is_successful(&self) -> bool {

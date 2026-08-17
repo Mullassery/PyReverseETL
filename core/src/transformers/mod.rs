@@ -1,6 +1,6 @@
 pub mod spark;
 
-pub use spark::{SparkTransformer, SparkConfig, SparkJobResult};
+pub use spark::{SparkConfig, SparkJobResult, SparkTransformer};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -237,7 +237,10 @@ mod tests {
 
     #[test]
     fn test_transformation_status_values() {
-        assert_ne!(TransformationStatus::Completed, TransformationStatus::Failed);
+        assert_ne!(
+            TransformationStatus::Completed,
+            TransformationStatus::Failed
+        );
         assert_ne!(TransformationStatus::Running, TransformationStatus::Pending);
         assert_eq!(TransformationStatus::Skipped, TransformationStatus::Skipped);
     }

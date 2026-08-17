@@ -1,8 +1,7 @@
 /// Connector Registry and Discovery
 ///
 /// Central registry for discovering, registering, and managing all available connectors
-
-use super::{SourceConnector, DestinationConnector, ConnectorConfig, ConnectionPool};
+use super::{ConnectionPool, ConnectorConfig, DestinationConnector, SourceConnector};
 use std::collections::HashMap;
 
 /// Built-in connector descriptors
@@ -49,10 +48,7 @@ impl BuiltInConnectors {
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["path"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                required_params: vec!["path"].iter().map(|s| s.to_string()).collect(),
             },
             ConnectorDescriptor {
                 id: "api".to_string(),
@@ -352,6 +348,8 @@ mod tests {
 
         let stream_capable = registry.find_by_capability("stream");
         assert!(!stream_capable.is_empty());
-        assert!(stream_capable.iter().any(|c| c.id == "api" || c.id == "snowflake"));
+        assert!(stream_capable
+            .iter()
+            .any(|c| c.id == "api" || c.id == "snowflake"));
     }
 }

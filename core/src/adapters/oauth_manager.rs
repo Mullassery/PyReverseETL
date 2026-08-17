@@ -62,14 +62,19 @@ impl OAuthManager {
 
     /// Get a valid access token (auto-refreshing if needed)
     pub async fn get_token(&self) -> Result<String, AdapterError> {
-        let token = self.current_token.lock().unwrap();
-
-        if let Some(ref tok) = *token {
-            if !tok.is_expired() {
-                return Ok(tok.access_token.clone());
+        // Scoped so the `MutexGuard` provably drops before the `.await` below --
+        // `std::sync::MutexGuard` isn't `Send`-across-await-safe, so it must not
+        // still be in scope (even briefly) when we hit an await point.
+        let cached = {
+            let token = self.current_token.lock().unwrap();
+            match &*token {
+                Some(tok) if !tok.is_expired() => Some(tok.access_token.clone()),
+                _ => None,
             }
+        };
+        if let Some(access_token) = cached {
+            return Ok(access_token);
         }
-        drop(token);
 
         // Token expired or not present, refresh it
         let new_token = self.refresh_token().await?;
@@ -79,25 +84,67 @@ impl OAuthManager {
         Ok(access_token)
     }
 
-    /// Refresh the OAuth token (simulated - would call token endpoint in production)
+    /// Refresh the OAuth token via a real client-credentials grant POST to
+    /// `token_url` (RFC 6749 section 4.4) -- `grant_type=client_credentials`,
+    /// `client_id`, `client_secret`, and `scope` if configured.
     async fn refresh_token(&self) -> Result<OAuthToken, AdapterError> {
-        // In production, would make HTTP POST to token_url with:
-        // grant_type=client_credentials
-        // client_id=...
-        // client_secret=...
-        // scope=...
-
         if self.client_id.is_empty() || self.client_secret.is_empty() {
             return Err(AdapterError::AuthenticationFailed(
                 "Missing OAuth credentials".to_string(),
             ));
         }
 
-        // Simulated successful token response
+        let mut form = vec![
+            ("grant_type", "client_credentials"),
+            ("client_id", self.client_id.as_str()),
+            ("client_secret", self.client_secret.as_str()),
+        ];
+        if let Some(scope) = &self.scope {
+            form.push(("scope", scope.as_str()));
+        }
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&self.token_url)
+            .form(&form)
+            .send()
+            .await
+            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+
+        if !response.status().is_success() {
+            return Err(AdapterError::AuthenticationFailed(format!(
+                "token endpoint returned HTTP {}",
+                response.status()
+            )));
+        }
+
+        let body: serde_json::Value = response.json().await.map_err(|e| {
+            AdapterError::AuthenticationFailed(format!("invalid token response: {e}"))
+        })?;
+
+        let access_token = body
+            .get("access_token")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                AdapterError::AuthenticationFailed(
+                    "token response missing access_token".to_string(),
+                )
+            })?
+            .to_string();
+        let token_type = body
+            .get("token_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Bearer")
+            .to_string();
+        let expires_in = body
+            .get("expires_in")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(3600);
+
         Ok(OAuthToken {
-            access_token: format!("token_{}_{}", self.client_id, uuid::Uuid::new_v4()),
-            token_type: "Bearer".to_string(),
-            expires_in: 3600, // 1 hour
+            access_token,
+            token_type,
+            expires_in,
             issued_at: Utc::now(),
         })
     }
@@ -162,29 +209,86 @@ mod tests {
 
     #[test]
     fn test_oauth_manager_with_scope() {
-        let mgr = OAuthManager::new("id", "secret", "https://example.com/token")
-            .with_scope("read write");
+        let mgr =
+            OAuthManager::new("id", "secret", "https://example.com/token").with_scope("read write");
 
         assert_eq!(mgr.scope, Some("read write".to_string()));
     }
 
     #[tokio::test]
-    async fn test_oauth_refresh_token() {
-        let mgr = OAuthManager::new("client_id", "client_secret", "https://example.com/token");
-        let token = mgr.refresh_token().await.unwrap();
+    async fn missing_credentials_are_rejected_without_a_network_call() {
+        let mgr = OAuthManager::new("", "", "https://example.com/token");
+        let result = mgr.refresh_token().await;
+        assert!(result.is_err());
+    }
 
+    // -- Real HTTP tests against a local mock server -------------------------
+
+    #[tokio::test]
+    async fn refresh_token_performs_a_real_client_credentials_post() {
+        use crate::testing::MockHttpServer;
+
+        let server = MockHttpServer::start(
+            200,
+            r#"{"access_token":"tok_real_123","token_type":"Bearer","expires_in":1800}"#,
+        );
+        let mgr = OAuthManager::new(
+            "client_id",
+            "client_secret",
+            format!("{}/token", server.base_url),
+        )
+        .with_scope("read write");
+
+        let token = mgr.refresh_token().await.unwrap();
+        assert_eq!(token.access_token, "tok_real_123");
         assert_eq!(token.token_type, "Bearer");
-        assert!(token.access_token.starts_with("token_"));
-        assert_eq!(token.expires_in, 3600);
+        assert_eq!(token.expires_in, 1800);
+
+        let req = server.last_request().unwrap();
+        assert_eq!(req.method, "POST");
+        assert_eq!(req.path, "/token");
+        assert!(req.body.contains("grant_type=client_credentials"));
+        assert!(req.body.contains("client_id=client_id"));
+        assert!(req.body.contains("scope=read+write") || req.body.contains("scope=read%20write"));
     }
 
     #[tokio::test]
-    async fn test_oauth_get_token() {
-        let mgr = OAuthManager::new("client_id", "client_secret", "https://example.com/token");
+    async fn get_token_caches_the_real_token_and_does_not_refetch_while_valid() {
+        use crate::testing::MockHttpServer;
+
+        let server = MockHttpServer::start(
+            200,
+            r#"{"access_token":"tok_cached","token_type":"Bearer","expires_in":3600}"#,
+        );
+        let mgr = OAuthManager::new(
+            "client_id",
+            "client_secret",
+            format!("{}/token", server.base_url),
+        );
+
         let token1 = mgr.get_token().await.unwrap();
         let token2 = mgr.get_token().await.unwrap();
 
-        // Should return same token if not expired
         assert_eq!(token1, token2);
+        assert_eq!(
+            server.requests().len(),
+            1,
+            "second get_token() must reuse the cached token, not refetch"
+        );
+    }
+
+    #[tokio::test]
+    async fn refresh_token_surfaces_a_real_http_error() {
+        use crate::testing::MockHttpServer;
+
+        let server = MockHttpServer::start(401, r#"{"error":"invalid_client"}"#);
+        let mgr = OAuthManager::new(
+            "client_id",
+            "client_secret",
+            format!("{}/token", server.base_url),
+        );
+
+        let result = mgr.refresh_token().await;
+        assert!(result.is_err());
     }
 }

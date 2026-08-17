@@ -18,8 +18,12 @@ pub struct ValidationGate {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ValidationStatus {
     Valid,
-    Invalid { reason: String },
-    Stale { last_validated: chrono::DateTime<chrono::Utc> },
+    Invalid {
+        reason: String,
+    },
+    Stale {
+        last_validated: chrono::DateTime<chrono::Utc>,
+    },
     Unknown,
 }
 
@@ -38,7 +42,7 @@ pub struct StatGuardianConfig {
     /// StatGuardian API base URL (e.g., http://localhost:8000)
     pub api_url: String,
     /// Default behavior when validation is unavailable
-    pub fail_open: bool,  // if true, allow sync without validation; if false, block
+    pub fail_open: bool, // if true, allow sync without validation; if false, block
     /// Default freshness requirement (seconds)
     pub default_max_staleness: Option<u64>,
 }

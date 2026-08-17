@@ -1,3 +1,7 @@
+pub mod config;
+pub mod connectors_db;
+pub mod database_advanced;
+pub mod destination;
 /// Universal Connector Ecosystem
 /// Unified interface for all data sources and destinations
 ///
@@ -8,34 +12,39 @@
 /// - Easy custom connector creation
 /// - Automatic schema detection
 /// - Connection pooling and optimization
-
 pub mod error;
-pub mod destination;
-pub mod source;
-pub mod config;
+pub mod hdfs;
+pub mod mysql;
+pub mod object_storage;
+pub mod postgres;
+pub mod rate_limiting;
 pub mod registry;
 pub mod saas;
-pub mod rate_limiting;
-pub mod object_storage;
-pub mod database_advanced;
-pub mod hdfs;
-pub mod connectors_db;
-pub mod mysql;
-pub mod postgres;
+pub mod source;
 
+pub use config::{ConnectionPool, ConnectorConfig, ConnectorType};
+pub use connectors_db::{
+    ConnectorCategory, ConnectorInfo, ConnectorRegistry as ConnectorDb, ConnectorTypeInfo,
+    RateLimitDefault,
+};
+pub use database_advanced::{
+    AdvancedDatabaseDestination, AdvancedDatabaseSource, DatabaseConfig, TableSchema, WriteStrategy,
+};
+pub use destination::{DestinationConfig, DestinationConnector, WriteMode};
 pub use error::{ConnectorError, ConnectorResult};
-pub use destination::{DestinationConnector, DestinationConfig, WriteMode};
-pub use source::{SourceConnector, SourceConfig};
-pub use config::{ConnectorConfig, ConnectionPool, ConnectorType};
-pub use registry::{ConnectorRegistry, ConnectorDescriptor, BuiltInConnectors};
-pub use saas::{SaaSConnector, SaaSConfig};
-pub use rate_limiting::{RateLimiter, RateLimitConfig, RateLimitStrategy, RateLimiterRegistry, RateLimitStats};
-pub use object_storage::{ObjectStorageConfig, ObjectStorageSource, ObjectStorageDestination, FileFormat, TableFormat, FileOperations};
-pub use database_advanced::{DatabaseConfig, AdvancedDatabaseSource, AdvancedDatabaseDestination, WriteStrategy, TableSchema};
-pub use hdfs::{HdfsConfig, HdfsSource, HdfsDestination, HdfsAuth, HdfsOperations, FileStatus};
-pub use connectors_db::{ConnectorRegistry as ConnectorDb, ConnectorInfo, ConnectorCategory, ConnectorTypeInfo, RateLimitDefault};
-pub use mysql::{MySQLConnector, MySQLConfig};
-pub use postgres::{PostgreSQLConnector, PostgreSQLConfig};
+pub use hdfs::{FileStatus, HdfsAuth, HdfsConfig, HdfsDestination, HdfsOperations, HdfsSource};
+pub use mysql::{MySQLConfig, MySQLConnector};
+pub use object_storage::{
+    FileFormat, FileOperations, ObjectStorageConfig, ObjectStorageDestination, ObjectStorageSource,
+    TableFormat,
+};
+pub use postgres::{PostgreSQLConfig, PostgreSQLConnector};
+pub use rate_limiting::{
+    RateLimitConfig, RateLimitStats, RateLimitStrategy, RateLimiter, RateLimiterRegistry,
+};
+pub use registry::{BuiltInConnectors, ConnectorDescriptor, ConnectorRegistry};
+pub use saas::{SaaSConfig, SaaSConnector};
+pub use source::{SourceConfig, SourceConnector};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -160,7 +169,10 @@ mod tests {
         assert!(success.success);
         assert_eq!(success.message, "Connected successfully");
 
-        let failure = ConnectionTest::failure("Connection refused", Some("Port 5432 unreachable".to_string()));
+        let failure = ConnectionTest::failure(
+            "Connection refused",
+            Some("Port 5432 unreachable".to_string()),
+        );
         assert!(!failure.success);
         assert!(failure.details.is_some());
     }

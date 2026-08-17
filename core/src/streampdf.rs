@@ -31,9 +31,9 @@ pub struct StreamPDFConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExtractionMode {
-    Selective,  // Extract only relevant sections
-    Full,       // Extract entire PDF (less efficient)
-    Semantic,   // Semantic search-based extraction
+    Selective, // Extract only relevant sections
+    Full,      // Extract entire PDF (less efficient)
+    Semantic,  // Semantic search-based extraction
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,7 +54,7 @@ impl StreamPDFSource {
             api_url: api_url.into(),
             pdf_path: pdf_path.into(),
             extraction_query: extraction_query.into(),
-            max_tokens: Some(2000),  // Default token limit
+            max_tokens: Some(2000), // Default token limit
             min_confidence: Some(0.8),
         }
     }
@@ -70,8 +70,8 @@ impl StreamPDFSource {
     }
 
     pub fn token_efficient(mut self) -> Self {
-        self.max_tokens = Some(500);  // Minimize token usage
-        self.min_confidence = Some(0.9);  // Higher confidence threshold
+        self.max_tokens = Some(500); // Minimize token usage
+        self.min_confidence = Some(0.9); // Higher confidence threshold
         self
     }
 }

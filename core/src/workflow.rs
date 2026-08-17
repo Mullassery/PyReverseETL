@@ -42,15 +42,31 @@ pub struct Workflow {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SourceType {
     // Warehouse sources
-    Table { table_name: String },
-    Model { model_name: String },
-    Query { sql: String },
-    Audience { audience_id: String },
-    Event { event_type: String },
+    Table {
+        table_name: String,
+    },
+    Model {
+        model_name: String,
+    },
+    Query {
+        sql: String,
+    },
+    Audience {
+        audience_id: String,
+    },
+    Event {
+        event_type: String,
+    },
     // StreamXL integration - spreadsheet data sources
-    StreamXL { sheet_name: String, api_url: String },
+    StreamXL {
+        sheet_name: String,
+        api_url: String,
+    },
     // PyStreamPDF integration - PDF data sources with intelligent extraction
-    StreamPDF { pdf_path: String, extraction_query: String },
+    StreamPDF {
+        pdf_path: String,
+        extraction_query: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,7 +109,9 @@ pub struct EventStreamConfig {
 
 impl Default for SourceType {
     fn default() -> Self {
-        SourceType::Table { table_name: "default".to_string() }
+        SourceType::Table {
+            table_name: "default".to_string(),
+        }
     }
 }
 
@@ -182,18 +200,26 @@ mod tests {
 
     #[test]
     fn test_workflow_creation() {
-        let wf = Workflow::new("LTV Sync", "data_team", SourceType::Table {
-            table_name: "customers".to_string(),
-        });
+        let wf = Workflow::new(
+            "LTV Sync",
+            "data_team",
+            SourceType::Table {
+                table_name: "customers".to_string(),
+            },
+        );
         assert_eq!(wf.name, "LTV Sync");
         assert!(wf.enabled);
     }
 
     #[test]
     fn test_workflow_builder() {
-        let wf = Workflow::new("Test", "owner", SourceType::Table {
-            table_name: "t".to_string(),
-        })
+        let wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Table {
+                table_name: "t".to_string(),
+            },
+        )
         .with_description("Test workflow")
         .add_mapping("customer_id", "customerId")
         .add_mapping("ltv", "customerLTV");
@@ -203,9 +229,13 @@ mod tests {
 
     #[test]
     fn test_workflow_sync_modes() {
-        let wf = Workflow::new("Test", "owner", SourceType::Table {
-            table_name: "t".to_string(),
-        })
+        let wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Table {
+                table_name: "t".to_string(),
+            },
+        )
         .set_sync_mode(SyncMode::Incremental {
             key_column: "updated_at".to_string(),
         });
@@ -220,9 +250,13 @@ mod tests {
 
     #[test]
     fn test_workflow_rate_limit() {
-        let wf = Workflow::new("Test", "owner", SourceType::Table {
-            table_name: "t".to_string(),
-        })
+        let wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Table {
+                table_name: "t".to_string(),
+            },
+        )
         .set_rate_limit(RateLimit {
             records_per_second: 100,
             burst_size: Some(500),
@@ -242,9 +276,13 @@ mod tests {
             batch_size: 100,
             flush_interval_ms: 5000,
         };
-        let wf = Workflow::new("Test", "owner", SourceType::Event {
-            event_type: "customer_update".to_string(),
-        })
+        let wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Event {
+                event_type: "customer_update".to_string(),
+            },
+        )
         .set_event_stream_config(config);
 
         assert!(wf.event_stream_config.is_some());
@@ -255,9 +293,13 @@ mod tests {
 
     #[test]
     fn test_workflow_version_increment() {
-        let mut wf = Workflow::new("Test", "owner", SourceType::Table {
-            table_name: "t".to_string(),
-        });
+        let mut wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Table {
+                table_name: "t".to_string(),
+            },
+        );
         assert_eq!(wf.version, 1);
 
         let original_updated = wf.updated_at;
@@ -268,11 +310,17 @@ mod tests {
 
     #[test]
     fn test_workflow_with_all_features() {
-        let wf = Workflow::new("Full Test", "data_team", SourceType::Table {
-            table_name: "customers".to_string(),
-        })
+        let wf = Workflow::new(
+            "Full Test",
+            "data_team",
+            SourceType::Table {
+                table_name: "customers".to_string(),
+            },
+        )
         .with_description("Complete workflow test")
-        .set_sync_mode(SyncMode::Streaming { topic: "events".to_string() })
+        .set_sync_mode(SyncMode::Streaming {
+            topic: "events".to_string(),
+        })
         .add_mapping("id", "customerId")
         .add_mapping("email", "customerEmail")
         .set_schedule("0 9 * * *", "America/New_York")
@@ -291,9 +339,13 @@ mod tests {
 
     #[test]
     fn test_workflow_disabled() {
-        let wf = Workflow::new("Test", "owner", SourceType::Table {
-            table_name: "t".to_string(),
-        })
+        let wf = Workflow::new(
+            "Test",
+            "owner",
+            SourceType::Table {
+                table_name: "t".to_string(),
+            },
+        )
         .set_enabled(false);
 
         assert!(!wf.enabled);

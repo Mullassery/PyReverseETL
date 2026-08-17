@@ -1,373 +1,225 @@
 # PyReverseETL
 
-**Move your data automatically to where it's needed.**
+**Reverse ETL: move data from a source system into the tools your team actually
+works in, with a real lineage graph and real compliance enforcement.**
 
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-![Version: v2.1.1](https://img.shields.io/badge/Version-v2.1.1-blue)
-![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+![Version: v3.0.0](https://img.shields.io/badge/Version-v3.0.0-blue)
+[![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
 
-PyReverseETL automatically syncs **quality-validated** data from source systems to destinations with full audit trail, lineage tracking, and compliance records.
+A Rust sync engine with Python bindings and a CLI. `pyreverseetl execute`
+opens a real connection to a real source, reads real records, runs them
+through a real compliance/PII-masking engine, writes them to a real
+destination, and records a real lineage edge (source, destination, record
+count, timestamps) that you can query afterward. There is no simulated mode:
+if a connector isn't wired to a real backend yet, it's not offered as an
+option, not silently faked.
 
-**Architectural Role:** Owns data activation and movement. Only moves data that has passed quality validation. Maintains audit trail and compliance for every activation.
+## What's real right now
 
-## Simple as 1-2-3
+| Connector | Direction | Status |
+|---|---|---|
+| PostgreSQL | source + destination | Real, via [`sqlx`](https://github.com/launchbadge/sqlx). Generic-schema read/write, incremental reads, upsert. Verified with a real Postgres container. |
+| MySQL | source + destination | Real, via `sqlx`. Same capabilities as Postgres. Verified with a real MySQL container. |
+| S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV formats are implemented; Parquet/Avro/ORC/Iceberg/Delta are declared but return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
+| Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and real JSON payload construction. |
+| Salesforce | destination | Real REST API client: OAuth2 token exchange, `sobjects` create/upsert-by-external-ID/delete/describe against the actual Salesforce endpoint shapes. No live Salesforce account was available to verify against, so this is verified against a local mock HTTP server that asserts the exact request shape (method, path, auth header, body) the real API expects. |
+| HubSpot | destination | Real CRM v3 API client (create, upsert-by-`idProperty`, delete, properties/schema). Same caveat: verified against a mock server, not a live account. |
+| Marketo | destination | Real REST API client (identity token endpoint, `createOrUpdate` bulk leads, lead delete, describe). Same caveat: verified against a mock server, not a live account. |
+| GCS / Azure Blob | source + destination | **Not implemented.** Calling them returns an explicit error instead of a fake success. |
+| Kafka, HDFS, Spark/PySpark transforms, CDC streaming, the CLI dashboard, StatGuardian quality gates | — | Present in the codebase from earlier work but out of scope for this pass and not wired into `execute` / `run_sync`. Treat as experimental; several return fixed/fabricated numbers (documented inline where that's the case, e.g. `SparkTransformer::submit`). |
 
-1. **Describe** - Create a simple text file describing what you want to sync
-2. **Configure** - Set when, how often, and any special rules (skip weekends, business hours, etc.)
-3. **Run** - Start it up. Data syncs automatically on schedule.
+If you need a connector marked "not implemented" above, that's an honest gap,
+not a documentation oversight — open an issue rather than assuming it works.
 
-That's it. No complex setup. No manual work.
-
-## What Problems Does It Solve?
-
-- Data goes stale in your systems - PyReverseETL keeps it current
-- Manual data syncs are error-prone - PyReverseETL does it automatically
-- Multiple systems can't talk to each other - PyReverseETL connects them
-- Syncing on a schedule is complicated - PyReverseETL handles it simply
-
-## Core Capabilities
-
-### Data Sources (NEW in v2.0)
-- **Event Streams** — Real-time data from event streaming platforms
-- **Database Change Capture** — Real-time changes from databases (PostgreSQL, MySQL, MongoDB)
-- **API Polling** — REST endpoint polling and webhook receivers
-- **Scheduled Polling** — Configurable intervals (5min to 24hours)
-- **Change Detection** — Automatic detection of data changes
-- **Source Metadata** — Preserve source context and lineage
-
-### Data Transformations (NEW in v2.0)
-- **Distributed Processing** — Large-scale data transformations
-- **Multi-Stage Pipelines** — Chain transformations with error handling
-- **Intermediate Staging** — Temporary storage between processing stages
-- **Cost Optimization** — Filter data early in pipeline
-- **Data Preparation** — ML-ready feature preparation
-- **Cluster Support** — Local, YARN, Kubernetes deployment
-
-### Synchronization Engine
-- **Batch Sync** — Scheduled synchronization
-- **Incremental Sync** — Change-based synchronization
-- **CDC Sync** — Database change streams
-- **Streaming Sync** — Kafka, Pulsar, Redpanda
-- **Event-Driven Sync** — Trigger on business events
-- **Hybrid Sync** — Combine scheduling with events
-
-### Destination Ecosystem
-- **CRM** — Salesforce, HubSpot, Dynamics
-- **Marketing** — Braze, Iterable, Customer.io, Mailchimp, Klaviyo
-- **Advertising** — Meta Ads, Google Ads, LinkedIn Ads, Amazon Ads, TikTok Ads
-- **Support** — Zendesk, Freshdesk, Intercom
-- **Analytics** — Mixpanel, Amplitude, PostHog
-- **Data Platforms** — Kafka, Pulsar, Redpanda
-- **Custom** — Webhooks, custom connectors
-
-### Activation Objects
-- **Entities** — Customer, Account, Company, Lead, Subscription, Order, Product
-- **Traits** — Dynamic attributes (LTV, Churn Risk, Lead Score, etc.)
-- **Audiences** — Segmented groups (VIP Customers, Churn Risk, etc.)
-- **Metrics** — Business measurements (MRR, ARR, NPS, etc.)
-- **Events** — Business events (Subscription Renewed, Payment Failed, etc.)
-
-### Monitoring & Observability (NEW in v2.1)
-- **Real-Time Dashboard** — CLI stats dashboard with live metrics
-- **Throughput Monitoring** — Events per second tracking
-- **Latency Metrics** — Average and P99 latency measurements
-- **Quality Gates** — Quality check pass/fail monitoring
-- **Error Tracking** — Comprehensive error aggregation
-- **Platform Support** — macOS (Terminal.app) and Linux (terminator/xterm)
-
-## Architecture
-
-**Rust Core**
-- Sync runtime
-- Scheduling engine
-- State management
-- Connector runtime
-- Telemetry
-
-**Python Layer**
-- SDK and bindings
-- Custom extensions
-- AI integrations
-- Developer experience
-
-**Persistence**
-- SQLite (v1.5 - lightweight, no setup required)
-- PostgreSQL (v2.0+)
-- DuckDB (v2.0+)
-
-## Getting Started
-
-### Installation
+## Install
 
 ```bash
 pip install pyreverseetl
-# or with uv
-uv pip install reverseetl
+# or
+uv pip install pyreverseetl
 
-# Verify installation
-reverseetl --version
+pyreverseetl --version    # prints the installed version, read straight from the compiled Rust core
 ```
 
-### Quick Example
+This installs a compiled Rust extension (built with [maturin](https://github.com/PyO3/maturin)/PyO3) plus the `pyreverseetl` console command.
+
+## Quick start: a real sync against a local Postgres
+
+This spins up a real Postgres container, seeds a table, and syncs it to a
+webhook using the real engine end to end.
+
+```bash
+docker run --rm -d -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=demo \
+  --name pyreverseetl-demo-pg postgres:16
+
+docker exec -i pyreverseetl-demo-pg psql -U postgres -d demo -c "
+  CREATE TABLE customers (id INT PRIMARY KEY, name TEXT, email TEXT, ltv NUMERIC);
+  INSERT INTO customers VALUES
+    (1, 'Alice', 'alice@example.com', 4200.50),
+    (2, 'Bob',   'bob@example.com',   1800.00);
+"
+
+# In another terminal: a throwaway HTTP endpoint to receive the synced rows
+python3 -m http.server 8000 &   # or use https://webhook.site for a real inspectable URL
+
+pyreverseetl create-workflow ltv_sync "LTV to webhook" postgres customers \
+  --source-config '{"host":"localhost","port":5432,"database":"demo","username":"postgres","password":"postgres"}'
+
+pyreverseetl create-activation ltv_to_hook ltv_sync webhook \
+  --dest-config '{"url":"http://localhost:8000/hook","auth":{"type":"bearer","token":"demo"}}'
+
+pyreverseetl execute ltv_to_hook
+# {"status": "success", "run_id": "...", "rows_synced": 2, "rows_read": 2,
+#  "rows_failed": 0, "compliance_violations": [], "duration_ms": 12,
+#  "message": "Activation executed: 2 rows written to webhook"}
+
+pyreverseetl lineage
+# {"status": "success", "format": "json",
+#  "lineage": {"nodes": {...}, "edges": [{"run_id": "...", "record_count": 2, ...}]}}
+```
+
+Mask PII before it ever leaves the process:
+
+```bash
+pyreverseetl execute ltv_to_hook --compliance-rules \
+  '[{"id":"mask_email","rule_type":"pii_masking","target_fields":["email"],"action":{"type":"mask","pattern":"****"}}]'
+```
+
+Every one of these calls goes through the real Rust engine
+(`pyreverseetl._core.run_sync`) — `rows_synced` is the number of records the
+destination connector actually wrote, not a placeholder.
+
+### Python API
 
 ```python
-from pyreverseetl import Workflow, Destination, Activation
+import json
+import pyreverseetl
 
-# Define a workflow
-workflow = Workflow.from_table(
- name="LTV to CRM",
- table="customers",
- owner="data_team"
+result = pyreverseetl.run_sync(
+    source_type="postgres",
+    source_config=json.dumps({
+        "host": "localhost", "port": 5432, "database": "demo",
+        "username": "postgres", "password": "postgres", "table": "customers",
+    }),
+    destination_type="webhook",
+    destination_config=json.dumps({
+        "url": "http://localhost:8000/hook",
+        "auth": {"type": "bearer", "token": "demo"},
+    }),
+    limit=None,
+    compliance_rules=None,
 )
+print(result.rows_written, result.duration_ms)
 
-# Add field mappings
-workflow.add_mapping("customer_id", "customerId")
-workflow.add_mapping("lifetime_value", "customerLTV")
-workflow.add_mapping("segment", "segment")
-
-# Define destination
-salesforce = Destination.salesforce(
- name="Production Salesforce",
- instance_url="https://yourinstance.salesforce.com",
- api_version="v60.0"
-)
-
-# Create activation
-activation = Activation(
- name="Daily LTV Sync",
- workflow=workflow,
- destination=salesforce
-)
-
-# Schedule
-activation.schedule_daily(hour=2, minute=0)
-
-# Execute
-run = activation.execute()
-print(f"Synced {run.rows_processed} records")
+# Real lineage graph accumulated across every run_sync call in this process
+print(pyreverseetl.lineage_json())
+print(pyreverseetl.lineage_dot())  # Graphviz DOT export
 ```
 
-### Kafka Event Source with Polling
+## Lineage tracking
 
-```python
-from pyreverseetl import KafkaSource, KafkaConfig, SyncFrequency
+Every `run_sync` call registers real source/destination nodes and appends a
+real edge — actual record count, actual start/completion timestamps — to an
+in-process lineage graph (`pyreverseetl_core::lineage::LineageGraph`). It
+supports upstream/downstream queries and exports to JSON or Graphviz DOT.
+This did not exist anywhere in the codebase before this pass; the README
+previously described "lineage tracking" as a feature with zero backing code.
 
-# Configure Kafka source
-kafka_config = KafkaConfig(
- brokers="localhost:9092",
- topic="customer-events",
- group_id="pyreverseetl-consumer"
-)
+## Compliance & PII handling
 
-# Create source with hourly polling
-source = KafkaSource(kafka_config)
-source.set_sync_frequency(SyncFrequency.Hourly)
+`DefaultComplianceEngine` (`pyreverseetl_core::governance::compliance_rules`)
+applies real per-record rules before a write: mask a field, remove it,
+truncate it, or (for `Encrypt`) honestly report it as unresolved — there is
+no real encryption implementation, and the engine says so in
+`check_compliance` rather than silently claiming success. A `MockComplianceEngine`
+still exists but is `#[cfg(test)]`-only, so it can never run in a real build;
+it exists purely as a test double for exercising governance wiring without
+needing real masking behavior.
 
-# Connect and poll for events
-source.connect()
-while True:
- event = source.next_event()
- if event:
- print(f"Received: {event.entity_id} from {event.source}")
+## Architecture
+
+```
+Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_core::execute_sync
+                                                                  │
+                                            ┌─────────────────────┼─────────────────────┐
+                                       source read          compliance apply        destination write
+                                  (postgres/mysql/s3)      (DefaultComplianceEngine)  (postgres/mysql/s3/
+                                                                                       webhook/salesforce/
+                                                                                       hubspot/marketo)
+                                                                  │
+                                                          lineage edge recorded
 ```
 
-### PySpark Data Transformation Pipeline
-
-```python
-from pyreverseetl import (
- SparkTransformer, SparkConfig, TransformationPipeline, TransformationStage
-)
-
-# Define transformation stages
-normalize_stage = TransformationStage(
- name="normalize",
- config=SparkConfig(
- script="/path/to/normalize.py",
- input_topic="raw-events",
- output_topic="normalized-events"
- ),
- retry_count=3,
- skip_on_error=False
-)
-
-enrich_stage = TransformationStage(
- name="enrich",
- config=SparkConfig(
- script="/path/to/enrich.py",
- input_topic="normalized-events",
- output_topic="enriched-events"
- ),
- retry_count=2,
- skip_on_error=False
-)
-
-# Create pipeline
-pipeline = TransformationPipeline()\
- .add_stage(normalize_stage)\
- .add_stage(enrich_stage)
-
-# Execute pipeline
-for stage in pipeline.stages:
- transformer = SparkTransformer(stage.config)
- result = transformer.execute()
- print(f"{stage.name}: {result.records_output} records output")
-```
-
-## Core Concepts
-
-### Workflows
-Define data sources and how to extract them:
-- Table extraction
-- Model extraction
-- SQL queries
-- Audience definitions
-- Event streams
-
-### Activations
-Connect workflows to destinations with policies:
-- Field mappings
-- Transformations
-- Validation gates
-- Error handling
-- Scheduling
-
-### Sync Runs
-Track execution:
-- Status (Pending  Running  Success/Failed)
-- Row counts
-- Error details
-- Timing information
-
-## Ecosystem
-
-PyReverseETL is part of a larger platform:
-
-- **StatGuardian** — Data quality and contracts (ensures data is trustworthy)
-- **ClusterAudienceKit** — Customer segmentation (identifies who matters)
-- **PyStreamMCP** — Query optimization & context discovery (60-75% cost reduction)
-- **PyReverseETL** — Data activation (operationalizes intelligence)
-- **PyCustomerJourney** — Customer engagement (drives outcomes)
-
-### Integration with PyStreamMCP
-
-PyReverseETL integrates with **PyStreamMCP** for intelligent context retrieval:
-
-```python
-from pyreverseetl import Activation
-from pystreammcp import Agent, Discovery
-
-# Use PyStreamMCP to optimize context discovery
-discovery = Discovery.new(query_id="activation_1")
-sources = discovery.discover_sources() # Find optimal data
-optimized = discovery.optimize_for_cost() # Reduce volume
-
-# Activate with optimized context
-activation = Activation(
- name="Smart LTV Sync",
- query=optimized, # Use PyStreamMCP's optimized query
- destination="salesforce"
-)
-```
-
-**Do NOT rebuild query optimization in PyReverseETL.** PyStreamMCP provides:
-- Query planning and optimization (60-75% reduction in context usage)
-- Intelligent source discovery
-- Cost estimation
-- Progressive streaming retrieval
-- Multi-step query decomposition
-
-See [ARCHITECTURE.md](ARCHITECTURE.md#with-pystreammcp-query-optimization--context-discovery) for details.
-
-## Observability & Open-Source Stack
-
-PyReverseETL includes full OpenTelemetry integration for observability. Works with any open-source monitoring backend:
-
-- **Metrics:** Prometheus, OpenMetrics
-- **Traces:** Jaeger, Tempo
-- **Logs:** Loki, OpenSearch
-- **Dashboards:** Grafana, custom tools
-- **Alerts:** Alert Manager, native backend support
-
-See [OSS_ALTERNATIVES.md](docs/OSS_ALTERNATIVES.md) for complete open-source stack recommendations and setup guides.
-
-## Roadmap
-
-### Phase 1: Core Foundation (v1.0.0)
-- Core data model (Workflow, Activation, Destination, Entity)
-- SQLite persistence with CRUD repositories
-- Builder patterns for ergonomic API
-- 59 tests passing
-
-### Phase 2: Destination Ecosystem (v1.1.0)
-- 4 Production adapters (Webhook, Salesforce, HubSpot, Marketo)
-- YAML-based field mapping configuration
-- Automatic schema detection with type inference
-- OpenTelemetry-compatible alert message structures
-- 48 tests passing
-
-### Phase 3 Week 1: Resilience & HTTP (v1.1.5)
-- Exponential backoff retry logic
-- Production HTTP client with connection pooling
-- OAuth token manager with automatic refresh
-- 24 tests passing
-
-### Phase 3 Weeks 3-4: Real-Time Activation (v1.5.0)
-- Change Data Capture (CDC) engine with changelog persistence
-- Real-time activation pipeline with latency tracking
-- Backpressure management and checkpoint recovery
-- 36 new tests (178 total)
-
-### Phase 4: Event Sources & Transformations (v2.0.0  v2.0.1)
-- **Event Sources**: Kafka connector with SSL/SASL support
-- **Sync Frequency**: Configurable polling (5min-24hours) with timezone support
-- **Change Detection**: Track changes at preset intervals
-- **PySpark Transformations**: Multi-stage processing pipelines (optional)
-- **Intermediate Staging**: Kafka topics between transformation stages
-- **YAML Configuration**: Load/save configurations from YAML files
-- **Separate Source/Destination Polling**: Different schedules per system
-- **Transformation Error Handling**: Dead letter topics, retries, caching
-- **Detailed Status Messages**: Congratulatory success + actionable error messages
-- **Timezone Support**: IANA timezone database (400+ timezones)
-- **Day-of-Week & Blackout Filtering**: Skip syncs on specific days/dates
-- **Fault Tolerance & Caching**: Result caching for reliability
-- **Auto-Scaling**: Kafka (by lag/throughput) & PySpark (by size/latency)
-- 50+ new tests (265+ total passing)
-
-## Platform Philosophy
-
-PyReverseETL should be:
-
-- **Rust-powered** — Performance and reliability
-- **Python-extensible** — Ecosystem and integration
-- **OpenTelemetry-native** — Observability from day one
-- **Deployment-agnostic** — Laptop to Kubernetes
-- **Warehouse-native** — Snowflake, BigQuery, Databricks, DuckDB, Postgres
-- **Event-aware** — React to business events
-- **AI-assisted** — Learn from historical patterns
-- **Lineage-aware** — Track data flow and impact
-- **Production-ready** — Multi-tenant, secure, scalable
-
-while remaining **simple enough for data teams to adopt**.
+- **`core/`** — the Rust engine: connectors, the compliance engine, lineage
+  tracking, the sync executor.
+- **`python/src/`** — PyO3 bindings (`run_sync`, `lineage_json`, `lineage_dot`,
+  plus the lower-level data-model classes `PyWorkflow`/`PyDestination`/etc.).
+- **`python/pyreverseetl/`** — the installed Python package: `cli.py` (the
+  `pyreverseetl` command), `server.py` (an optional Flask REST wrapper around
+  the same engine), both backed by the real engine rather than any
+  in-process simulation.
 
 ## Development
 
-### Building
+```bash
+# Rust: build, test, lint
+cargo build -p pyreverseetl-core
+cargo test -p pyreverseetl-core --lib          # unit tests (hermetic, no external services)
+cargo test -p pyreverseetl-core --lib -- --ignored   # real Docker-backed round-trip tests, see below
+cargo clippy -p pyreverseetl-core --lib
+cargo fmt
+
+# Python bindings
+maturin develop --release
+pytest tests/ -v
+```
+
+### Running the real, Docker-backed connector tests
+
+Unit tests are hermetic by design (no network, no containers). The
+round-trip tests that prove the Postgres/MySQL/S3 connectors actually talk to
+a real service are `#[ignore]`d by default; run them explicitly against real
+containers:
 
 ```bash
-# Build Rust core
-cargo build -p pyreverseetl-core
+docker run --rm -d -p 5439:5432 -e POSTGRES_PASSWORD=postgres \
+    -e POSTGRES_DB=pyreverseetl_test --name pyreverseetl-pg-test postgres:16
+docker run --rm -d -p 3307:3306 -e MYSQL_ROOT_PASSWORD=mysql \
+    -e MYSQL_DATABASE=pyreverseetl_test --name pyreverseetl-mysql-test mysql:8
+docker run --rm -d -p 9000:9000 -e MINIO_ROOT_USER=minioadmin \
+    -e MINIO_ROOT_PASSWORD=minioadmin --name pyreverseetl-minio-test minio/minio server /data
+docker run --rm --entrypoint sh minio/mc -c \
+    "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mb local/pyreverseetl-test"
 
-# Build Python bindings
-maturin develop
-
-# Run tests
-cargo test
-pytest tests/
+PYREVERSEETL_TEST_PG_PORT=5439 PYREVERSEETL_TEST_MYSQL_PORT=3307 \
+PYREVERSEETL_TEST_MINIO_ENDPOINT=http://localhost:9000 \
+    cargo test -p pyreverseetl-core --lib -- --ignored
 ```
+
+The same Docker services also back real, end-to-end Python-level tests in
+`tests/test_real_sync_docker.py` (they run the actual `pyreverseetl` CLI
+command as a subprocess and check real rows moved through it); those are
+skipped, not failed, when the containers aren't running.
 
 ### Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Known gaps (deliberately out of scope for this pass)
+
+- **GCS / Azure object storage**: return an explicit "not implemented" error.
+- **Kafka / CDC streaming, HDFS, PySpark transforms, the CLI dashboard,
+  StatGuardian quality-gate integration**: present in the codebase but not
+  wired into the real sync path (`execute` / `run_sync`); several of these
+  return fixed, non-real numbers if you call their APIs directly (this is
+  documented inline in the affected modules, e.g. `SparkTransformer::submit`).
+  Treat anything not listed in the connector table above as unverified.
+- Salesforce/HubSpot/Marketo clients are real API implementations but were
+  only verified against mocked HTTP responses (no live account was available
+  in this environment) — please report any request-shape mismatches against
+  a real account as issues.
 
 ## License
 
@@ -377,7 +229,3 @@ Proprietary License. See [LICENSE](LICENSE) for details. All rights reserved.
 
 - GitHub Issues: [PyReverseETL/issues](https://github.com/Mullassery/PyReverseETL/issues)
 - Discussions: [PyReverseETL/discussions](https://github.com/Mullassery/PyReverseETL/discussions)
-
----
-
-**PyReverseETL: Operationalize Your Data Intelligence**

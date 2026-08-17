@@ -1,17 +1,16 @@
+pub mod dashboard_launcher;
+pub mod logs;
 /// OpenTelemetry integration for observability
 /// Provides metrics, traces, and logs for sync operations
-
 pub mod metrics;
-pub mod traces;
-pub mod logs;
 pub mod metrics_server;
-pub mod dashboard_launcher;
+pub mod traces;
 
-pub use metrics::{SyncMetrics, MetricsCollector};
-pub use traces::{SyncTracer, TraceSpan, TraceSummary};
-pub use logs::SyncLogger;
-pub use metrics_server::{MetricsServer, MetricsSnapshot, MetricsHistory};
 pub use dashboard_launcher::{launch_dashboard, DashboardConfig, Platform};
+pub use logs::SyncLogger;
+pub use metrics::{MetricsCollector, SyncMetrics};
+pub use metrics_server::{MetricsHistory, MetricsServer, MetricsSnapshot};
+pub use traces::{SyncTracer, TraceSpan, TraceSummary};
 
 use std::sync::Arc;
 
@@ -43,11 +42,7 @@ pub struct SyncContext {
 }
 
 impl SyncContext {
-    pub fn new(
-        sync_name: &str,
-        source: &str,
-        destination: &str,
-    ) -> Self {
+    pub fn new(sync_name: &str, source: &str, destination: &str) -> Self {
         Self {
             sync_run_id: uuid::Uuid::new_v4().to_string(),
             sync_name: sync_name.to_string(),

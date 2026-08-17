@@ -10,25 +10,28 @@ import random
 import string
 from datetime import datetime
 
+
 def generate_test_data(count=10000):
     """Generate test customer records"""
     customers = []
     for i in range(count):
-        customers.append({
-            'id': i,
-            'name': f"Customer {i}",
-            'email': f"customer{i}@example.com",
-            'phone': f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
-            'created_at': datetime.now().isoformat(),
-        })
+        customers.append(
+            {
+                "id": i,
+                "name": f"Customer {i}",
+                "email": f"customer{i}@example.com",
+                "phone": f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
+                "created_at": datetime.now().isoformat(),
+            }
+        )
     return customers
 
 
 def test_without_transformation():
     """Test: Direct sync without transformation"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 1: Direct Sync (No Transformation)")
-    print("="*60)
+    print("=" * 60)
 
     # Generate test data
     print("Generating 10,000 customer records...")
@@ -62,19 +65,19 @@ def test_without_transformation():
     print(f"  Avg latency: {(duration/synced*1000):.2f}ms per record")
 
     return {
-        'test': 'no_transformation',
-        'duration': duration,
-        'synced': synced,
-        'errors': errors,
-        'throughput': throughput,
+        "test": "no_transformation",
+        "duration": duration,
+        "synced": synced,
+        "errors": errors,
+        "throughput": throughput,
     }
 
 
 def test_with_transformation():
     """Test: Sync with data transformation"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 2: Sync with Transformation")
-    print("="*60)
+    print("=" * 60)
 
     # Generate test data
     print("Generating 10,000 customer records...")
@@ -83,11 +86,11 @@ def test_with_transformation():
     # Transform function (normalize phone, lowercase email)
     def normalize_customer(customer):
         return {
-            'id': customer['id'],
-            'name': customer['name'].strip(),
-            'email': customer['email'].lower(),
-            'phone': customer['phone'].replace('-', '').replace(' ', ''),
-            'created_at': customer['created_at'],
+            "id": customer["id"],
+            "name": customer["name"].strip(),
+            "email": customer["email"].lower(),
+            "phone": customer["phone"].replace("-", "").replace(" ", ""),
+            "created_at": customer["created_at"],
         }
 
     # Simulate sync with transformation
@@ -120,11 +123,11 @@ def test_with_transformation():
     print(f"  Avg latency: {(duration/synced*1000):.2f}ms per record")
 
     return {
-        'test': 'with_transformation',
-        'duration': duration,
-        'synced': synced,
-        'errors': errors,
-        'throughput': throughput,
+        "test": "with_transformation",
+        "duration": duration,
+        "synced": synced,
+        "errors": errors,
+        "throughput": throughput,
     }
 
 
@@ -140,18 +143,30 @@ def main():
     results_with_transform = test_with_transformation()
 
     # Comparison
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("COMPARISON: No Transform vs With Transform")
-    print("="*60)
+    print("=" * 60)
 
-    overhead = results_with_transform['duration'] - results_no_transform['duration']
-    overhead_pct = (overhead / results_no_transform['duration'] * 100) if results_no_transform['duration'] > 0 else 0
+    overhead = results_with_transform["duration"] - results_no_transform["duration"]
+    overhead_pct = (
+        (overhead / results_no_transform["duration"] * 100)
+        if results_no_transform["duration"] > 0
+        else 0
+    )
 
-    throughput_diff = results_no_transform['throughput'] - results_with_transform['throughput']
-    throughput_pct = (throughput_diff / results_with_transform['throughput'] * 100) if results_with_transform['throughput'] > 0 else 0
+    throughput_diff = (
+        results_no_transform["throughput"] - results_with_transform["throughput"]
+    )
+    throughput_pct = (
+        (throughput_diff / results_with_transform["throughput"] * 100)
+        if results_with_transform["throughput"] > 0
+        else 0
+    )
 
     print(f"\nDuration overhead: {overhead:.3f}s ({overhead_pct:.1f}%)")
-    print(f"Throughput impact: {throughput_diff:,.0f} records/sec ({throughput_pct:.1f}%)")
+    print(
+        f"Throughput impact: {throughput_diff:,.0f} records/sec ({throughput_pct:.1f}%)"
+    )
 
     print(f"\nNo Transform: {results_no_transform['throughput']:,.0f} records/sec")
     print(f"With Transform: {results_with_transform['throughput']:,.0f} records/sec")
@@ -159,7 +174,9 @@ def main():
     print("\n✅ Benchmark complete!")
     print(f"\nConclusion:")
     print(f"  Transformation overhead: ~{overhead_pct:.1f}% slower")
-    print(f"  Still highly efficient at {results_with_transform['throughput']:,.0f} records/sec")
+    print(
+        f"  Still highly efficient at {results_with_transform['throughput']:,.0f} records/sec"
+    )
     print(f"  Suitable for production reverse ETL workloads")
 
 
