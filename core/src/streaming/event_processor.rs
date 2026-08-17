@@ -46,11 +46,22 @@ impl EventProcessor {
         for handler in handlers.iter() {
             handler.handle(&event).await?;
         }
+        drop(handlers);
 
-        let mut queue = self.queue.lock().await;
-        queue.push(event);
+        // Pre-existing deadlock fix: this used to hold `queue`'s lock guard
+        // across the `self.flush().await` call below once the buffer filled up.
+        // `flush()` also locks `self.queue` (a non-reentrant `tokio::sync::Mutex`),
+        // so any event that crossed `buffer_size` deadlocked the processor
+        // forever -- `test_batch_flush` and `test_processed_count` (both of
+        // which push past `buffer_size`) hung indefinitely because of this.
+        // Fix: release the lock before flushing instead of holding it through.
+        let should_flush = {
+            let mut queue = self.queue.lock().await;
+            queue.push(event);
+            queue.len() >= self.buffer_size
+        };
 
-        if queue.len() >= self.buffer_size {
+        if should_flush {
             self.flush().await?;
         }
 
