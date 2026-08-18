@@ -21,7 +21,7 @@ jobs:
         # "Unable to find libsasl2 on your system" without libsasl2-dev.
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev
+          sudo apt-get install -y cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev libcurl4-openssl-dev liblz4-dev libzstd-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -60,13 +60,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install build dependencies
-        # cmake/libsasl2-dev/libssl-dev/zlib1g-dev/libkrb5-dev are needed for
-        # the same reason as the Rust job: `pip install -e .` triggers a real
-        # maturin build of the same crate tree, including the rdkafka
-        # dependency (cmake-build/ssl/gssapi/libz features).
+        # cmake/libsasl2-dev/libssl-dev/zlib1g-dev/libkrb5-dev/libcurl4-openssl-dev/
+        # liblz4-dev/libzstd-dev are needed for the same reason as the Rust
+        # job: `pip install -e .` triggers a real maturin build of the same
+        # crate tree, including rdkafka's from-source librdkafka build
+        # (cmake-build/ssl/gssapi/libz features).
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev
+          sudo apt-get install -y build-essential python3-dev cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev libcurl4-openssl-dev liblz4-dev libzstd-dev
 
       - name: Install dependencies
         run: pip install -e ".[dev]"
