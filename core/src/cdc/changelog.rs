@@ -176,9 +176,24 @@ mod tests {
         }
     }
 
+    /// A real ChangeLog is a real file on disk (see the struct docs - "Persistent
+    /// changelog using JSON lines format"); there is no actual in-memory mode
+    /// despite the ":memory:" literal these tests used to pass as the path. Since
+    /// cargo test runs tests in parallel by default, every test opening the same
+    /// literal ":memory:" file in append mode was writing into (and reading back)
+    /// each other's entries, causing the counts asserted below to depend on
+    /// scheduling. Each test now gets its own real, isolated temp file.
+    fn temp_changelog_path(test_name: &str) -> String {
+        std::env::temp_dir()
+            .join(format!("pyreverseetl-changelog-test-{test_name}-{}.jsonl", Uuid::new_v4()))
+            .to_string_lossy()
+            .into_owned()
+    }
+
     #[test]
     fn test_append_change() {
-        let changelog = ChangeLog::new(":memory:").unwrap();
+        let path = temp_changelog_path("append_change");
+        let changelog = ChangeLog::new(&path).unwrap();
         let change = create_test_change("1");
 
         let entry_id = changelog.append(change).unwrap();
@@ -186,11 +201,13 @@ mod tests {
         assert!(!entry_id.is_empty());
         let entries = changelog.all_entries().unwrap();
         assert_eq!(entries.len(), 1);
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
     fn test_get_unprocessed() {
-        let changelog = ChangeLog::new(":memory:").unwrap();
+        let path = temp_changelog_path("get_unprocessed");
+        let changelog = ChangeLog::new(&path).unwrap();
 
         let change1 = create_test_change("1");
         let entry_id1 = changelog.append(change1).unwrap();
@@ -203,11 +220,13 @@ mod tests {
         let unprocessed = changelog.get_unprocessed().unwrap();
         assert_eq!(unprocessed.len(), 1);
         assert_eq!(unprocessed[0].change.entity_id, "2");
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
     fn test_mark_processed() {
-        let changelog = ChangeLog::new(":memory:").unwrap();
+        let path = temp_changelog_path("mark_processed");
+        let changelog = ChangeLog::new(&path).unwrap();
         let change = create_test_change("1");
 
         let entry_id = changelog.append(change).unwrap();
@@ -217,11 +236,13 @@ mod tests {
         assert_eq!(entries.len(), 1);
         assert!(entries[0].processed);
         assert!(entries[0].processed_at.is_some());
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
     fn test_changelog_entries_limit() {
-        let changelog = ChangeLog::new(":memory:").unwrap();
+        let path = temp_changelog_path("entries_limit");
+        let changelog = ChangeLog::new(&path).unwrap();
 
         for i in 1..=10 {
             let change = create_test_change(&i.to_string());
@@ -230,11 +251,13 @@ mod tests {
 
         let limited = changelog.entries(5).unwrap();
         assert_eq!(limited.len(), 5);
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
     fn test_changelog_clear() {
-        let changelog = ChangeLog::new(":memory:").unwrap();
+        let path = temp_changelog_path("clear");
+        let changelog = ChangeLog::new(&path).unwrap();
         let change = create_test_change("1");
         changelog.append(change).unwrap();
 
@@ -242,5 +265,6 @@ mod tests {
 
         changelog.clear().unwrap();
         assert_eq!(changelog.all_entries().unwrap().len(), 0);
+        let _ = std::fs::remove_file(&path);
     }
 }

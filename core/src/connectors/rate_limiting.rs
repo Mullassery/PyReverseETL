@@ -344,12 +344,14 @@ mod tests {
         let config = RateLimitConfig::token_bucket(100);
         let limiter = RateLimiter::new(config);
 
-        // Should allow first 100 requests
-        for _ in 0..100 {
+        // token_bucket(100) sets max_burst to 2x the steady-state rate (200),
+        // and the bucket starts full at max_burst - so 200 requests succeed
+        // before the bucket is actually exhausted, not 100.
+        for _ in 0..200 {
             assert!(limiter.is_allowed());
         }
 
-        // 101st should be denied
+        // 201st should be denied
         assert!(!limiter.is_allowed());
     }
 
@@ -360,6 +362,10 @@ mod tests {
 
         // Allow 1000 requests per hour
         assert!(limiter.is_allowed());
+        // is_allowed() only checks eligibility; total_requests is driven by
+        // record_success()/record_error(), which the caller reports after
+        // the request actually completes.
+        limiter.record_success();
 
         let stats = limiter.stats();
         assert_eq!(stats.total_requests, 1);
