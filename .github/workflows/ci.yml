@@ -13,20 +13,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install native build dependencies
+        # rdkafka is built with cmake-build/ssl/gssapi/libz features (a real,
+        # from-source librdkafka build, not a stub), which needs these system
+        # dev packages present or the build fails before it even gets to Rust
+        # code - most concretely, sasl2-sys's build script panics with
+        # "Unable to find libsasl2 on your system" without libsasl2-dev.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            crates
-            core
-            python
+          # The whole repo is one Cargo workspace rooted here (root Cargo.toml's
+          # [workspace] members = ["core", "python"]) - "crates" doesn't exist as
+          # a directory, so that cache root was never doing anything.
+          workspaces: .
 
       - name: Build Rust
-        run: cargo build --release --all-features
+        # Deliberately -p pyreverseetl-core, not --workspace/--all-features:
+        # python/Cargo.toml declares `pyo3 = { features = ["extension-module"] }`
+        # unconditionally (not behind a Cargo feature flag), which needs
+        # maturin's dynamic-lookup linker flags to actually link - a plain
+        # `cargo build --workspace` always fails at the link step for the
+        # `pyreverseetl` (python bindings) package. That crate is only ever
+        # meant to be built via `maturin build`/`maturin develop`, exercised by
+        # the Python test job below, not by a bare `cargo build`.
+        run: cargo build --release -p pyreverseetl-core
 
       - name: Test Rust
-        run: cargo test --release --all-features
+        run: cargo test --release -p pyreverseetl-core
 
   python-tests:
     name: Python Tests (Python ${{ matrix.python-version }})
@@ -42,9 +60,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install build dependencies
+        # cmake/libsasl2-dev/libssl-dev/zlib1g-dev/libkrb5-dev are needed for
+        # the same reason as the Rust job: `pip install -e .` triggers a real
+        # maturin build of the same crate tree, including the rdkafka
+        # dependency (cmake-build/ssl/gssapi/libz features).
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev
+          sudo apt-get install -y build-essential python3-dev cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev
 
       - name: Install dependencies
         run: pip install -e ".[dev]"
