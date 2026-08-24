@@ -56,6 +56,15 @@ PyReverseETL provides data activation and reverse ETL for orchestrating workflow
 - **Data Sources:** Snowflake, BigQuery, Redshift, PostgreSQL
 - **Frameworks:** Census, Hightouch, RudderStack
 
+## Reliability & Data Integrity (external critique, verified real gaps)
+
+The production sync path (`core/src/executor.rs::execute_sync`) has real infrastructure for these built elsewhere in the crate, but it's unwired from the path actually invoked by the CLI/Python bindings:
+
+- **Retry-with-backoff bypassed in production adapters**: a solid `RetryPolicy` exists (`core/src/adapters/retry_policy.rs`, `core/src/governance/retry_policy.rs`) wired into `adapters/http_client.rs`, but the live HubSpot/Salesforce/Marketo adapters call `reqwest::blocking::Client` directly (e.g. `hubspot.rs:150-169`), bypassing it entirely — a failed request or 429 just increments a failure counter with no retry.
+- **Schema-drift detection stubbed**: `SchemaEvolution`/`DefaultSchemaEvolution` (`core/src/governance/schema_evolution.rs`) always returns `Ok(vec![])` ("would compare against registered schema" per its own comment), and even that stub is only wired into `ActivationPipeline`, which the real CLI path (`execute_sync`) never calls. A source schema change today only surfaces as per-record HTTP errors.
+- **No dry-run mode**: no `--dry-run`/`dry_run` flag anywhere in `python/pyreverseetl/cli.py` or `core/src/executor.rs` — no way to audit payloads before they hit HubSpot/Salesforce/etc.
+- **No local idempotency ledger**: no record-level "already synced" state store — duplicate protection relies entirely on destination-side upsert keys (real, e.g. HubSpot `idProperty=email`, Salesforce external-ID upsert), which don't cover crash-mid-batch recovery, no-op-change detection, or adapters with no upsert semantics at all (e.g. the webhook adapter just POSTs).
+
 ## Priority Features
 
 1. **Destination Ecosystem** (Q3 2026) — CRM/Marketing integrations
