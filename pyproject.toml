@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "PyReverseETL"
-version = "3.0.0"
+version = "3.1.0"
 description = "The Open Operational Data Activation Runtime"
 readme = "README.md"
 license = { text = "Proprietary" }
@@ -32,6 +32,7 @@ module-name = "pyreverseetl._core"
 python-source = "python"
 manifest-path = "python/Cargo.toml"
 features = ["pyo3/extension-module"]
+include = ["LICENSE"]
 
 [project.urls]
 Repository = "https://github.com/Mullassery/PyReverseETL"

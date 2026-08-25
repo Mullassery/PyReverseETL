@@ -1,6 +1,6 @@
 use super::{
     AdapterError, AuthMethod, BatchResult, DestinationAdapter, DestinationSchema, FieldMapping,
-    OperationResult,
+    OperationResult, RetryPolicy,
 };
 use crate::Entity;
 use serde_json::{json, Value};
@@ -17,6 +17,7 @@ pub struct WebhookAdapter {
     method: String,
     headers: HashMap<String, String>,
     client: reqwest::blocking::Client,
+    retry_policy: RetryPolicy,
 }
 
 impl WebhookAdapter {
@@ -53,6 +54,7 @@ impl WebhookAdapter {
             method: method.to_uppercase(),
             headers,
             client,
+            retry_policy: RetryPolicy::default(),
         })
     }
 
@@ -181,34 +183,36 @@ impl WebhookAdapter {
     }
 
     fn send(&self, payload: &Value) -> Result<(), AdapterError> {
-        let mut req = match self.method.as_str() {
-            "PATCH" => self.client.patch(&self.url),
-            "PUT" => self.client.put(&self.url),
-            _ => self.client.post(&self.url),
-        }
-        .json(payload);
+        self.retry_policy.execute_blocking(|| {
+            let mut req = match self.method.as_str() {
+                "PATCH" => self.client.patch(&self.url),
+                "PUT" => self.client.put(&self.url),
+                _ => self.client.post(&self.url),
+            }
+            .json(payload);
 
-        for (key, value) in &self.headers {
-            req = req.header(key.as_str(), value.as_str());
-        }
+            for (key, value) in &self.headers {
+                req = req.header(key.as_str(), value.as_str());
+            }
 
-        let response = req
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            let response = req
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
 
-        match response.status().as_u16() {
-            200..=299 => Ok(()),
-            401 | 403 => Err(AdapterError::AuthenticationFailed(format!(
-                "webhook rejected credentials: HTTP {}",
-                response.status()
-            ))),
-            429 => Err(AdapterError::RateLimitExceeded {
-                retry_after_ms: 5000,
-            }),
-            status => Err(AdapterError::OperationFailed(format!(
-                "webhook returned HTTP {status}"
-            ))),
-        }
+            match response.status().as_u16() {
+                200..=299 => Ok(()),
+                401 | 403 => Err(AdapterError::AuthenticationFailed(format!(
+                    "webhook rejected credentials: HTTP {}",
+                    response.status()
+                ))),
+                429 => Err(AdapterError::RateLimitExceeded {
+                    retry_after_ms: 5000,
+                }),
+                status => Err(AdapterError::OperationFailed(format!(
+                    "webhook returned HTTP {status}"
+                ))),
+            }
+        })
     }
 }
 
@@ -296,19 +300,21 @@ impl DestinationAdapter for WebhookAdapter {
                 "ID cannot be empty".to_string(),
             ));
         }
-        let mut req = self.client.delete(&self.url).json(&json!({"id": id}));
-        for (key, value) in &self.headers {
-            req = req.header(key.as_str(), value.as_str());
-        }
-        let response = req
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        match response.status().as_u16() {
-            200..=299 | 404 => Ok(()),
-            status => Err(AdapterError::OperationFailed(format!(
-                "webhook delete returned HTTP {status}"
-            ))),
-        }
+        self.retry_policy.execute_blocking(|| {
+            let mut req = self.client.delete(&self.url).json(&json!({"id": id}));
+            for (key, value) in &self.headers {
+                req = req.header(key.as_str(), value.as_str());
+            }
+            let response = req
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            match response.status().as_u16() {
+                200..=299 | 404 => Ok(()),
+                status => Err(AdapterError::OperationFailed(format!(
+                    "webhook delete returned HTTP {status}"
+                ))),
+            }
+        })
     }
 
     fn get_schema(&self) -> Result<DestinationSchema, AdapterError> {
@@ -461,6 +467,34 @@ mod tests {
         let result = adapter.upsert(&entity, &[]).unwrap();
         assert!(!result.success);
         assert!(result.error_message.unwrap().contains("Authentication"));
+    }
+
+    #[test]
+    fn upsert_retries_past_transient_rate_limit_and_succeeds() {
+        let server = MockHttpServer::start_sequence(vec![
+            (429, String::new()),
+            (429, String::new()),
+            (200, "{}".to_string()),
+        ]);
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!(server.base_url.clone()));
+        let adapter = WebhookAdapter::new(
+            &config,
+            AuthMethod::Bearer {
+                token: "tok".to_string(),
+            },
+        )
+        .unwrap();
+
+        let entity = Entity::new(crate::entity::EntityType::Customer, "id", "cust_1");
+        let result = adapter.upsert(&entity, &[]).unwrap();
+
+        assert!(result.success, "{:?}", result.error_message);
+        assert_eq!(
+            server.requests().len(),
+            3,
+            "two failed attempts + one that succeeded"
+        );
     }
 
     #[test]

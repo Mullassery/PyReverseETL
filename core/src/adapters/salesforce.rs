@@ -1,6 +1,6 @@
 use super::{
     AdapterError, AuthMethod, BatchResult, DestinationAdapter, DestinationSchema, FieldMapping,
-    FieldType, OperationResult,
+    FieldType, OperationResult, RetryPolicy,
 };
 use crate::Entity;
 use serde_json::{json, Value};
@@ -30,6 +30,7 @@ pub struct SalesforceAdapter {
     external_id_field: Option<String>,
     client: reqwest::blocking::Client,
     access_token: Mutex<Option<String>>,
+    retry_policy: RetryPolicy,
 }
 
 impl SalesforceAdapter {
@@ -81,6 +82,7 @@ impl SalesforceAdapter {
             external_id_field,
             client,
             access_token: Mutex::new(None),
+            retry_policy: RetryPolicy::default(),
         })
     }
 
@@ -101,31 +103,33 @@ impl SalesforceAdapter {
             form.push(("grant_type", "client_credentials"));
         }
 
-        let response = self
-            .client
-            .post(&url)
-            .form(&form)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .post(&url)
+                .form(&form)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
 
-        if !response.status().is_success() {
-            return Err(AdapterError::AuthenticationFailed(format!(
-                "Salesforce token exchange failed: HTTP {}",
-                response.status()
-            )));
-        }
+            if !response.status().is_success() {
+                return Err(AdapterError::AuthenticationFailed(format!(
+                    "Salesforce token exchange failed: HTTP {}",
+                    response.status()
+                )));
+            }
 
-        let body: Value = response.json().map_err(|e| {
-            AdapterError::AuthenticationFailed(format!("invalid token response: {e}"))
-        })?;
-        body.get("access_token")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .ok_or_else(|| {
-                AdapterError::AuthenticationFailed(
-                    "token response missing access_token".to_string(),
-                )
-            })
+            let body: Value = response.json().map_err(|e| {
+                AdapterError::AuthenticationFailed(format!("invalid token response: {e}"))
+            })?;
+            body.get("access_token")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .ok_or_else(|| {
+                    AdapterError::AuthenticationFailed(
+                        "token response missing access_token".to_string(),
+                    )
+                })
+        })
     }
 
     fn token(&self) -> Result<String, AdapterError> {
@@ -201,51 +205,53 @@ impl DestinationAdapter for SalesforceAdapter {
             ),
         };
 
-        let request = if method_is_patch {
-            self.client.patch(&url)
-        } else {
-            self.client.post(&url)
-        }
-        .bearer_auth(&token)
-        .json(&sf_record);
+        self.retry_policy.execute_blocking(|| {
+            let request = if method_is_patch {
+                self.client.patch(&url)
+            } else {
+                self.client.post(&url)
+            }
+            .bearer_auth(&token)
+            .json(&sf_record);
 
-        let response = request
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        let status = response.status();
+            let response = request
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            let status = response.status();
 
-        if status.as_u16() == 401 {
-            return Err(AdapterError::AuthenticationFailed(
-                "Salesforce rejected the access token".to_string(),
-            ));
-        }
-        if status.as_u16() == 429 {
-            return Err(AdapterError::RateLimitExceeded {
-                retry_after_ms: 5000,
+            if status.as_u16() == 401 {
+                return Err(AdapterError::AuthenticationFailed(
+                    "Salesforce rejected the access token".to_string(),
+                ));
+            }
+            if status.as_u16() == 429 {
+                return Err(AdapterError::RateLimitExceeded {
+                    retry_after_ms: 5000,
+                });
+            }
+            if !status.is_success() {
+                return Ok(OperationResult {
+                    id: entity.id.clone(),
+                    success: false,
+                    external_id: None,
+                    error_message: Some(format!("Salesforce returned HTTP {status}")),
+                });
+            }
+
+            // Salesforce's create response includes the new record's `id`; a
+            // successful PATCH upsert returns 204 with no body.
+            let returned_id = response.json::<Value>().ok().and_then(|v| {
+                v.get("id")
+                    .and_then(|id| id.as_str())
+                    .map(|s| s.to_string())
             });
-        }
-        if !status.is_success() {
-            return Ok(OperationResult {
+
+            Ok(OperationResult {
                 id: entity.id.clone(),
-                success: false,
-                external_id: None,
-                error_message: Some(format!("Salesforce returned HTTP {status}")),
-            });
-        }
-
-        // Salesforce's create response includes the new record's `id`; a
-        // successful PATCH upsert returns 204 with no body.
-        let returned_id = response.json::<Value>().ok().and_then(|v| {
-            v.get("id")
-                .and_then(|id| id.as_str())
-                .map(|s| s.to_string())
-        });
-
-        Ok(OperationResult {
-            id: entity.id.clone(),
-            success: true,
-            external_id: returned_id.or(external_id),
-            error_message: None,
+                success: true,
+                external_id: returned_id.clone().or_else(|| external_id.clone()),
+                error_message: None,
+            })
         })
     }
 
@@ -307,21 +313,23 @@ impl DestinationAdapter for SalesforceAdapter {
             "{}/services/data/{}/sobjects/{}/{}",
             self.instance_url, API_VERSION, self.object_name, id
         );
-        let response = self
-            .client
-            .delete(&url)
-            .bearer_auth(&token)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        match response.status().as_u16() {
-            200..=299 | 404 => Ok(()),
-            401 => Err(AdapterError::AuthenticationFailed(
-                "Salesforce rejected the access token".to_string(),
-            )),
-            status => Err(AdapterError::OperationFailed(format!(
-                "Salesforce delete returned HTTP {status}"
-            ))),
-        }
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .delete(&url)
+                .bearer_auth(&token)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            match response.status().as_u16() {
+                200..=299 | 404 => Ok(()),
+                401 => Err(AdapterError::AuthenticationFailed(
+                    "Salesforce rejected the access token".to_string(),
+                )),
+                status => Err(AdapterError::OperationFailed(format!(
+                    "Salesforce delete returned HTTP {status}"
+                ))),
+            }
+        })
     }
 
     fn get_schema(&self) -> Result<DestinationSchema, AdapterError> {
@@ -330,12 +338,13 @@ impl DestinationAdapter for SalesforceAdapter {
             "{}/services/data/{}/sobjects/{}/describe",
             self.instance_url, API_VERSION, self.object_name
         );
-        let response = self
-            .client
-            .get(&url)
-            .bearer_auth(&token)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+        let response = self.retry_policy.execute_blocking(|| {
+            self.client
+                .get(&url)
+                .bearer_auth(&token)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))
+        })?;
 
         if !response.status().is_success() {
             return Err(AdapterError::OperationFailed(format!(
@@ -595,5 +604,32 @@ mod tests {
         assert!(schema.fields.contains_key("Email"));
         assert!(schema.required_fields.contains(&"LastName".to_string()));
         assert_eq!(schema.max_batch_size, 10000);
+    }
+
+    #[test]
+    fn upsert_retries_past_transient_rate_limit_and_succeeds() {
+        // Real retry-with-backoff behavior: the first request (token
+        // exchange) succeeds, then the upsert itself gets rate-limited
+        // twice before a real success -- proves the RetryPolicy wired into
+        // salesforce.rs actually retries instead of surfacing the first
+        // 429 immediately.
+        let server = MockHttpServer::start_sequence(vec![
+            (200, json!({"access_token": "tok"}).to_string()),
+            (429, String::new()),
+            (429, String::new()),
+            (200, json!({"id": "003xx"}).to_string()),
+        ]);
+        let config = config_for(&server, "Contact", None);
+        let adapter = SalesforceAdapter::new(&config, oauth()).unwrap();
+
+        let entity = Entity::new(crate::entity::EntityType::Customer, "id", "cust_1");
+        let result = adapter.upsert(&entity, &[]).unwrap();
+
+        assert!(result.success, "{:?}", result.error_message);
+        assert_eq!(
+            server.requests().len(),
+            4,
+            "1 token exchange + 2 failed upserts + 1 that succeeded"
+        );
     }
 }

@@ -158,6 +158,9 @@ class CLIInterface:
         activation_id: str,
         limit: Optional[int] = None,
         compliance_rules: Optional[list] = None,
+        dry_run: bool = False,
+        schema_store_path: Optional[str] = None,
+        idempotency_store_path: Optional[str] = None,
     ) -> dict:
         """Execute an activation: run a real sync through the Rust engine.
 
@@ -176,6 +179,26 @@ class CLIInterface:
                 `[{"id": "mask_email", "rule_type": "pii_masking",
                    "target_fields": ["email"],
                    "action": {"type": "mask", "pattern": "****"}}]`
+            dry_run: If True, records are still read from the real source and
+                run through the real compliance engine, but nothing is ever
+                written to the destination -- no HTTP request, database
+                write, or object-storage put. The response's
+                `dry_run_preview` holds the exact post-compliance payload for
+                every record that would have been sent, so it can be
+                audited before running for real. No run is recorded in
+                history, since nothing was actually synced.
+            schema_store_path: Optional path to a SQLite file where the
+                last-seen field-name/type shape for this source->destination
+                pair is persisted and diffed against on every run. Omit to
+                disable schema-drift checking entirely (default).
+            idempotency_store_path: Optional path to a SQLite file recording
+                which exact record content was already successfully sent to
+                which destination. Re-running the same sync (e.g. after a
+                crash mid-batch) skips records already synced instead of
+                re-sending them, while a record whose content genuinely
+                changed is still sent. Only applies to the adapter-based
+                destinations (webhook/salesforce/hubspot/marketo). Omit to
+                disable idempotency checking entirely (default).
 
         Returns:
             JSON response with real execution details, or a real error if
@@ -215,12 +238,34 @@ class CLIInterface:
                 destination_config=json.dumps(destination_config),
                 limit=limit,
                 compliance_rules=json.dumps(compliance_rules) if compliance_rules else None,
+                dry_run=dry_run,
+                schema_store_path=schema_store_path,
+                idempotency_store_path=idempotency_store_path,
             )
         except Exception as e:  # noqa: BLE001 - surface real engine errors verbatim
             return {
                 "status": "error",
                 "activation_id": activation_id,
                 "message": f"Sync failed: {e}",
+            }
+
+        if result.dry_run:
+            # Nothing was actually synced -- don't record a fake run in history.
+            return {
+                "status": "success",
+                "run_id": result.run_id,
+                "activation_id": activation_id,
+                "dry_run": True,
+                "rows_read": result.rows_read,
+                "rows_would_write": len(result.dry_run_preview),
+                "dry_run_preview": [json.loads(p) for p in result.dry_run_preview],
+                "compliance_violations": result.compliance_violations,
+                "schema_changes": result.schema_changes,
+                "duration_ms": result.duration_ms,
+                "message": (
+                    f"Dry run: {len(result.dry_run_preview)} row(s) would be written to "
+                    f"{activation['destination']} (nothing was actually sent)"
+                ),
             }
 
         run_id = result.run_id
@@ -231,7 +276,9 @@ class CLIInterface:
             "rows_synced": result.rows_written,
             "rows_read": result.rows_read,
             "rows_failed": result.rows_failed,
+            "rows_skipped_idempotent": result.rows_skipped_idempotent,
             "compliance_violations": result.compliance_violations,
+            "schema_changes": result.schema_changes,
             "destination": activation["destination"],
             "started_at": result.started_at,
             "completed_at": result.completed_at,
@@ -246,7 +293,9 @@ class CLIInterface:
             "rows_synced": result.rows_written,
             "rows_read": result.rows_read,
             "rows_failed": result.rows_failed,
+            "rows_skipped_idempotent": result.rows_skipped_idempotent,
             "compliance_violations": result.compliance_violations,
+            "schema_changes": result.schema_changes,
             "duration_ms": result.duration_ms,
             "message": f"Activation executed: {result.rows_written} rows written to {activation['destination']}",
         }
@@ -416,8 +465,30 @@ def main():
             if len(sys.argv) > 3 and sys.argv[3].isdigit():
                 limit = int(sys.argv[3])
             compliance_rules = _parse_config_arg(sys.argv, "--compliance-rules")
+            dry_run = "--dry-run" in sys.argv
+            schema_store_path = None
+            if "--schema-store" in sys.argv:
+                idx = sys.argv.index("--schema-store")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--schema-store requires a file path"}))
+                    sys.exit(1)
+                schema_store_path = sys.argv[idx + 1]
+            idempotency_store_path = None
+            if "--idempotency-store" in sys.argv:
+                idx = sys.argv.index("--idempotency-store")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--idempotency-store requires a file path"}))
+                    sys.exit(1)
+                idempotency_store_path = sys.argv[idx + 1]
 
-            result = cli.execute_activation(activation_id, limit, compliance_rules)
+            result = cli.execute_activation(
+                activation_id,
+                limit,
+                compliance_rules,
+                dry_run,
+                schema_store_path,
+                idempotency_store_path,
+            )
             print(json.dumps(result))
 
         elif command == "status":
@@ -510,16 +581,34 @@ COMMANDS:
             pyreverseetl create-activation ltv_to_hook ltv_sync webhook \\
                 --dest-config '{"url":"https://example.com/hook","auth":{"type":"bearer","token":"secret"}}'
 
-    execute <activation_id> [limit] [--compliance-rules <json|@file>]
+    execute <activation_id> [limit] [--compliance-rules <json|@file>] [--dry-run] [--schema-store <path>] [--idempotency-store <path>]
         Execute a REAL data synchronization through the Rust engine
         - activation_id: Activation to execute (required)
         - limit: Max rows to read from the source (optional)
         - --compliance-rules: JSON array of compliance rules applied before
           write, e.g. '[{"id":"mask_email","rule_type":"pii_masking",
           "target_fields":["email"],"action":{"type":"mask","pattern":"****"}}]'
+        - --dry-run: Read and apply compliance rules for real, but never
+          write to the destination. Prints the exact payload that would
+          have been sent for each record (dry_run_preview) instead.
+        - --schema-store <path>: Persist the last-seen field shape for this
+          source->destination pair to a real SQLite file at <path>, and
+          report any field added/removed/type-changed since the last run
+          (schema_changes) instead of only finding out via per-record HTTP
+          errors from the destination.
+        - --idempotency-store <path>: Persist which exact record content was
+          already sent to which destination to a real SQLite file at
+          <path>. Re-running the same sync (e.g. after a crash mid-batch)
+          skips records already synced (rows_skipped_idempotent) instead of
+          re-sending them, while a record whose content genuinely changed
+          is still sent. Only applies to webhook/salesforce/hubspot/marketo
+          destinations.
 
         Example:
             pyreverseetl execute ltv_to_hook 5000
+            pyreverseetl execute ltv_to_hook --dry-run
+            pyreverseetl execute ltv_to_hook --schema-store .pyreverseetl/schema.db
+            pyreverseetl execute ltv_to_hook --idempotency-store .pyreverseetl/idempotency.db
 
     status <run_id>
         Get status of a sync run

@@ -7,6 +7,7 @@ pub mod entity;
 pub mod error;
 pub mod executor;
 pub mod governance;
+pub mod idempotency;
 pub mod lineage;
 pub mod observability;
 pub mod pipeline;

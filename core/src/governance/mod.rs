@@ -21,7 +21,9 @@ pub use compliance_rules::{
 pub use credentials::{AuthMethod, GovernanceCredentials};
 pub use quality_gate::{QualityGate, StatGuardianGate, ValidationResult};
 pub use retry_policy::{RateLimiter, RetryPolicy};
-pub use schema_evolution::{SchemaChange, SchemaChangeType, SchemaEvolution};
+pub use schema_evolution::{
+    DefaultSchemaEvolution, SchemaChange, SchemaChangeType, SchemaEvolution,
+};
 pub use statguardian_client::{
     SchemaCheckRequest, SchemaCheckResponse, StatGuardianClient, ValidateRequest, ValidateResponse,
 };

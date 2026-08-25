@@ -1,6 +1,6 @@
 use super::{
     AdapterError, AuthMethod, BatchResult, DestinationAdapter, DestinationSchema, FieldMapping,
-    FieldType, OperationResult,
+    FieldType, OperationResult, RetryPolicy,
 };
 use crate::Entity;
 use serde_json::{json, Value};
@@ -28,6 +28,7 @@ pub struct MarketoAdapter {
     dedup_field: String,
     client: reqwest::blocking::Client,
     access_token: Mutex<Option<String>>,
+    retry_policy: RetryPolicy,
 }
 
 impl MarketoAdapter {
@@ -70,6 +71,7 @@ impl MarketoAdapter {
             dedup_field,
             client,
             access_token: Mutex::new(None),
+            retry_policy: RetryPolicy::default(),
         })
     }
 
@@ -79,28 +81,30 @@ impl MarketoAdapter {
             "{}/identity/oauth/token?grant_type=client_credentials&client_id={}&client_secret={}",
             self.api_host, self.client_id, self.client_secret
         );
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        if !response.status().is_success() {
-            return Err(AdapterError::AuthenticationFailed(format!(
-                "Marketo token exchange failed: HTTP {}",
-                response.status()
-            )));
-        }
-        let body: Value = response.json().map_err(|e| {
-            AdapterError::AuthenticationFailed(format!("invalid token response: {e}"))
-        })?;
-        body.get("access_token")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .ok_or_else(|| {
-                AdapterError::AuthenticationFailed(
-                    "token response missing access_token".to_string(),
-                )
-            })
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .get(&url)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            if !response.status().is_success() {
+                return Err(AdapterError::AuthenticationFailed(format!(
+                    "Marketo token exchange failed: HTTP {}",
+                    response.status()
+                )));
+            }
+            let body: Value = response.json().map_err(|e| {
+                AdapterError::AuthenticationFailed(format!("invalid token response: {e}"))
+            })?;
+            body.get("access_token")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .ok_or_else(|| {
+                    AdapterError::AuthenticationFailed(
+                        "token response missing access_token".to_string(),
+                    )
+                })
+        })
     }
 
     fn token(&self) -> Result<String, AdapterError> {
@@ -165,62 +169,64 @@ impl DestinationAdapter for MarketoAdapter {
             "input": [lead],
         });
 
-        let response = self
-            .client
-            .post(format!("{}/rest/v1/leads.json", self.api_host))
-            .bearer_auth(&token)
-            .json(&body)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        let status = response.status();
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .post(format!("{}/rest/v1/leads.json", self.api_host))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            let status = response.status();
 
-        if status.as_u16() == 401 {
-            return Err(AdapterError::AuthenticationFailed(
-                "Marketo rejected the access token".to_string(),
-            ));
-        }
-        if status.as_u16() == 429 {
-            return Err(AdapterError::RateLimitExceeded {
-                retry_after_ms: 20000,
-            });
-        }
-        if !status.is_success() {
-            return Ok(OperationResult {
+            if status.as_u16() == 401 {
+                return Err(AdapterError::AuthenticationFailed(
+                    "Marketo rejected the access token".to_string(),
+                ));
+            }
+            if status.as_u16() == 429 {
+                return Err(AdapterError::RateLimitExceeded {
+                    retry_after_ms: 20000,
+                });
+            }
+            if !status.is_success() {
+                return Ok(OperationResult {
+                    id: entity.id.clone(),
+                    success: false,
+                    external_id: None,
+                    error_message: Some(format!("Marketo returned HTTP {status}")),
+                });
+            }
+
+            let response_body: Value = response.json().map_err(|e| {
+                AdapterError::OperationFailed(format!("invalid Marketo response: {e}"))
+            })?;
+            let success = response_body
+                .get("success")
+                .and_then(|s| s.as_bool())
+                .unwrap_or(false);
+            if !success {
+                return Ok(OperationResult {
+                    id: entity.id.clone(),
+                    success: false,
+                    external_id: None,
+                    error_message: Some(format!("Marketo rejected the lead: {response_body}")),
+                });
+            }
+
+            let marketo_id = response_body
+                .get("result")
+                .and_then(|r| r.as_array())
+                .and_then(|arr| arr.first())
+                .and_then(|first| first.get("id"))
+                .map(|id| id.to_string());
+
+            Ok(OperationResult {
                 id: entity.id.clone(),
-                success: false,
-                external_id: None,
-                error_message: Some(format!("Marketo returned HTTP {status}")),
-            });
-        }
-
-        let response_body: Value = response
-            .json()
-            .map_err(|e| AdapterError::OperationFailed(format!("invalid Marketo response: {e}")))?;
-        let success = response_body
-            .get("success")
-            .and_then(|s| s.as_bool())
-            .unwrap_or(false);
-        if !success {
-            return Ok(OperationResult {
-                id: entity.id.clone(),
-                success: false,
-                external_id: None,
-                error_message: Some(format!("Marketo rejected the lead: {response_body}")),
-            });
-        }
-
-        let marketo_id = response_body
-            .get("result")
-            .and_then(|r| r.as_array())
-            .and_then(|arr| arr.first())
-            .and_then(|first| first.get("id"))
-            .map(|id| id.to_string());
-
-        Ok(OperationResult {
-            id: entity.id.clone(),
-            success: true,
-            external_id: marketo_id.or(external_id),
-            error_message: None,
+                success: true,
+                external_id: marketo_id.clone().or_else(|| external_id.clone()),
+                error_message: None,
+            })
         })
     }
 
@@ -279,42 +285,46 @@ impl DestinationAdapter for MarketoAdapter {
         }
         let token = self.token()?;
         let body = json!({ "input": [{ "id": id.parse::<i64>().unwrap_or(0) }] });
-        let response = self
-            .client
-            .post(format!("{}/rest/v1/leads/delete.json", self.api_host))
-            .bearer_auth(&token)
-            .json(&body)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        match response.status().as_u16() {
-            200..=299 => Ok(()),
-            401 => Err(AdapterError::AuthenticationFailed(
-                "Marketo rejected the access token".to_string(),
-            )),
-            status => Err(AdapterError::OperationFailed(format!(
-                "Marketo delete returned HTTP {status}"
-            ))),
-        }
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .post(format!("{}/rest/v1/leads/delete.json", self.api_host))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            match response.status().as_u16() {
+                200..=299 => Ok(()),
+                401 => Err(AdapterError::AuthenticationFailed(
+                    "Marketo rejected the access token".to_string(),
+                )),
+                status => Err(AdapterError::OperationFailed(format!(
+                    "Marketo delete returned HTTP {status}"
+                ))),
+            }
+        })
     }
 
     fn get_schema(&self) -> Result<DestinationSchema, AdapterError> {
         let token = self.token()?;
-        let response = self
-            .client
-            .get(format!("{}/rest/v1/leads/describe.json", self.api_host))
-            .bearer_auth(&token)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+        let body: Value = self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .get(format!("{}/rest/v1/leads/describe.json", self.api_host))
+                .bearer_auth(&token)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
 
-        if !response.status().is_success() {
-            return Err(AdapterError::OperationFailed(format!(
-                "Marketo describe returned HTTP {}",
-                response.status()
-            )));
-        }
+            if !response.status().is_success() {
+                return Err(AdapterError::OperationFailed(format!(
+                    "Marketo describe returned HTTP {}",
+                    response.status()
+                )));
+            }
 
-        let body: Value = response.json().map_err(|e| {
-            AdapterError::OperationFailed(format!("invalid describe response: {e}"))
+            response.json().map_err(|e| {
+                AdapterError::OperationFailed(format!("invalid describe response: {e}"))
+            })
         })?;
 
         let mut fields = HashMap::new();
@@ -523,5 +533,30 @@ mod tests {
         assert!(schema.fields.contains_key("email"));
         assert!(schema.fields.contains_key("firstName"));
         assert_eq!(schema.max_batch_size, 300);
+    }
+
+    #[test]
+    fn upsert_retries_past_transient_rate_limit_and_succeeds() {
+        let server = MockHttpServer::start_sequence(vec![
+            (200, json!({"access_token": "tok"}).to_string()),
+            (429, String::new()),
+            (429, String::new()),
+            (
+                200,
+                json!({"success": true, "result": [{"id": 42}]}).to_string(),
+            ),
+        ]);
+        let config = config_for(&server);
+        let adapter = MarketoAdapter::new(&config, oauth()).unwrap();
+        let entity = Entity::new(crate::entity::EntityType::Lead, "id", "lead_1");
+
+        let result = adapter.upsert(&entity, &[]).unwrap();
+
+        assert!(result.success, "{:?}", result.error_message);
+        assert_eq!(
+            server.requests().len(),
+            4,
+            "1 token exchange + 2 failed upserts + 1 that succeeded"
+        );
     }
 }

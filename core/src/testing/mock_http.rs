@@ -44,6 +44,20 @@ impl MockHttpServer {
     /// Start a server on an OS-assigned local port, responding to every
     /// request with `status`/`body` (as `application/json`).
     pub fn start(status: u16, body: &str) -> Self {
+        Self::start_sequence(vec![(status, body.to_string())])
+    }
+
+    /// Start a server that responds to successive requests with each
+    /// `(status, body)` pair in `responses`, in order; once exhausted, every
+    /// further request repeats the last entry. Exists to test real
+    /// retry-with-backoff behavior (e.g. `[(429, ""), (429, ""), (200, "{}")]`
+    /// asserts an adapter actually retries past transient failures instead
+    /// of giving up on the first one).
+    pub fn start_sequence(responses: Vec<(u16, String)>) -> Self {
+        assert!(
+            !responses.is_empty(),
+            "must configure at least one response"
+        );
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind mock http server");
         listener.set_nonblocking(true).expect("set nonblocking");
         let port = listener.local_addr().expect("local addr").port();
@@ -54,8 +68,11 @@ impl MockHttpServer {
 
         let requests_clone = requests.clone();
         let shutdown_clone = shutdown.clone();
-        let status_line = status_line_for(status);
-        let body = body.to_string();
+        let responses: Vec<(String, String)> = responses
+            .into_iter()
+            .map(|(status, body)| (status_line_for(status), body))
+            .collect();
+        let mut next_response_idx = 0usize;
 
         let handle = std::thread::spawn(move || loop {
             if *shutdown_clone.lock().unwrap() {
@@ -67,7 +84,10 @@ impl MockHttpServer {
                     if let Some(req) = read_request(&stream) {
                         requests_clone.lock().unwrap().push(req);
                     }
-                    write_response(stream, &status_line, &body);
+                    let idx = next_response_idx.min(responses.len() - 1);
+                    let (status_line, body) = &responses[idx];
+                    next_response_idx += 1;
+                    write_response(stream, status_line, body);
                 }
                 Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     std::thread::sleep(std::time::Duration::from_millis(5));

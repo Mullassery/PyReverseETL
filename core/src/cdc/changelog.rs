@@ -185,7 +185,10 @@ mod tests {
     /// scheduling. Each test now gets its own real, isolated temp file.
     fn temp_changelog_path(test_name: &str) -> String {
         std::env::temp_dir()
-            .join(format!("pyreverseetl-changelog-test-{test_name}-{}.jsonl", Uuid::new_v4()))
+            .join(format!(
+                "pyreverseetl-changelog-test-{test_name}-{}.jsonl",
+                Uuid::new_v4()
+            ))
             .to_string_lossy()
             .into_owned()
     }

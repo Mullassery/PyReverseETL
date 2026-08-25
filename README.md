@@ -35,6 +35,41 @@ The exact third-party API each CRM/marketing-automation adapter targets is
 named in the source file, not repeated here to avoid implying vendor
 endorsement.
 
+## Reliability
+
+All four wired into the real production sync path (`execute_sync`), not a
+separate/dead one:
+
+- **Retry with backoff**: every HubSpot/Salesforce/Marketo/webhook HTTP call
+  (upsert, delete, schema fetch, OAuth token exchange) automatically retries
+  transient failures (connection errors, timeouts, 429 rate limits) with
+  exponential backoff, instead of failing on the first blip.
+- **Dry run** (`--dry-run` / `dry_run=True`): reads from the real source and
+  runs the real compliance engine, but never writes to the destination.
+  `dry_run_preview` shows the exact payload each record would have sent, so
+  you can audit before committing.
+  ```bash
+  pyreverseetl execute my_activation --dry-run
+  ```
+- **Schema-drift detection** (`--schema-store <path>`): persists the
+  last-seen field-name/type shape for a source->destination pair to a real
+  SQLite file, and reports any field added/removed/type-changed since the
+  last run (`schema_changes`) — instead of only finding out via a per-record
+  HTTP error from the destination.
+  ```bash
+  pyreverseetl execute my_activation --schema-store .pyreverseetl/schema.db
+  ```
+- **Idempotency ledger** (`--idempotency-store <path>`): persists which
+  exact record content was already sent to which destination to a real
+  SQLite file. Re-running the same sync (e.g. after a crash mid-batch) skips
+  records already synced (`rows_skipped_idempotent`) instead of re-sending
+  them, while a record whose content genuinely changed is still sent — this
+  covers destinations with no upsert semantics of their own (the webhook
+  adapter just POSTs) as well as crash-mid-batch recovery.
+  ```bash
+  pyreverseetl execute my_activation --idempotency-store .pyreverseetl/idempotency.db
+  ```
+
 ## Install
 
 ```bash

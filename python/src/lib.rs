@@ -466,6 +466,24 @@ pub struct PySyncResult {
     pub completed_at: String,
     #[pyo3(get)]
     pub duration_ms: i64,
+    #[pyo3(get)]
+    pub dry_run: bool,
+    /// Only non-empty when `dry_run=True`: the exact post-compliance JSON
+    /// payload for every record that would have been sent, one string per
+    /// record.
+    #[pyo3(get)]
+    pub dry_run_preview: Vec<String>,
+    /// Only non-empty when `schema_store_path` was passed to `run_sync`: a
+    /// human-readable description of every field-name/type change detected
+    /// against the last-known shape for this source->destination pair.
+    #[pyo3(get)]
+    pub schema_changes: Vec<String>,
+    /// Records skipped because a real idempotency ledger (see
+    /// `idempotency_store_path`) already had this exact content marked as
+    /// synced to this destination. Always 0 when idempotency checking is
+    /// disabled.
+    #[pyo3(get)]
+    pub rows_skipped_idempotent: u64,
 }
 
 /// Run a real sync: read from `source_type`/`source_config` (JSON string),
@@ -473,9 +491,20 @@ pub struct PySyncResult {
 /// `destination_type`/`destination_config` (JSON string), and record a real
 /// lineage edge. Supported `source_type`: `postgres`, `mysql`, `s3`.
 /// Supported `destination_type`: all of those plus `webhook`, `salesforce`,
-/// `hubspot`, `marketo`.
+/// `hubspot`, `marketo`. With `dry_run=True`, records are still read and run
+/// through the real compliance engine, but the destination is never
+/// actually written to -- see `PySyncResult.dry_run_preview` for what would
+/// have been sent. With `schema_store_path` set, the last-seen field shape
+/// for this source->destination pair is persisted to a real SQLite file at
+/// that path and diffed on every run -- see `PySyncResult.schema_changes`.
+/// With `idempotency_store_path` set, a real SQLite ledger at that path
+/// records which exact record content was already sent to which
+/// destination, so re-running the same sync (e.g. after a crash) skips
+/// records already synced instead of re-sending them -- see
+/// `PySyncResult.rows_skipped_idempotent`. Only applies to the
+/// adapter-based destinations (webhook/salesforce/hubspot/marketo).
 #[pyfunction]
-#[pyo3(signature = (source_type, source_config, destination_type, destination_config, limit=None, compliance_rules=None))]
+#[pyo3(signature = (source_type, source_config, destination_type, destination_config, limit=None, compliance_rules=None, dry_run=false, schema_store_path=None, idempotency_store_path=None))]
 pub fn run_sync(
     source_type: &str,
     source_config: &str,
@@ -483,6 +512,9 @@ pub fn run_sync(
     destination_config: &str,
     limit: Option<u64>,
     compliance_rules: Option<&str>,
+    dry_run: bool,
+    schema_store_path: Option<&str>,
+    idempotency_store_path: Option<&str>,
 ) -> PyResult<PySyncResult> {
     let source_cfg_value = parse_json(source_config)?;
     let dest_cfg_value = parse_json(destination_config)?;
@@ -494,6 +526,9 @@ pub fn run_sync(
     let options = ExecuteOptions {
         limit,
         compliance_rules: rules,
+        dry_run,
+        schema_store_path: schema_store_path.map(std::path::PathBuf::from),
+        idempotency_store_path: idempotency_store_path.map(std::path::PathBuf::from),
     };
 
     let runtime = tokio::runtime::Runtime::new().map_err(py_err)?;
@@ -510,6 +545,10 @@ pub fn run_sync(
         started_at: result.started_at.to_rfc3339(),
         completed_at: result.completed_at.to_rfc3339(),
         duration_ms: result.duration_ms,
+        schema_changes: result.schema_changes,
+        rows_skipped_idempotent: result.rows_skipped_idempotent,
+        dry_run: result.dry_run,
+        dry_run_preview: result.dry_run_preview,
     })
 }
 

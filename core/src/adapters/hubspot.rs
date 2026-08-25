@@ -1,6 +1,6 @@
 use super::{
     AdapterError, AuthMethod, BatchResult, DestinationAdapter, DestinationSchema, FieldMapping,
-    FieldType, OperationResult,
+    FieldType, OperationResult, RetryPolicy,
 };
 use crate::Entity;
 use serde_json::{json, Value};
@@ -26,6 +26,7 @@ pub struct HubSpotAdapter {
     object_type: String,
     dedup_email: bool,
     client: reqwest::blocking::Client,
+    retry_policy: RetryPolicy,
 }
 
 impl HubSpotAdapter {
@@ -68,6 +69,7 @@ impl HubSpotAdapter {
             object_type,
             dedup_email,
             client,
+            retry_policy: RetryPolicy::default(),
         })
     }
 
@@ -124,70 +126,82 @@ impl DestinationAdapter for HubSpotAdapter {
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        let (request, external_id) = if self.dedup_email {
-            match &email {
-                Some(email) => (
-                    self.client.patch(format!(
-                        "{}/crm/v3/objects/{}/{}?idProperty=email",
-                        self.api_base, self.object_type, email
-                    )),
-                    Some(email.clone()),
-                ),
-                None => (
+        let external_id_for_create = if self.dedup_email {
+            email.clone()
+        } else {
+            Some(entity.id.clone())
+        };
+
+        // The whole request-build-send-classify cycle runs inside the retry
+        // closure so a retried attempt builds (and sends) a fresh request --
+        // a `reqwest::blocking::RequestBuilder` is consumed by `.send()` and
+        // can't be reused across attempts.
+        self.retry_policy.execute_blocking(|| {
+            let (request, external_id) = if self.dedup_email {
+                match &email {
+                    Some(email) => (
+                        self.client.patch(format!(
+                            "{}/crm/v3/objects/{}/{}?idProperty=email",
+                            self.api_base, self.object_type, email
+                        )),
+                        Some(email.clone()),
+                    ),
+                    None => (
+                        self.client.post(format!(
+                            "{}/crm/v3/objects/{}",
+                            self.api_base, self.object_type
+                        )),
+                        None,
+                    ),
+                }
+            } else {
+                (
                     self.client.post(format!(
                         "{}/crm/v3/objects/{}",
                         self.api_base, self.object_type
                     )),
-                    None,
-                ),
+                    external_id_for_create.clone(),
+                )
+            };
+
+            let response = request
+                .bearer_auth(&self.api_key)
+                .json(&body)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            let status = response.status();
+
+            if status.as_u16() == 401 {
+                return Err(AdapterError::AuthenticationFailed(
+                    "HubSpot rejected the access token".to_string(),
+                ));
             }
-        } else {
-            (
-                self.client.post(format!(
-                    "{}/crm/v3/objects/{}",
-                    self.api_base, self.object_type
-                )),
-                Some(entity.id.clone()),
-            )
-        };
+            if status.as_u16() == 429 {
+                return Err(AdapterError::RateLimitExceeded {
+                    retry_after_ms: 10000,
+                });
+            }
+            if !status.is_success() {
+                return Ok(OperationResult {
+                    id: entity.id.clone(),
+                    success: false,
+                    external_id: None,
+                    error_message: Some(format!("HubSpot returned HTTP {status}")),
+                });
+            }
 
-        let response = request
-            .bearer_auth(&self.api_key)
-            .json(&body)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        let status = response.status();
-
-        if status.as_u16() == 401 {
-            return Err(AdapterError::AuthenticationFailed(
-                "HubSpot rejected the access token".to_string(),
-            ));
-        }
-        if status.as_u16() == 429 {
-            return Err(AdapterError::RateLimitExceeded {
-                retry_after_ms: 10000,
+            let returned_id = response.json::<Value>().ok().and_then(|v| {
+                v.get("id")
+                    .and_then(|id| id.as_str())
+                    .map(|s| s.to_string())
             });
-        }
-        if !status.is_success() {
-            return Ok(OperationResult {
+
+            Ok(OperationResult {
                 id: entity.id.clone(),
-                success: false,
-                external_id: None,
-                error_message: Some(format!("HubSpot returned HTTP {status}")),
-            });
-        }
-
-        let returned_id = response.json::<Value>().ok().and_then(|v| {
-            v.get("id")
-                .and_then(|id| id.as_str())
-                .map(|s| s.to_string())
-        });
-
-        Ok(OperationResult {
-            id: entity.id.clone(),
-            success: true,
-            external_id: returned_id.or(external_id),
-            error_message: None,
+                success: true,
+                external_id: returned_id.or(external_id),
+                error_message: None,
+            })
         })
     }
 
@@ -244,46 +258,50 @@ impl DestinationAdapter for HubSpotAdapter {
                 "ID cannot be empty".to_string(),
             ));
         }
-        let response = self
-            .client
-            .delete(format!(
-                "{}/crm/v3/objects/{}/{}",
-                self.api_base, self.object_type, id
-            ))
-            .bearer_auth(&self.api_key)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
-        match response.status().as_u16() {
-            200..=299 | 404 => Ok(()),
-            401 => Err(AdapterError::AuthenticationFailed(
-                "HubSpot rejected the access token".to_string(),
-            )),
-            status => Err(AdapterError::OperationFailed(format!(
-                "HubSpot delete returned HTTP {status}"
-            ))),
-        }
+        self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .delete(format!(
+                    "{}/crm/v3/objects/{}/{}",
+                    self.api_base, self.object_type, id
+                ))
+                .bearer_auth(&self.api_key)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+            match response.status().as_u16() {
+                200..=299 | 404 => Ok(()),
+                401 => Err(AdapterError::AuthenticationFailed(
+                    "HubSpot rejected the access token".to_string(),
+                )),
+                status => Err(AdapterError::OperationFailed(format!(
+                    "HubSpot delete returned HTTP {status}"
+                ))),
+            }
+        })
     }
 
     fn get_schema(&self) -> Result<DestinationSchema, AdapterError> {
-        let response = self
-            .client
-            .get(format!(
-                "{}/crm/v3/properties/{}",
-                self.api_base, self.object_type
-            ))
-            .bearer_auth(&self.api_key)
-            .send()
-            .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
+        let body: Value = self.retry_policy.execute_blocking(|| {
+            let response = self
+                .client
+                .get(format!(
+                    "{}/crm/v3/properties/{}",
+                    self.api_base, self.object_type
+                ))
+                .bearer_auth(&self.api_key)
+                .send()
+                .map_err(|e| AdapterError::NetworkError(e.to_string()))?;
 
-        if !response.status().is_success() {
-            return Err(AdapterError::OperationFailed(format!(
-                "HubSpot properties endpoint returned HTTP {}",
-                response.status()
-            )));
-        }
+            if !response.status().is_success() {
+                return Err(AdapterError::OperationFailed(format!(
+                    "HubSpot properties endpoint returned HTTP {}",
+                    response.status()
+                )));
+            }
 
-        let body: Value = response.json().map_err(|e| {
-            AdapterError::OperationFailed(format!("invalid properties response: {e}"))
+            response.json().map_err(|e| {
+                AdapterError::OperationFailed(format!("invalid properties response: {e}"))
+            })
         })?;
 
         let mut fields = HashMap::new();
@@ -472,5 +490,48 @@ mod tests {
 
         let req = server.last_request().unwrap();
         assert_eq!(req.path, "/crm/v3/properties/contacts");
+    }
+
+    #[test]
+    fn upsert_retries_past_transient_rate_limit_and_succeeds() {
+        // Two 429s, then a real success -- proves the retry policy wired
+        // into hubspot.rs actually retries a live failure instead of
+        // surfacing it immediately (the bug this fixes: adapters called
+        // `reqwest::blocking` directly, bypassing the crate's RetryPolicy
+        // entirely).
+        let server = MockHttpServer::start_sequence(vec![
+            (429, String::new()),
+            (429, String::new()),
+            (200, r#"{"id":"999"}"#.to_string()),
+        ]);
+        let config = config_with_base(&server, true);
+        let adapter = HubSpotAdapter::new(&config, api_key()).unwrap();
+
+        let entity = Entity::new(crate::entity::EntityType::Customer, "id", "cust_1");
+        let result = adapter.upsert(&entity, &[]).unwrap();
+
+        assert!(result.success, "{:?}", result.error_message);
+        assert_eq!(
+            server.requests().len(),
+            3,
+            "two failed attempts + one that succeeded"
+        );
+    }
+
+    #[test]
+    fn upsert_does_not_retry_a_non_retryable_auth_failure() {
+        let server = MockHttpServer::start(401, "");
+        let config = config_with_base(&server, true);
+        let adapter = HubSpotAdapter::new(&config, api_key()).unwrap();
+
+        let entity = Entity::new(crate::entity::EntityType::Customer, "id", "cust_1");
+        let result = adapter.upsert(&entity, &[]);
+
+        assert!(result.is_err());
+        assert_eq!(
+            server.requests().len(),
+            1,
+            "auth failures must not be retried"
+        );
     }
 }

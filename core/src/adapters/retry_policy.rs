@@ -62,6 +62,40 @@ impl RetryPolicy {
         }
     }
 
+    /// Synchronous counterpart to [`Self::execute`], for the blocking
+    /// `reqwest::blocking`-based adapters (HubSpot/Salesforce/Marketo/
+    /// webhook implement the synchronous `DestinationAdapter` trait, so
+    /// there's no async executor here to `.await` on -- these run inside
+    /// `executor.rs`'s `spawn_blocking`, where a blocking sleep is exactly
+    /// the right tool rather than pulling in a Tokio runtime just for this).
+    /// Same retry/backoff semantics as `execute`, identical `is_retryable`
+    /// classification.
+    pub fn execute_blocking<F, T>(&self, mut f: F) -> Result<T, AdapterError>
+    where
+        F: FnMut() -> Result<T, AdapterError>,
+    {
+        let mut attempt = 0;
+
+        loop {
+            match f() {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    if !Self::is_retryable(&e) {
+                        return Err(e);
+                    }
+
+                    if attempt >= self.max_retries {
+                        return Err(e);
+                    }
+
+                    let delay = self.calculate_backoff(attempt);
+                    std::thread::sleep(delay);
+                    attempt += 1;
+                }
+            }
+        }
+    }
+
     /// Calculate backoff duration for the given attempt number
     pub fn calculate_backoff(&self, attempt: u32) -> Duration {
         let delay_ms = (self.initial_delay_ms as f64 * self.backoff_multiplier.powi(attempt as i32))
@@ -215,6 +249,66 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(*call_count.lock().unwrap(), 3); // Initial + 2 retries
+    }
+
+    #[test]
+    fn test_execute_blocking_success_first_attempt() {
+        let policy = RetryPolicy::new(3, 1, 10);
+        let mut call_count = 0;
+
+        let result = policy.execute_blocking(|| {
+            call_count += 1;
+            Ok::<i32, AdapterError>(42)
+        });
+
+        assert_eq!(result.unwrap(), 42);
+        assert_eq!(call_count, 1);
+    }
+
+    #[test]
+    fn test_execute_blocking_retries_then_succeeds() {
+        let policy = RetryPolicy::new(3, 1, 10);
+        let mut call_count = 0;
+
+        let result = policy.execute_blocking(|| {
+            call_count += 1;
+            if call_count < 3 {
+                Err(AdapterError::NetworkError("timeout".to_string()))
+            } else {
+                Ok::<i32, AdapterError>(42)
+            }
+        });
+
+        assert_eq!(result.unwrap(), 42);
+        assert_eq!(call_count, 3);
+    }
+
+    #[test]
+    fn test_execute_blocking_non_retryable_error_stops_immediately() {
+        let policy = RetryPolicy::new(3, 1, 10);
+        let mut call_count = 0;
+
+        let result = policy.execute_blocking(|| {
+            call_count += 1;
+            Err::<i32, AdapterError>(AdapterError::AuthenticationFailed("nope".to_string()))
+        });
+
+        assert!(result.is_err());
+        assert_eq!(call_count, 1);
+    }
+
+    #[test]
+    fn test_execute_blocking_gives_up_after_max_retries() {
+        let policy = RetryPolicy::new(2, 1, 10);
+        let mut call_count = 0;
+
+        let result = policy.execute_blocking(|| {
+            call_count += 1;
+            Err::<i32, AdapterError>(AdapterError::NetworkError("always fails".to_string()))
+        });
+
+        assert!(result.is_err());
+        assert_eq!(call_count, 3); // Initial + 2 retries
     }
 
     #[test]
