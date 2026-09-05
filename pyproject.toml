@@ -7,7 +7,7 @@ name = "PyReverseETL"
 version = "3.1.0"
 description = "The Open Operational Data Activation Runtime"
 readme = "README.md"
-license = { text = "Proprietary" }
+license = "Apache-2.0"
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
 requires-python = ">=3.9"
 classifiers = [

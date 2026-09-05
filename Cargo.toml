@@ -5,6 +5,6 @@ resolver = "2"
 [workspace.package]
 version = "3.1.0"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
-license = "Proprietary"
+license = "Apache-2.0"
 repository = "https://github.com/Mullassery/PyReverseETL"
 edition = "2021"

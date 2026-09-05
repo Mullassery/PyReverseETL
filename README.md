@@ -261,7 +261,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-Proprietary License. See [LICENSE](LICENSE) for details. All rights reserved.
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Support
 
