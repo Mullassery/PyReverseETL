@@ -4,7 +4,7 @@
 works in, with a real lineage graph and real compliance enforcement.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-![Version: v3.0.0](https://img.shields.io/badge/Version-v3.0.0-blue)
+![Version: v3.1.0](https://img.shields.io/badge/Version-v3.1.0-blue)
 [![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
 
 A Rust sync engine with Python bindings and a CLI. `pyreverseetl execute`
@@ -14,6 +14,19 @@ destination, and records a real lineage edge (source, destination, record
 count, timestamps) that you can query afterward. There is no simulated mode:
 if a connector isn't wired to a real backend yet, it's not offered as an
 option, not silently faked.
+
+## Use cases
+
+- **Syncing operational data (Postgres/MySQL) into a CRM or marketing tool**
+  with real compliance/PII masking applied before it leaves the source.
+- **Pushing to a webhook destination with real auth** (Bearer/API key/Basic)
+  for integrations that don't have a dedicated connector yet.
+- **Auditing what moved where** — every sync records a real lineage edge
+  you can query afterward, not just a log line.
+- **Not yet a good fit for:** Kafka/CDC streaming, Spark/PySpark transforms,
+  or non-S3 cloud object storage — all either explicitly not implemented or
+  present but not wired into the real sync path (see
+  [Known gaps](#known-gaps-deliberately-out-of-scope-for-this-pass) below).
 
 ## What's real right now
 
