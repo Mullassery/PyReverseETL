@@ -3,7 +3,7 @@
 **Reverse ETL: move data from a source system into the tools your team actually
 works in, with a real lineage graph and real compliance enforcement.**
 
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Version: v3.0.0](https://img.shields.io/badge/Version-v3.0.0-blue)
 [![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
 
