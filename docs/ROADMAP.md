@@ -59,13 +59,15 @@ what's actually shipped, using the same evidence README.md already cites.
 - **Compliance / PII masking** — `DefaultComplianceEngine` applies real
   per-record mask/remove/truncate rules; `Encrypt` honestly reports as
   unresolved rather than claiming success it doesn't have.
-- **Tests** — 64 `#[test]`-annotated Rust functions in `core/`, plus
-  Docker-backed round-trip tests (`--ignored` by default, run explicitly
-  against real Postgres/MySQL/MinIO containers) and real end-to-end
-  Python tests (`tests/test_real_sync_docker.py`) that run the actual CLI
-  as a subprocess. CI (`tests.yml`, `ci.yml`) is green on the latest push,
+- **Tests** — 452 `#[test]`-annotated Rust functions in `core/` pass
+  (`cargo test -p pyreverseetl-core --lib`, verified locally 2026-09-20; 6
+  further tests are `--ignored` by default and need real Docker containers),
+  plus 5 passing / 4 skipped (no Docker) Python tests in `tests/` run against
+  the compiled extension. CI (`tests.yml`, `ci.yml`) was last confirmed green
   after fixing missing native build deps for `rdkafka-sys` (commits
-  `7a827d5`, `7f8aa45`, `6ccec29`).
+  `7a827d5`, `7f8aa45`, `6ccec29`); this pass could not re-verify the GitHub
+  Actions run itself (no network in this sandbox), only that the same build
+  and test commands succeed locally.
 
 ## What's partial, scaffolding, or an explicit non-goal for now
 

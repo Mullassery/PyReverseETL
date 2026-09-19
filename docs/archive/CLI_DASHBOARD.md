@@ -1,3 +1,11 @@
+> **Archived, not independently verified.** This document describes the
+> `pyreverseetl-dashboard` binary (`core/bin/pyreverseetl_dashboard.rs`) as
+> it existed in July 2026. Per the current `README.md` ("Known gaps"), this
+> dashboard is present in the codebase but **not wired into** the real
+> `execute`/`run_sync` sync path - treat any metric it displays as
+> unverified. Moved here 2026-09-20 as part of a documentation-honesty pass;
+> content below is unmodified and may be stale.
+
 # PyReverseETL CLI Stats Dashboard
 
 ## Overview

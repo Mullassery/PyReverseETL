@@ -1,3 +1,11 @@
+> **Archived, not independently verified.** The "COMPLETE & TESTED" /
+> "Production-Ready (0 errors)" claims below were never independently
+> verified by any later pass and are not consistent with the current
+> `README.md`, which lists the CLI dashboard as present but **not wired
+> into** the real sync path and explicitly experimental. Do not rely on
+> this document's status claims. Moved here 2026-09-20 as part of a
+> documentation-honesty pass; content below is otherwise unmodified.
+
 # PyReverseETL CLI Stats Dashboard - Implementation Summary
 
 **Date**: July 30, 2026  

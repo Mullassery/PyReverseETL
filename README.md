@@ -256,7 +256,13 @@ skipped, not failed, when the containers aren't running.
 
 ### Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards. For a
+blunt, file-and-line-referenced list of what's tested vs. untested vs.
+broken vs. not built, plus known technical debt, see
+[ROADMAP_HONEST.md](ROADMAP_HONEST.md) (narrative version:
+[docs/ROADMAP.md](docs/ROADMAP.md)). Changes are tracked in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Known gaps (deliberately out of scope for this pass)
 

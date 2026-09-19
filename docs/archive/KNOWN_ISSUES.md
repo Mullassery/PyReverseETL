@@ -1,3 +1,12 @@
+> **Archived, superseded, and now factually wrong.** This document's central
+> claim - "49 semantic errors" block every local rebuild and CI build - is
+> no longer true: as of 2026-09-20, `cargo build -p pyreverseetl-core` and
+> `cargo test -p pyreverseetl-core --lib` both succeed cleanly (452 tests
+> pass, 0 fail) on the current `main`. Whatever caused the errors described
+> below was fixed at some point between v2.0.1 and the current v3.1.0; this
+> file was never updated to reflect that. Kept for history only. For
+> current, verified status see `README.md` and `docs/ROADMAP.md`.
+
 # PyReverseETL - Known Issues
 
 **Last Updated:** 2026-07-20  

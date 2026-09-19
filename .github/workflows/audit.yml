@@ -1,0 +1,66 @@
+name: Dependency Audit
+
+# Separate from tests.yml/ci.yml: this job's job is to *fail loudly* when a
+# known-vulnerable dependency shows up, on a schedule, independent of
+# whether anyone happens to touch Cargo.toml/pyproject.toml that week.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "core/Cargo.toml"
+      - "python/Cargo.toml"
+      - "pyproject.toml"
+      - ".github/workflows/audit.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "core/Cargo.toml"
+      - "python/Cargo.toml"
+      - "pyproject.toml"
+  schedule:
+    # Mondays 04:00 UTC - after dependabot's Monday 03:00 UTC run so a fresh
+    # dependency bump gets audited the same day.
+    - cron: "0 4 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  cargo-audit:
+    name: cargo audit (Rust advisories)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Run cargo audit
+        run: cargo audit
+
+  pip-audit:
+    name: pip-audit (Python advisories)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Extract declared Python dependencies
+        # Requires-based scan (no need to build the Rust extension first) -
+        # this only checks the Python-side dependency tree declared in
+        # pyproject.toml (currently just pytest as a dev dependency; grows
+        # as real Python deps are added).
+        run: |
+          python -c "
+          import tomllib
+          d = tomllib.load(open('pyproject.toml', 'rb'))
+          deps = d['project'].get('dependencies', []) + d['project'].get('optional-dependencies', {}).get('dev', [])
+          open('audit-requirements.txt', 'w').write('\n'.join(deps) + '\n')
+          "
+          cat audit-requirements.txt
+      - name: Run pip-audit
+        run: pip-audit -r audit-requirements.txt

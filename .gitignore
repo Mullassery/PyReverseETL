@@ -39,7 +39,10 @@ env/
 
 # Rust
 target/
-Cargo.lock
+# Cargo.lock IS committed deliberately: core/Cargo.toml declares a real
+# [[bin]] (pyreverseetl-dashboard), so this workspace produces an actual
+# binary, not just a library - lockfiles for binary crates should be
+# committed for reproducible builds (see https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control).
 
 # Temp files
 *.tmp

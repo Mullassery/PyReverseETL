@@ -1,10 +1,4 @@
-# Mark Rust/C code as vendored (don't count toward language stats)
-crates/** linguist-vendored=true
-*.rs linguist-vendored=true
-src/c/** linguist-vendored=true
-src/cpp/** linguist-vendored=true
-
-# Mark build artifacts as generated
+# Mark build artifacts as generated (these are real generated files)
 *.so linguist-generated=true
 *.pyd linguist-generated=true
 *.dylib linguist-generated=true
@@ -13,7 +7,10 @@ build/** linguist-generated=true
 dist/** linguist-generated=true
 *.egg-info/** linguist-generated=true
 
-# Force Python as primary language
-*.py linguist-language=Python
-pyproject.toml linguist-language=Python
-setup.py linguist-language=Python
+# NOTE: this file previously marked all *.rs as linguist-vendored=true and
+# forced GitHub's language bar to report Python as the primary/only
+# language. That was inaccurate: core/ is a substantial Rust engine (the
+# sync executor, all connectors, the compliance engine, lineage tracking)
+# and is not vendored third-party code - it's this project's own code and
+# should show up in the language stats. Removed as part of an honesty pass
+# (2026-09-20).
