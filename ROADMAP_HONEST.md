@@ -10,8 +10,8 @@ simply don't exist — if it's not built, it says "not built."
 
 ## Bucket 1 — Verified working (I ran these commands myself, 2026-09-20)
 
-- `cargo build -p pyreverseetl-core` — succeeds. 26 compiler warnings (see
-  Technical Debt).
+- `cargo build -p pyreverseetl-core` — succeeds. 25 compiler warnings (see
+  Technical Debt; was 26 before this pass's `base64::encode` fix).
 - `cargo test -p pyreverseetl-core --lib` — **452 passed, 0 failed, 6
   ignored** (the ignored ones need real Docker containers per README).
 - `cargo fmt --check` — clean, no diff.
@@ -77,7 +77,12 @@ for completeness:
   feature — it always reports success and does nothing. It is not on the
   real `execute_sync` path (per README), so it cannot currently mislead a
   real sync run, but if it were wired in as-is it would silently rubber-
-  stamp everything.
+  stamp everything. **(2026-09-21: re-verified with grep that no non-test
+  code anywhere in `core/src` constructs a `GovernanceEngine` or calls
+  `with_governance` — genuinely unused outside tests, confirmed rather than
+  assumed. Added explicit `///` doc-comment disclosure on the struct and
+  both methods; logic intentionally left unchanged pending the real
+  wire-it-or-delete-it decision below.)**
 
 ## Bucket 4 — Not built / explicit non-goals
 
@@ -97,33 +102,37 @@ for completeness:
 ### Warrants a dedicated follow-up session
 
 1. **482 clippy warnings** on `cargo clippy -p pyreverseetl-core --lib`
-   (verified 2026-09-20). Not spot-fixed in this pass because the volume
-   needs a dedicated session to avoid rubber-stamping `cargo clippy --fix`
-   over code nobody's reviewed. Concrete categories seen: dead struct
-   fields (`core/src/adapters/http_client.rs:10` `timeout` never read;
-   `core/src/connectors/config.rs:79-80` `source_instances`/
-   `destination_instances` never read; `core/src/governance/quality_gate.rs:47-48`
-   `endpoint`/`timeout_ms` never read; `core/src/pipeline/activation_pipeline.rs:53`
-   `activation` never read; `core/src/sources/kafka.rs:70`
-   `last_message_time` never read), unused `vec!` where an array would do
-   (`core/src/connectors/registry.rs:173,177,184,188`), a deprecated API
-   call (`base64::encode` at `core/src/adapters/http_client.rs:142` — the
-   crate's own docs say to use `Engine::encode` instead), unused imports
+   (verified 2026-09-20, now 481 after fix below — the deprecated
+   `base64::encode` call was one of them). Not spot-fixed in this pass
+   because the volume needs a dedicated session to avoid rubber-stamping
+   `cargo clippy --fix` over code nobody's reviewed. Concrete categories
+   still open: dead struct fields (`core/src/adapters/http_client.rs:10`
+   `timeout` never read; `core/src/connectors/config.rs:79-80`
+   `source_instances`/`destination_instances` never read;
+   `core/src/governance/quality_gate.rs:47-48` `endpoint`/`timeout_ms` never
+   read; `core/src/pipeline/activation_pipeline.rs:53` `activation` never
+   read; `core/src/sources/kafka.rs:70` `last_message_time` never read),
+   unused `vec!` where an array would do
+   (`core/src/connectors/registry.rs:173,177,184,188`), unused imports
    (`core/src/connectors/registry.rs:4`), unused parameters
    (`core/src/governance/quality_gate.rs:62,73`,
    `core/src/transformers/spark.rs:179`).
-2. **`.cargo/config.toml` hardcodes one contributor's personal machine.**
-   `rustflags = ["-C", "llvm-args=-mcpu=apple-a14"]` under
-   `[target.'cfg(target_os = "macos")']` targets a specific Apple Silicon
-   microarchitecture baseline for *every* macOS build of this project by
-   *every* contributor, and `[build] jobs = 12` hardcodes a "Mac Studio"
-   core count. This is committed project config, not a personal
-   `~/.cargo/config.toml` — it affects every clone. Also, the `[alias] lint
-   = "clippy --all --release -- -D warnings"` alias documented nowhere else
-   would currently **fail** if anyone ran `cargo lint`, given finding #1
-   above (482 warnings, `-D warnings` turns every one into a hard error).
-   Needs a dedicated session to either genericize this file or remove the
-   parts that shouldn't be committed at all.
+   - **FIXED (2026-09-21)**: the deprecated `base64::encode` call at
+     `core/src/adapters/http_client.rs:142` — migrated to
+     `base64::engine::general_purpose::STANDARD.encode(...)` via the
+     `Engine` trait, matching the existing pattern in
+     `core/src/adapters/webhook.rs`. Verified: builds clean, 452 tests
+     still pass.
+2. ~~**`.cargo/config.toml` hardcodes one contributor's personal machine.**~~
+   **FIXED (2026-09-21)**: removed `[build] jobs = 12` (a "Mac Studio" core
+   count) and the `-mcpu=apple-a14` rustflag entirely; `jobs` now falls back
+   to Cargo's default and macOS builds no longer pin a CPU
+   microarchitecture. Verified `cargo build -p pyreverseetl-core` and
+   `cargo fmt --check` succeed on a different machine. Note: `cargo lint`
+   (`clippy --all --release -- -D warnings`) still fails — that's entirely
+   due to the pre-existing 481 clippy warnings in finding #1 above, not
+   caused by or related to this config fix; fixing that is still a
+   dedicated-session item.
 3. **`sqlx` is exact-pinned to `=0.7.4`** (`core/Cargo.toml:33`) and the
    build already emits a "will be rejected by a future version of Rust"
    future-incompatibility warning for `sqlx-postgres v0.7.4`. The exact pin
@@ -146,15 +155,21 @@ for completeness:
    REST wrapper) — see Bucket 2 above. This is a network-facing surface
    with no tests at all, not even a smoke test that the app object
    constructs.
-5. **CI never actually enforces Python lint.**
-   `.github/workflows/tests.yml` runs `ruff check . 2>/dev/null || true` —
-   the `|| true` means a lint failure can never fail the build. Running
-   `ruff check python/` locally (2026-09-20) found **28 real issues**
-   (mostly `UP006`/`FA100` typing modernization and unsorted imports, e.g.
-   `python/pyreverseetl/server.py:83,87,102,105`) that CI has been silently
-   swallowing. Not fixed in this pass because turning on enforcement means
-   either fixing all 28 first or the next PR's CI goes red for unrelated
-   reasons — needs a dedicated session to do both at once.
+5. ~~**CI never actually enforces Python lint.**~~ **FIXED (2026-09-21)**:
+   the earlier count of 28 was scoped to `ruff check python/` only; CI
+   actually runs `ruff check .` (repo-wide), which had **58** real findings
+   at the time of this fix (`python/`, `tests/`, and `examples/` combined).
+   All 58 fixed for real (22 safe auto-fixes, 39 more via reviewed
+   `--unsafe-fixes` — typing modernization to `X | None`/`dict`/`list` with
+   `from __future__ import annotations`, safe given `requires-python =
+   ">=3.9"` — plus 4 `datetime.now()` → `datetime.now(timezone.utc)`, 2
+   `chmod +x` for shebang'd scripts, and 5 intentional blind-`except`
+   call sites documented in place with `# noqa: BLE001` + a one-line
+   rationale rather than rewritten). Added `ruff>=0.6` to
+   `pyproject.toml`'s `dev` extra (CI's install step never actually
+   installed it before) and removed the `|| true` from
+   `.github/workflows/tests.yml`. `ruff check .` now exits 0 and is a real,
+   enforced gate.
 6. **`.github/workflows/tests.yml` and `.github/workflows/ci.yml`
    substantially duplicate each other** (both run the Python test matrix on
    push/PR to main). Costs CI minutes and gives two places to keep in sync;
@@ -171,9 +186,11 @@ for completeness:
    for `${VAR:-default}` interpolation like `docker-compose.server.yml`
    already does, for consistency and so nobody copy-pastes this file
    straight into a shared environment.
-8. `rust-toolchain.toml` pins `channel = "1.97"` with no stated reason;
-   fine as-is, just flagging that nobody has documented why 1.97
-   specifically vs. `stable`.
+8. ~~`rust-toolchain.toml` pins `channel = "1.97"` with no stated reason~~
+   **FIXED (2026-09-21)**: added a comment explaining the pin is
+   intentional (reproducible builds across contributors/CI) rather than an
+   unexplained accident, and how to change it (bump deliberately, re-verify
+   tests/clippy).
 
 ## What would most de-risk this project next
 

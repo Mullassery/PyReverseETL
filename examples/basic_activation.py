@@ -7,7 +7,7 @@ This example shows how to:
 3. Activate customer segments
 """
 
-from pyre import Warehouse, Activation, ActivationTarget
+from pyre import Activation, ActivationTarget, Warehouse
 
 # Connect to warehouse
 warehouse = Warehouse(connection_string="postgres://user:pass@localhost/warehouse")

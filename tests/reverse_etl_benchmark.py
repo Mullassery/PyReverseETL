@@ -5,10 +5,9 @@ PyReverseETL Reverse ETL Performance Benchmark
 Tests sync performance with and without transformation.
 """
 
-import time
 import random
-import string
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 
 
 def generate_test_data(count=10000):
@@ -21,7 +20,7 @@ def generate_test_data(count=10000):
                 "name": f"Customer {i}",
                 "email": f"customer{i}@example.com",
                 "phone": f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
-                "created_at": datetime.now().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
         )
     return customers
@@ -48,7 +47,9 @@ def test_without_transformation():
         try:
             # Simulate write to destination
             synced += 1
-        except Exception as e:
+        # Benchmark harness: tally any per-record failure and keep going
+        # rather than aborting the whole run, so a broad catch is intentional.
+        except Exception:  # noqa: BLE001
             errors += 1
 
     duration = time.time() - start_time
@@ -56,7 +57,7 @@ def test_without_transformation():
     # Report metrics
     throughput = synced / duration if duration > 0 else 0
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Duration: {duration:.2f} seconds")
     print(f"  Records synced: {synced:,}")
     print(f"  Errors: {errors}")
@@ -103,10 +104,12 @@ def test_with_transformation():
     for customer in customers:
         try:
             # Transform data
-            transformed = normalize_customer(customer)
+            normalize_customer(customer)
             # Simulate write to destination
             synced += 1
-        except Exception as e:
+        # Benchmark harness: tally any per-record failure and keep going
+        # rather than aborting the whole run, so a broad catch is intentional.
+        except Exception:  # noqa: BLE001
             errors += 1
 
     duration = time.time() - start_time
@@ -114,7 +117,7 @@ def test_with_transformation():
     # Report metrics
     throughput = synced / duration if duration > 0 else 0
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Duration: {duration:.2f} seconds")
     print(f"  Records synced: {synced:,}")
     print(f"  Errors: {errors}")
@@ -136,7 +139,7 @@ def main():
     print("\n" + "🚀 PyReverseETL Reverse ETL Benchmark 🚀")
     print("Scenario: Sync customer data to data warehouse")
     print("Records: 10,000 customers")
-    print("Date:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    print("Date:", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
     # Run tests
     results_no_transform = test_without_transformation()
@@ -172,12 +175,12 @@ def main():
     print(f"With Transform: {results_with_transform['throughput']:,.0f} records/sec")
 
     print("\n✅ Benchmark complete!")
-    print(f"\nConclusion:")
+    print("\nConclusion:")
     print(f"  Transformation overhead: ~{overhead_pct:.1f}% slower")
     print(
         f"  Still highly efficient at {results_with_transform['throughput']:,.0f} records/sec"
     )
-    print(f"  Suitable for production reverse ETL workloads")
+    print("  Suitable for production reverse ETL workloads")
 
 
 if __name__ == "__main__":

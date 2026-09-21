@@ -5,26 +5,26 @@ Re-exports the compiled Rust core's public classes so they're reachable as
 """
 
 from ._core import (
-    __version__,
     PyActivation,
     PyDestination,
     PyEntity,
     PySyncResult,
     PySyncRun,
     PyWorkflow,
+    __version__,
     lineage_dot,
     lineage_json,
     run_sync,
 )
 
 __all__ = [
-    "__version__",
     "PyActivation",
     "PyDestination",
     "PyEntity",
     "PySyncResult",
     "PySyncRun",
     "PyWorkflow",
+    "__version__",
     "lineage_dot",
     "lineage_json",
     "run_sync",

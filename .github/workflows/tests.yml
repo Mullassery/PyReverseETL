@@ -23,4 +23,4 @@ jobs:
       - name: Test
         run: pytest 2>/dev/null || echo "No tests"
       - name: Lint
-        run: ruff check . 2>/dev/null || true
+        run: ruff check .

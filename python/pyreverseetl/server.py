@@ -7,8 +7,9 @@ separate in-memory dict simulator with the exact same problem the CLI had --
 anything. It now delegates to `CLIInterface` so both entry points share one
 real code path instead of two divergent fake ones.
 """
+from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .cli import CLIInterface
 
@@ -22,7 +23,7 @@ class PyReverseETLServer:
         self.port = port
         self._cli = CLIInterface()
 
-    def create_workflow(self, workflow_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_workflow(self, workflow_id: str, config: dict[str, Any]) -> dict[str, Any]:
         """Create a workflow.
 
         `config` supports: name, source (postgres/mysql/s3 to actually run),
@@ -36,7 +37,7 @@ class PyReverseETLServer:
             config.get("source_config"),
         )
 
-    def create_activation(self, activation_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_activation(self, activation_id: str, config: dict[str, Any]) -> dict[str, Any]:
         """Create an activation.
 
         `config` supports: workflow_id, destination (postgres/mysql/s3/
@@ -55,36 +56,36 @@ class PyReverseETLServer:
     def execute_activation(
         self,
         activation_id: str,
-        limit: Optional[int] = None,
-        compliance_rules: Optional[list] = None,
-    ) -> Dict[str, Any]:
+        limit: int | None = None,
+        compliance_rules: list | None = None,
+    ) -> dict[str, Any]:
         """Execute an activation: a real sync through the Rust engine (see
         `CLIInterface.execute_activation`). `rows_synced` is the real number
         of records the destination connector/adapter actually wrote.
         """
         return self._cli.execute_activation(activation_id, limit, compliance_rules)
 
-    def get_run_status(self, run_id: str) -> Dict[str, Any]:
+    def get_run_status(self, run_id: str) -> dict[str, Any]:
         """Get run status."""
         return self._cli.get_run_status(run_id)
 
-    def list_workflows(self) -> Dict[str, Any]:
+    def list_workflows(self) -> dict[str, Any]:
         """List workflows."""
         return self._cli.list_workflows()
 
-    def list_activations(self) -> Dict[str, Any]:
+    def list_activations(self) -> dict[str, Any]:
         """List activations."""
         return self._cli.list_activations()
 
-    def get_metrics(self, activation_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_metrics(self, activation_id: str | None = None) -> dict[str, Any]:
         """Get metrics computed from real recorded runs."""
         return self._cli.get_metrics(activation_id)
 
-    def get_lineage(self, fmt: str = "json") -> Dict[str, Any]:
+    def get_lineage(self, fmt: str = "json") -> dict[str, Any]:
         """Get the real data-lineage graph accumulated from every sync run."""
         return self._cli.get_lineage(fmt)
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Health check endpoint."""
         try:
             from . import __version__
@@ -99,10 +100,10 @@ class PyReverseETLServer:
         }
 
 
-def create_flask_app(server: Optional[PyReverseETLServer] = None):
+def create_flask_app(server: PyReverseETLServer | None = None):
     """Create Flask app for REST API."""
     try:
-        from flask import Flask, request, jsonify
+        from flask import Flask, jsonify, request
     except ImportError:
         raise ImportError(
             "Flask is required for REST API. Install with: pip install flask"

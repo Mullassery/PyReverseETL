@@ -1,4 +1,12 @@
-# Cargo configuration for Mac Studio + Server deployment
+# Cargo configuration for this workspace.
+#
+# NOTE: this file previously hardcoded one contributor's personal machine
+# (a "Mac Studio" core count for `[build] jobs`, and an Apple A14-specific
+# `-mcpu` codegen target) into every macOS build for every contributor.
+# That's been removed — `jobs` is left to Cargo's own default (number of
+# logical CPUs), and macOS builds no longer pin a specific CPU
+# microarchitecture, so this file no longer degrades or breaks builds on
+# machines other than the original author's.
 
 # Profile: Development (fast iteration on Mac)
 [profile.dev]
@@ -21,23 +29,11 @@ panic = "abort"        # Smaller binaries
 inherits = "release"
 debug = true
 
-# Build settings
-[build]
-# Use all available cores for faster builds on Mac Studio
-jobs = 12              # Mac Studio has 8 cores (4P+4E), 12 gives headroom
-
 # Target-specific settings
 [target.'cfg(target_os = "macos")']
 # Mac-specific optimizations
 rustflags = [
     "-C", "link-arg=-mmacosx-version-min=11.0",  # Target macOS 11+
-    "-C", "llvm-args=-mcpu=apple-a14",           # Optimize for Apple Silicon
-]
-
-[target.'cfg(target_os = "linux")']
-# Linux-specific optimizations
-rustflags = [
-    "-C", "llvm-args=-mcpu=generic",             # Generic CPU for broad compatibility
 ]
 
 # Aliases for common tasks

@@ -138,8 +138,9 @@ impl HttpClient {
                 req = req.header("X-API-Key", key.clone());
             }
             AuthMethod::Basic { username, password } => {
+                use base64::Engine;
                 let credentials = format!("{}:{}", username, password);
-                let encoded = base64::encode(credentials);
+                let encoded = base64::engine::general_purpose::STANDARD.encode(credentials);
                 req = req.header("Authorization", format!("Basic {}", encoded));
             }
             _ => {}

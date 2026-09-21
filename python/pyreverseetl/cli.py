@@ -22,11 +22,11 @@ needs (`git`, `docker`, etc. all persist local state between invocations);
 without it, `execute` run as its own process would never be able to find a
 workflow/activation created by an earlier command.
 """
+from __future__ import annotations
 
 import json
 import os
 import sys
-from typing import Optional
 
 DEFAULT_STATE_PATH = os.path.join(os.path.expanduser("~"), ".pyreverseetl", "state.json")
 
@@ -34,7 +34,7 @@ DEFAULT_STATE_PATH = os.path.join(os.path.expanduser("~"), ".pyreverseetl", "sta
 class CLIInterface:
     """Command-line interface for PyReverseETL workflow integration."""
 
-    def __init__(self, state_path: Optional[str] = None):
+    def __init__(self, state_path: str | None = None):
         self.state_path = state_path or os.environ.get("PYREVERSEETL_STATE_PATH", DEFAULT_STATE_PATH)
         self.workflows = {}
         self.activations = {}
@@ -68,7 +68,7 @@ class CLIInterface:
         name: str,
         source: str,
         table: str,
-        source_config: Optional[dict] = None,
+        source_config: dict | None = None,
     ) -> dict:
         """Create a new workflow.
 
@@ -110,7 +110,7 @@ class CLIInterface:
         workflow_id: str,
         destination: str,
         sync_mode: str = "incremental",
-        destination_config: Optional[dict] = None,
+        destination_config: dict | None = None,
     ) -> dict:
         """Create an activation (workflow -> destination mapping).
 
@@ -156,11 +156,11 @@ class CLIInterface:
     def execute_activation(
         self,
         activation_id: str,
-        limit: Optional[int] = None,
-        compliance_rules: Optional[list] = None,
+        limit: int | None = None,
+        compliance_rules: list | None = None,
         dry_run: bool = False,
-        schema_store_path: Optional[str] = None,
-        idempotency_store_path: Optional[str] = None,
+        schema_store_path: str | None = None,
+        idempotency_store_path: str | None = None,
     ) -> dict:
         """Execute an activation: run a real sync through the Rust engine.
 
@@ -349,7 +349,7 @@ class CLIInterface:
             "count": len(self.activations),
         }
 
-    def get_metrics(self, activation_id: Optional[str] = None) -> dict:
+    def get_metrics(self, activation_id: str | None = None) -> dict:
         """Get activation metrics computed from real recorded runs.
 
         Args:
@@ -525,7 +525,10 @@ def main():
             print(json.dumps({"error": f"Unknown command: {command}"}))
             sys.exit(1)
 
-    except Exception as e:
+    # Top-level CLI boundary: any exception must become a JSON error +
+    # non-zero exit, not a raw Python traceback, so catching broadly here
+    # is intentional rather than an oversight.
+    except Exception as e:  # noqa: BLE001
         print(json.dumps({"error": str(e), "status": "error"}))
         sys.exit(1)
 

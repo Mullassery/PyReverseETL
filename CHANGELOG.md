@@ -15,6 +15,66 @@ that didn't happen, gaps are left as gaps. For full detail, use
 ## [Unreleased]
 
 ### Fixed
+- `core/src/adapters/http_client.rs:142` used the deprecated `base64::encode`
+  free function (removed/deprecated upstream in favor of the `Engine` trait).
+  Migrated to `base64::engine::general_purpose::STANDARD.encode(...)`,
+  mirroring the pattern already used in `core/src/adapters/webhook.rs`.
+  Verified with `cargo build -p pyreverseetl-core` (warning gone, 26 -> 25
+  warnings) and `cargo test -p pyreverseetl-core --lib` (452 passed).
+- `.cargo/config.toml` hardcoded one contributor's personal machine into
+  every macOS build: `[build] jobs = 12` (a specific "Mac Studio" core
+  count) and `rustflags = ["-C", "llvm-args=-mcpu=apple-a14"]` (an Apple
+  A14-specific codegen target) under `[target.'cfg(target_os = "macos")']`.
+  Removed both -- `jobs` now falls back to Cargo's own default (logical CPU
+  count) and macOS builds no longer pin a CPU microarchitecture. Verified
+  `cargo build -p pyreverseetl-core` and `cargo fmt --check` succeed on a
+  non-"Mac Studio" machine. (`cargo lint`, i.e. `clippy --all --release -- -D
+  warnings`, still fails -- that's the pre-existing 482 clippy warnings
+  documented below, unrelated to and unaffected by this config change.)
+- CI's Python lint gate (`.github/workflows/tests.yml`) ran
+  `ruff check . 2>/dev/null || true`, silently swallowing every lint
+  failure. Re-running `ruff check .` (the repo-wide scope CI actually uses,
+  not just `python/`) found **58** real findings, not the 28 an earlier pass
+  saw scoped to `python/` only. Fixed all 58:
+  - 22 auto-fixed via `ruff check --fix` (unsorted imports, f-strings
+    without placeholders, an unused import, unsorted `__all__`).
+  - 39 more (some overlapping) via `ruff check --fix --unsafe-fixes`:
+    `typing.Optional`/`Dict`/`List` rewritten to `X | None`/`dict`/`list`
+    with `from __future__ import annotations` added
+    (`python/pyreverseetl/cli.py`, `python/pyreverseetl/server.py` --
+    project requires Python >=3.9, so this is a safe, semantics-preserving
+    rewrite), plus one unused local variable removed.
+  - 4 `datetime.now()` calls without a `tz` argument (`DTZ005`, in
+    `tests/*.py` benchmark scripts) fixed by passing `timezone.utc`.
+  - 2 files with a shebang but no execute bit (`EXE001`,
+    `tests/reverse_etl_benchmark.py`, `tests/realistic_reverse_etl_benchmark.py`)
+    fixed with `chmod +x`.
+  - 5 blind `except Exception` findings (`BLE001`) are intentional top-level
+    catch-all boundaries (the CLI's `main()` error handler;
+    count-errors-and-keep-going benchmark loops) -- documented in place with
+    `# noqa: BLE001` plus a one-line comment explaining why, rather than
+    rewritten to catch narrower exception types that would need
+    verification against real failure modes this pass couldn't check.
+  - Added `ruff>=0.6` to the `dev` optional-dependency group
+    (`pyproject.toml`) since CI's `pip install -e ".[dev]"` step never
+    actually installed it before.
+  - Removed `|| true` from `.github/workflows/tests.yml`'s Lint step --
+    `ruff check .` is now a real, enforced CI gate.
+  - Verified: `ruff check .` exits 0; `cargo test -p pyreverseetl-core --lib`
+    still 452 passed; `PYTHONPATH=python pytest tests/ -v` still 5 passed, 4
+    skipped.
+- `core/src/governance/quality_gate.rs`: `StatGuardianGate::validate` and
+  `check_drift` always returned a hardcoded `passed: true, quality_score:
+  0.95` / "no drift" regardless of input, with no doc-comment disclosure at
+  the type/method level (only an inline `// In production, this would...`
+  comment). Verified it is genuinely not wired into any non-test code path
+  (no non-test caller constructs a `GovernanceEngine` or calls
+  `with_governance` anywhere in `core/src`). Added explicit `///` doc
+  comments on `StatGuardianGate` and both methods disclosing this; logic
+  unchanged.
+- `rust-toolchain.toml` pinned `channel = "1.97"` with no stated reason.
+  Added a comment explaining why it's pinned (reproducible builds) rather
+  than left floating on `stable`.
 - `Cargo.lock` is now committed (was gitignored despite the workspace
   producing a real `[[bin]]`, `pyreverseetl-dashboard`).
 - `.gitattributes` no longer marks all `*.rs` as `linguist-vendored` /

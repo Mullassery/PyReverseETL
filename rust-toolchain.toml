@@ -1,3 +1,9 @@
+# Pinned (rather than "stable") so every contributor and CI runner builds
+# with the exact same compiler this workspace was last verified against,
+# instead of silently picking up whatever `stable` happens to be on the day.
+# 1.97 was the current stable release at the time this was pinned; bump it
+# deliberately (and re-verify `cargo test`/`cargo clippy`) rather than
+# switching back to a floating channel.
 [toolchain]
 channel = "1.97"
 profile = "minimal"

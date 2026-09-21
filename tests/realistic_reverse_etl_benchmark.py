@@ -5,10 +5,10 @@ Realistic PyReverseETL Reverse ETL Performance Benchmark
 Tests actual sync performance with database I/O
 """
 
+import random
 import sqlite3
 import time
-import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def setup_database(db_path):
@@ -46,7 +46,7 @@ def generate_test_data(count=1000):
                 "name": f"Customer {i}",
                 "email": f"customer{i}@example.com",
                 "phone": f"555-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}",
-                "created_at": datetime.now().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
         )
     return customers
@@ -88,7 +88,9 @@ def test_without_transformation(db_path, records=1000):
                 ),
             )
             synced += 1
-        except Exception as e:
+        # Benchmark harness: tally any per-record failure and keep going
+        # rather than aborting the whole run, so a broad catch is intentional.
+        except Exception:  # noqa: BLE001
             errors += 1
 
     conn.commit()
@@ -100,7 +102,7 @@ def test_without_transformation(db_path, records=1000):
     throughput = synced / duration if duration > 0 else 0
     latency_ms = (duration / synced * 1000) if synced > 0 else 0
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Duration: {duration:.3f} seconds")
     print(f"  Records synced: {synced:,}")
     print(f"  Errors: {errors}")
@@ -167,7 +169,9 @@ def test_with_transformation(db_path, records=1000):
                 ),
             )
             synced += 1
-        except Exception as e:
+        # Benchmark harness: tally any per-record failure and keep going
+        # rather than aborting the whole run, so a broad catch is intentional.
+        except Exception:  # noqa: BLE001
             errors += 1
 
     conn.commit()
@@ -179,7 +183,7 @@ def test_with_transformation(db_path, records=1000):
     throughput = synced / duration if duration > 0 else 0
     latency_ms = (duration / synced * 1000) if synced > 0 else 0
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Duration: {duration:.3f} seconds")
     print(f"  Records synced: {synced:,}")
     print(f"  Errors: {errors}")
@@ -204,7 +208,7 @@ def main():
     print("\n" + "🚀 PyReverseETL Realistic Reverse ETL Benchmark 🚀")
     print("Scenario: Sync customer data to SQLite database")
     print("Records: 1,000 customers (realistic I/O)")
-    print("Date:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    print("Date:", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
     # Run tests
     results_no_transform = test_without_transformation(db_path, records=1000)
@@ -235,26 +239,26 @@ def main():
         results_with_transform["latency_ms"] - results_no_transform["latency_ms"]
     )
 
-    print(f"\nTiming Comparison:")
+    print("\nTiming Comparison:")
     print(f"  No transform duration: {results_no_transform['duration']:.3f}s")
     print(f"  With transform duration: {results_with_transform['duration']:.3f}s")
     print(f"  Overhead: {overhead:.3f}s ({overhead_pct:.1f}%)")
 
-    print(f"\nThroughput Comparison:")
+    print("\nThroughput Comparison:")
     print(f"  No transform: {results_no_transform['throughput']:.0f} records/sec")
     print(f"  With transform: {results_with_transform['throughput']:.0f} records/sec")
     print(f"  Impact: {throughput_diff:.0f} records/sec ({throughput_pct:.1f}%)")
 
-    print(f"\nLatency Comparison:")
+    print("\nLatency Comparison:")
     print(f"  No transform: {results_no_transform['latency_ms']:.2f}ms/record")
     print(f"  With transform: {results_with_transform['latency_ms']:.2f}ms/record")
     print(f"  Overhead: {latency_overhead:.2f}ms/record")
 
     print("\n✅ Benchmark complete!")
-    print(f"\nConclusion:")
+    print("\nConclusion:")
     print(f"  Transformation adds ~{overhead_pct:.1f}% overhead")
     print(f"  Still processes {results_with_transform['throughput']:.0f} records/sec")
-    print(f"  Suitable for production reverse ETL at scale")
+    print("  Suitable for production reverse ETL at scale")
     print(
         f"  Can sync 1 million records in ~{1000000/results_with_transform['throughput']/60:.1f} minutes"
     )

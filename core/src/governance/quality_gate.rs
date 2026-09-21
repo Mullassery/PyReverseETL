@@ -42,7 +42,16 @@ pub trait QualityGate: Send + Sync {
     async fn get_quality_threshold(&self) -> Result<f64>;
 }
 
-/// StatGuardian-backed quality gate
+/// StatGuardian-backed quality gate.
+///
+/// **Disclosure**: this is not currently wired into the real `execute_sync`
+/// sync path (verified: no non-test code constructs a `GovernanceEngine` or
+/// calls `with_governance`), and its `QualityGate` impl below does not call
+/// StatGuardian or inspect the passed-in `Entity` at all -- `validate` always
+/// returns `passed: true, quality_score: 0.95` and `check_drift` always
+/// returns "no drift detected", regardless of input. If this gate is ever
+/// wired into a real path as-is, it will silently rubber-stamp everything;
+/// treat it as an unimplemented stub, not a working quality gate.
 pub struct StatGuardianGate {
     endpoint: String,
     timeout_ms: u64,
@@ -59,6 +68,9 @@ impl StatGuardianGate {
 
 #[async_trait]
 impl QualityGate for StatGuardianGate {
+    /// Always returns a hardcoded `passed: true, quality_score: 0.95` --
+    /// does not call StatGuardian and ignores `entity` entirely. See the
+    /// disclosure on `StatGuardianGate` above.
     async fn validate(&self, entity: &Entity) -> Result<ValidationResult> {
         // In production, this would call StatGuardian API
         // For now, return mock validation result
@@ -70,6 +82,9 @@ impl QualityGate for StatGuardianGate {
         })
     }
 
+    /// Always returns "no drift detected" -- does not call StatGuardian and
+    /// ignores `entity` entirely. See the disclosure on `StatGuardianGate`
+    /// above.
     async fn check_drift(&self, entity: &Entity) -> Result<DriftReport> {
         // In production, this would call StatGuardian drift detection
         Ok(DriftReport {
