@@ -170,21 +170,37 @@ async fn execute_with_records(
     // source->destination pair. Runs before the write (and even in dry-run)
     // so drift surfaces as an explicit finding, not just per-record HTTP
     // errors after the fact.
+    //
+    // Skipped entirely when this run read zero records (e.g. an incremental
+    // query with nothing new): `batch_shape_entity` of an empty record set
+    // infers an empty shape, and diffing "empty" against a real previously-
+    // stored shape would report *every* known field as `Removed` -- a false
+    // schema-drift alarm caused by there simply being no data this run, not
+    // by an actual upstream schema change. Skipping also leaves the stored
+    // shape untouched, so the next non-empty run still diffs against the
+    // real last-known shape.
     let schema_changes = if let Some(store_path) = &options.schema_store_path {
-        let schema_key = format!(
-            "{}->{}",
-            source_node.id,
-            destination_schema_key(&destination)
-        );
-        let evolution =
-            DefaultSchemaEvolution::with_sqlite_store("auto".to_string(), schema_key, store_path)?;
-        let shape_entity = batch_shape_entity(&compliant_records);
-        evolution
-            .detect_changes(&shape_entity)
-            .await?
-            .iter()
-            .map(describe_schema_change)
-            .collect()
+        if compliant_records.is_empty() {
+            Vec::new()
+        } else {
+            let schema_key = format!(
+                "{}->{}",
+                source_node.id,
+                destination_schema_key(&destination)
+            );
+            let evolution = DefaultSchemaEvolution::with_sqlite_store(
+                "auto".to_string(),
+                schema_key,
+                store_path,
+            )?;
+            let shape_entity = batch_shape_entity(&compliant_records);
+            evolution
+                .detect_changes(&shape_entity)
+                .await?
+                .iter()
+                .map(describe_schema_change)
+                .collect()
+        }
     } else {
         Vec::new()
     };
@@ -950,6 +966,109 @@ mod tests {
         .unwrap();
 
         assert_eq!(third.schema_changes.len(), 1);
+        assert!(third.schema_changes[0].contains("signup_source"));
+        assert!(third.schema_changes[0].contains("added"));
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn empty_batch_does_not_falsely_report_every_field_removed() {
+        // Regression test: an empty source read (e.g. an incremental query
+        // that legitimately returns zero new rows this run) used to be
+        // diffed as "every previously-known field vanished", because
+        // batch_shape_entity() of zero records infers an empty shape, and
+        // diffing empty against a real stored shape reports every field as
+        // Removed. That's a false schema-drift alarm caused by there being
+        // no data this run, not a real upstream schema change.
+        let dir = std::env::temp_dir().join(format!("pyreverseetl_test_{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let store_path = dir.join("schema.db");
+
+        let server = MockHttpServer::start(200, "{}");
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!(server.base_url.clone()));
+        let destination = || DestinationSpec::Webhook {
+            config: config.clone(),
+            auth: AdapterAuth::Bearer {
+                token: "tok".to_string(),
+            },
+        };
+        let lineage = LineageStore::new();
+
+        // First run: establish a real shape (id, email, name).
+        let first = execute_with_records(
+            sample_records(),
+            source_node(),
+            destination(),
+            ExecuteOptions {
+                limit: None,
+                compliance_rules: vec![],
+                dry_run: false,
+                schema_store_path: Some(store_path.clone()),
+                idempotency_store_path: None,
+            },
+            &lineage,
+        )
+        .await
+        .unwrap();
+        assert!(first.schema_changes.is_empty());
+
+        // Second run: zero records read from the source this time (e.g. an
+        // incremental query with nothing new). Nothing about the schema
+        // actually changed -- there's simply no data this run.
+        let second = execute_with_records(
+            Vec::new(),
+            source_node(),
+            destination(),
+            ExecuteOptions {
+                limit: None,
+                compliance_rules: vec![],
+                dry_run: false,
+                schema_store_path: Some(store_path.clone()),
+                idempotency_store_path: None,
+            },
+            &lineage,
+        )
+        .await
+        .unwrap();
+
+        assert!(
+            second.schema_changes.is_empty(),
+            "an empty batch must not be reported as every field being removed, got: {:?}",
+            second.schema_changes
+        );
+
+        // Third run: real records again, with one genuinely new field. The
+        // stored shape must have survived the empty run untouched, so this
+        // still diffs correctly against the *original* (id, email, name)
+        // shape rather than against nothing.
+        let mut records_with_new_field = sample_records();
+        for record in &mut records_with_new_field {
+            record.data["signup_source"] = json!("referral");
+        }
+        let third = execute_with_records(
+            records_with_new_field,
+            source_node(),
+            destination(),
+            ExecuteOptions {
+                limit: None,
+                compliance_rules: vec![],
+                dry_run: false,
+                schema_store_path: Some(store_path.clone()),
+                idempotency_store_path: None,
+            },
+            &lineage,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            third.schema_changes.len(),
+            1,
+            "the empty run must not have clobbered or lost the real stored shape, got: {:?}",
+            third.schema_changes
+        );
         assert!(third.schema_changes[0].contains("signup_source"));
         assert!(third.schema_changes[0].contains("added"));
 

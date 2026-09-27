@@ -15,6 +15,57 @@ that didn't happen, gaps are left as gaps. For full detail, use
 ## [Unreleased]
 
 ### Fixed
+- `core/src/pipeline/backpressure.rs`: `BackpressureManager::acquire` and
+  `::release` were both check-then-act (a separate atomic load, then a
+  separate `fetch_add`/`fetch_sub`), not single atomic operations -- classic
+  TOCTOU races reachable by real concurrent callers, since
+  `ActivationPipeline` shares one `Arc<BackpressureManager>` across
+  concurrently processed events. Verified both races with real
+  multi-threaded tests before fixing: (1) 20 real OS threads calling
+  `acquire()` concurrently from `queue_depth == 94` (one below the
+  reject threshold of 95) all succeeded, taking `queue_depth` to 114 -- 19
+  over the configured "hard" cap, where sequential semantics only allow 1 to
+  succeed; (2) 2 real concurrent `release()` calls at `queue_depth == 1`
+  reproducibly (5/5 runs) underflowed the *unsigned* counter to a wrapped
+  `usize::MAX`, which would make `check_load()` return `Reject` forever --
+  a permanent, unrecoverable lockout of the whole backpressure manager, not
+  just a transient overshoot. Fixed both with a single atomic
+  `AtomicUsize::fetch_update` (compare-and-swap retry loop) each --
+  `acquire()` re-checks the threshold against the freshly-read value on
+  every retry; `release()` uses `checked_sub` so it can never go below zero.
+  Added two regression tests using real `std::thread` + `Barrier` (not
+  single-threaded tests, which can't exercise a race at all):
+  `concurrent_acquire_never_overshoots_the_reject_threshold` and
+  `concurrent_release_never_underflows_below_zero`; both re-run 10x with
+  zero failures post-fix (the pre-fix equivalents failed every single run).
+  Verified: `cargo test -p pyreverseetl-core --lib` -- 455 passed, 0 failed,
+  6 ignored; `cargo fmt --check` and `cargo build -p pyreverseetl-core`
+  clean (same pre-existing 25 warnings, none new);
+  `PYTHONPATH=python pytest tests/ -v` unaffected (5 passed, 4 skipped).
+- `core/src/executor.rs`'s real schema-drift detection (wired into
+  `execute_sync` per commit `022ddda`) falsely reported **every** field of a
+  source->destination pair as "removed" whenever a sync run read zero
+  records (e.g. an incremental query that legitimately returns no new rows).
+  Root cause: `batch_shape_entity(&compliant_records)` of an empty record
+  set infers an empty field shape, and `DefaultSchemaEvolution::detect_changes`
+  then diffs that empty shape against the real, non-empty shape persisted
+  from the last run with data -- which is indistinguishable, from inside
+  `diff_shapes`, from "every field genuinely disappeared". This is a false
+  schema-drift alarm caused entirely by there being no data this run, not by
+  any real upstream schema change; a caller reading `ExecutionResult::
+  schema_changes` (e.g. the CLI) would see something like `["Field 'email'
+  removed...", "Field 'name' removed...", "Field 'id' removed..."]` for a
+  run that simply had nothing to sync. Verified with a failing test first
+  (`core/src/executor.rs`, `empty_batch_does_not_falsely_report_every_field_removed`)
+  before fixing. Fix: schema-drift detection is now skipped entirely when
+  `compliant_records` is empty, leaving the persisted shape untouched so the
+  next non-empty run still diffs correctly against the real last-known
+  shape (covered by the same test's third assertion, and by the pre-existing
+  `schema_drift_is_detected_and_persisted_across_separate_runs` test, both of
+  which still pass). Verified: `cargo test -p pyreverseetl-core --lib` — 453
+  passed, 0 failed, 6 ignored (was 452 before this pass's one new test);
+  `PYTHONPATH=python pytest tests/ -v` unaffected (5 passed, 4 skipped,
+  Python code untouched by this fix).
 - `core/src/adapters/http_client.rs:142` used the deprecated `base64::encode`
   free function (removed/deprecated upstream in favor of the `Engine` trait).
   Migrated to `base64::engine::general_purpose::STANDARD.encode(...)`,

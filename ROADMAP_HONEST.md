@@ -8,6 +8,83 @@ technical-debt list, per this repo's documentation-honesty convention.
 Nothing below is hedged with "planned" or "may be added" for things that
 simply don't exist — if it's not built, it says "not built."
 
+## Real bugs found and fixed by a deep code-review pass (2026-09-27)
+
+- **False schema-drift alarm on an empty batch, `core/src/executor.rs`
+  (schema-drift block inside `execute_with_records`).** The real schema-drift
+  detector wired into `execute_sync` (commit `022ddda`) compares the field
+  shape of the current run's records against the last-known persisted shape.
+  When a run reads **zero** records (e.g. an incremental query that
+  legitimately finds nothing new since the last run), `batch_shape_entity`
+  of an empty record set produces an empty shape, and diffing "empty"
+  against a real, non-empty stored shape is indistinguishable from "every
+  field just vanished" — `ExecutionResult::schema_changes` would report every
+  previously-known field as `Removed`, purely because there was no data this
+  run, not because of any real upstream schema change. Confirmed with a
+  failing test before touching any logic (added
+  `empty_batch_does_not_falsely_report_every_field_removed` in
+  `core/src/executor.rs`, which failed with exactly this symptom:
+  `["Field 'email' removed (was: string)", "Field 'id' removed (was:
+  number)", "Field 'name' removed (was: string)"]` for a run with 0 records).
+  **Fixed**: schema-drift detection is now skipped entirely when
+  `compliant_records` is empty, so the persisted shape is left untouched and
+  the next non-empty run still diffs correctly against the real last-known
+  shape (same test's third run asserts this explicitly). Verified:
+  `cargo test -p pyreverseetl-core --lib` — 453 passed, 0 failed, 6 ignored
+  (452 before this pass, +1 new regression test); `cargo fmt --check` clean;
+  `PYTHONPATH=python pytest tests/ -v` unaffected (5 passed, 4 skipped, no
+  Python code touched).
+
+- **Two TOCTOU races in `BackpressureManager`, `core/src/pipeline/backpressure.rs`
+  (`acquire`/`release`) — both verified with real concurrent-thread tests,
+  both fixed.** `acquire()` called `check_load()` (a separate atomic read)
+  and then, only if that read said `Ok`/`Warn`, did a separate
+  `fetch_add(1, ...)` — check and increment were two distinct atomic
+  operations, not one. `release()` had the identical shape: a separate load
+  of `current`, then an unconditional `fetch_sub(1, ...)` if `current > 0`.
+  `ActivationPipeline` holds exactly one shared `Arc<BackpressureManager>`
+  across concurrently processed events, so both were reachable by real
+  concurrent callers, not just a theoretical concern.
+  - Verified `acquire()`'s race with a test that drives load to
+    `reject_threshold - 1` (94 of 100) and fires 20 real OS threads at the
+    real, public `acquire()` simultaneously via a `Barrier`: **all 20
+    succeeded**, taking `queue_depth` to 114 — 19 over the configured
+    "hard" reject cap of 95 — where sequential semantics only allow exactly
+    1 to succeed.
+  - Verified `release()`'s race is worse than a transient overshoot: with
+    `queue_depth` at 1, firing 2 concurrent real `release()` calls
+    reproducibly took the *unsigned* `current_load` counter from 1 to 0 to a
+    wrapped `usize::MAX` (`18446744073709551615`, confirmed across 5 runs).
+    Once wrapped, `check_load()` would see an enormous load forever and
+    permanently return `Reject` — a total, unrecoverable lockout of the
+    backpressure manager (every future event rejected until process
+    restart), not just a brief cap overshoot.
+  - **Fixed**: both `acquire()` and `release()` now use a single atomic
+    `AtomicUsize::fetch_update` (a compare-and-swap retry loop) instead of a
+    separate load-then-branch-then-mutate. `acquire()`'s closure re-checks
+    `current >= reject_threshold` against the freshly-read value on every
+    retry (so only as many concurrent callers as there are actually-available
+    slots can win); `release()`'s closure uses `checked_sub(1)` (so it can
+    never go below zero regardless of how many more `release()` calls than
+    acquired slots race in). `check_load()`'s duplicated inline threshold
+    computation was also factored into a shared private `reject_threshold()`
+    helper used by both.
+  - Regression tests (real concurrent OS threads via `std::thread` +
+    `Barrier`, not single-threaded unit tests that can't exercise a race at
+    all): `concurrent_acquire_never_overshoots_the_reject_threshold` (asserts
+    exactly 1 of 20 concurrent callers wins the last slot, final
+    `queue_depth == 95`) and `concurrent_release_never_underflows_below_zero`
+    (10 concurrent `release()` calls against 1 acquired slot; asserts
+    `queue_depth` saturates at 0, never wraps). Both re-run 10x in a loop
+    during this pass with zero failures (the pre-fix versions of these tests
+    failed reliably, every single run).
+  - Verified: `cargo test -p pyreverseetl-core --lib` — 455 passed, 0 failed,
+    6 ignored (453 after the schema-drift fix above, +2 new backpressure
+    regression tests); `cargo fmt --check` and `cargo build -p
+    pyreverseetl-core` clean (same pre-existing 25 warnings, none new);
+    `PYTHONPATH=python pytest tests/ -v` unaffected (5 passed, 4 skipped, no
+    Python code touched).
+
 ## Bucket 1 — Verified working (I ran these commands myself, 2026-09-20)
 
 - `cargo build -p pyreverseetl-core` — succeeds. 25 compiler warnings (see
