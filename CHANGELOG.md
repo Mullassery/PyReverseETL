@@ -19,7 +19,7 @@ that didn't happen, gaps are left as gaps. For full detail, use
   elapsed wall-clock time for `execution_time_ms` instead of a hardcoded
   `5000`; the 1000-in/950-out record counts remain an explicitly documented
   simulation (no Spark job is run).
-- Added `.grapify.yml` and a `Grapify scan` CI job; bumped version to 3.1.1.
+- Added an optional, isolated Graphify code knowledge-graph backend (`tools/graphify/`, `.graphifyignore`, optional workflow) and bumped version to 3.1.1.
 
 ### Fixed
 - `core/src/governance/quality_gate.rs`: `StatGuardianGate::validate` and
