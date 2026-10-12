@@ -4,9 +4,12 @@
 /// - Quality score checking
 /// - Drift detection
 /// - Threshold enforcement
-use crate::{Entity, Error, Result};
+use super::statguardian_client::StatGuardianClient;
+use crate::{Entity, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Duration;
 
 /// Result of quality validation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,53 +47,58 @@ pub trait QualityGate: Send + Sync {
 
 /// StatGuardian-backed quality gate.
 ///
-/// **Disclosure**: this is not currently wired into the real `execute_sync`
-/// sync path (verified: no non-test code constructs a `GovernanceEngine` or
-/// calls `with_governance`), and its `QualityGate` impl below does not call
-/// StatGuardian or inspect the passed-in `Entity` at all -- `validate` always
-/// returns `passed: true, quality_score: 0.95` and `check_drift` always
-/// returns "no drift detected", regardless of input. If this gate is ever
-/// wired into a real path as-is, it will silently rubber-stamp everything;
-/// treat it as an unimplemented stub, not a working quality gate.
+/// Delegates to a real [`StatGuardianClient`] over HTTP: `validate` calls the
+/// StatGuardian `/validate` endpoint and `check_drift` calls `/detect-changes`
+/// and maps the returned schema changes onto a [`DriftReport`]. If the
+/// StatGuardian service is unreachable or returns an error, the calls return an
+/// error rather than silently passing.
 pub struct StatGuardianGate {
-    endpoint: String,
-    timeout_ms: u64,
+    client: Arc<StatGuardianClient>,
 }
 
 impl StatGuardianGate {
+    /// Create a gate for the given base URL and timeout.
+    ///
+    /// No bearer token is sent; use [`Self::with_api_key`] when the
+    /// StatGuardian deployment requires authentication.
     pub fn new(endpoint: String, timeout_ms: u64) -> Self {
+        Self::with_api_key(endpoint, String::new(), timeout_ms)
+    }
+
+    /// Create a gate that authenticates with the given API key.
+    pub fn with_api_key(endpoint: String, api_key: String, timeout_ms: u64) -> Self {
+        let client =
+            StatGuardianClient::with_timeout(endpoint, api_key, Duration::from_millis(timeout_ms));
         Self {
-            endpoint,
-            timeout_ms,
+            client: Arc::new(client),
         }
     }
 }
 
 #[async_trait]
 impl QualityGate for StatGuardianGate {
-    /// Always returns a hardcoded `passed: true, quality_score: 0.95` --
-    /// does not call StatGuardian and ignores `entity` entirely. See the
-    /// disclosure on `StatGuardianGate` above.
     async fn validate(&self, entity: &Entity) -> Result<ValidationResult> {
-        // In production, this would call StatGuardian API
-        // For now, return mock validation result
-        Ok(ValidationResult {
-            passed: true,
-            quality_score: 0.95,
-            issues: vec![],
-            schema_version: "v1.0.0".to_string(),
-        })
+        self.client.validate(entity).await
     }
 
-    /// Always returns "no drift detected" -- does not call StatGuardian and
-    /// ignores `entity` entirely. See the disclosure on `StatGuardianGate`
-    /// above.
     async fn check_drift(&self, entity: &Entity) -> Result<DriftReport> {
-        // In production, this would call StatGuardian drift detection
+        let changes = self.client.detect_schema_changes(entity).await?;
+        let total_fields = entity
+            .attributes
+            .as_object()
+            .map(|obj| obj.len())
+            .unwrap_or(0)
+            .max(changes.len());
+        let drift_percentage = if total_fields == 0 {
+            0.0
+        } else {
+            (changes.len() as f64 / total_fields as f64) * 100.0
+        };
+
         Ok(DriftReport {
-            detected: false,
-            drift_percentage: 0.0,
-            affected_fields: vec![],
+            detected: !changes.is_empty(),
+            drift_percentage,
+            affected_fields: changes.into_iter().map(|c| c.field_name).collect(),
         })
     }
 

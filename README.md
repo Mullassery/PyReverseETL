@@ -4,7 +4,8 @@
 works in, with a real lineage graph and real compliance enforcement.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-![Version: v3.1.0](https://img.shields.io/badge/Version-v3.1.0-blue)
+![Version: v3.1.1](https://img.shields.io/badge/Version-v3.1.1-blue)
+[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
 [![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
 
 A Rust sync engine with Python bindings and a CLI. `pyreverseetl execute`

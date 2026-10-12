@@ -174,14 +174,18 @@ impl SparkTransformer {
         cmd
     }
 
-    /// Simulate job execution (for testing/local use)
+    /// Simulate job execution (for testing/local use).
+    ///
+    /// The record counts below are a fixed simulation (1000 in / 950 out) used
+    /// to exercise the pipeline; only `execution_time_ms` reflects real elapsed
+    /// wall-clock time for this call. No Spark job is actually run.
     pub fn execute_local(&self) -> crate::Result<SparkJobResult> {
         let start = Instant::now();
 
         // Simulate transformation: 1000 input records → 950 output records (5% filtered)
         let records_processed = 1000;
         let records_output = (records_processed as f64 * 0.95) as u64;
-        let execution_time_ms = 5000;
+        let execution_time_ms = start.elapsed().as_millis() as u64;
 
         Ok(SparkJobResult {
             job_id: self.job_id.clone(),

@@ -12,9 +12,23 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
-## [Unreleased]
+## [3.1.1] — 2026-10-12
+
+### Changed
+- `core/src/transformers/spark.rs`: `execute_local` now reports the real
+  elapsed wall-clock time for `execution_time_ms` instead of a hardcoded
+  `5000`; the 1000-in/950-out record counts remain an explicitly documented
+  simulation (no Spark job is run).
+- Added `.grapify.yml` and a `Grapify scan` CI job; bumped version to 3.1.1.
 
 ### Fixed
+- `core/src/governance/quality_gate.rs`: `StatGuardianGate::validate` and
+  `::check_drift` no longer rubber-stamp every entity with a hardcoded
+  `passed: true, quality_score: 0.95` / "no drift detected" result; they now
+  delegate to a real `StatGuardianClient` (`/validate` and `/detect-changes`).
+  A `with_api_key` constructor was added for authenticated deployments; `new`
+  keeps sending no bearer token. An unreachable/erroring service now surfaces
+  an error instead of a fabricated pass.
 - `core/src/pipeline/backpressure.rs`: `BackpressureManager::acquire` and
   `::release` were both check-then-act (a separate atomic load, then a
   separate `fetch_add`/`fetch_sub`), not single atomic operations -- classic
