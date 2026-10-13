@@ -1,105 +1,108 @@
 # PyReverseETL
 
-**Reverse ETL: move data from a source system into the tools your team actually
-works in, with a real lineage graph and real compliance enforcement.**
+**The open operational data activation runtime: move data from a source system into the tools your team actually works in, with a real lineage graph and real compliance enforcement.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-![Version: v3.1.1](https://img.shields.io/badge/Version-v3.1.1-blue)
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
+[![PyPI](https://img.shields.io/pypi/v/pyreverseetl)](https://pypi.org/project/pyreverseetl/)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
 [![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
+[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
-A Rust sync engine with Python bindings and a CLI. `pyreverseetl execute`
-opens a real connection to a real source, reads real records, runs them
-through a real compliance/PII-masking engine, writes them to a real
-destination, and records a real lineage edge (source, destination, record
-count, timestamps) that you can query afterward. There is no simulated mode:
-if a connector isn't wired to a real backend yet, it's not offered as an
-option, not silently faked.
+## What it is
 
-## Use cases
+PyReverseETL is a Rust sync engine with Python bindings and a CLI. `pyreverseetl execute`
+opens a real connection to a real source, reads real records, runs them through a real
+compliance/PII-masking engine, writes them to a real destination, and records a real
+lineage edge (source, destination, record count, timestamps) that you can query afterward.
+There is no simulated mode: if a connector isn't wired to a real backend yet, it's not
+offered as an option and not silently faked.
 
-- **Syncing operational data (Postgres/MySQL) into a CRM or marketing tool**
-  with real compliance/PII masking applied before it leaves the source.
-- **Pushing to a webhook destination with real auth** (Bearer/API key/Basic)
-  for integrations that don't have a dedicated connector yet.
-- **Auditing what moved where** — every sync records a real lineage edge
+## Features
+
+- **Real connectors, real I/O.** PostgreSQL, MySQL, S3/S3-compatible object storage
+  (MinIO) as source and destination; generic-schema read/write, incremental reads, upsert.
+- **Real HTTP destinations.** Webhook destination with real auth (Bearer / API key /
+  Basic) and JSON payload construction; CRM/marketing-automation REST adapters for
+  Salesforce, HubSpot, and Marketo.
+- **Compliance/PII handling before data leaves the process.** Mask, remove, or truncate
+  fields per-record; `Encrypt` is honestly reported as unresolved rather than faked.
+- **Lineage tracking.** Every sync registers real source/destination nodes and appends a
+  real edge (record count + timestamps) to an in-process lineage graph, queryable and
+  exportable to JSON or Graphviz DOT.
+- **Reliability in the real sync path.** Retry with backoff on transient HTTP failures,
+  dry-run preview, schema-drift detection, and an idempotency ledger for crash-mid-batch
+  recovery.
+- **CLI + Python API + optional Flask REST server**, all backed by the same engine.
+
+## Who it's for
+
+- **Data and platform engineers** syncing operational data (Postgres/MySQL) into a CRM or
+  marketing tool, with compliance/PII masking applied before it leaves the source.
+- **Teams pushing to a webhook destination** with real auth for integrations that don't
+  have a dedicated connector yet.
+- **Anyone who needs to audit what moved where** — every sync records a real lineage edge
   you can query afterward, not just a log line.
-- **Not yet a good fit for:** Kafka/CDC streaming, Spark/PySpark transforms,
-  or non-S3 cloud object storage — all either explicitly not implemented or
-  present but not wired into the real sync path (see
-  [Known gaps](#known-gaps-deliberately-out-of-scope-for-this-pass) below).
 
-## What's real right now
+## What it is not
+
+- **Not a streaming/CDC platform.** Kafka, CDC streaming, and HDFS are not wired into the
+  real sync path and are out of scope for this pass.
+- **Not a Spark/PySpark transform engine.** The transformer is present from earlier work
+  but not wired into `execute`/`run_sync`; several such modules return fixed, non-real
+  numbers if called directly (documented inline, e.g. `SparkTransformer::submit`).
+- **Not a StatGuardian quality-gate integration.** Present in the codebase but not wired
+  into the real sync path; treat it as experimental.
+- **Not verified against live CRM accounts.** The Salesforce/HubSpot/Marketo adapters are
+  real REST clients, but they were verified against local mock HTTP servers that assert
+  the exact request shape (no live account was available). Please report request-shape
+  mismatches against a real account as issues.
+- **Not encryption.** `Encrypt` compliance actions are reported as unresolved rather than
+  silently claimed to succeed.
+
+## Connector status
 
 | Connector | Direction | Status |
 |---|---|---|
 | PostgreSQL | source + destination | Real, via [`sqlx`](https://github.com/launchbadge/sqlx). Generic-schema read/write, incremental reads, upsert. Verified with a real Postgres container. |
 | MySQL | source + destination | Real, via `sqlx`. Same capabilities as Postgres. Verified with a real MySQL container. |
-| S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV formats are implemented; Parquet/Avro/ORC/Iceberg/Delta are declared but return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
-| Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and real JSON payload construction. |
-| CRM (adapter: `core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe operations. No live account was available to verify against, so this is verified against a local mock HTTP server that asserts the exact request shape (method, path, auth header, body) the real API expects. |
-| CRM (adapter: `core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Same caveat: verified against a mock server, not a live account. |
-| Marketing automation (adapter: `core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, lead delete, describe). Same caveat: verified against a mock server, not a live account. |
-| Other cloud object storage backends | source + destination | **Not implemented.** Calling them returns an explicit error instead of a fake success. |
-| Kafka, HDFS, Spark/PySpark transforms, CDC streaming, the CLI dashboard, StatGuardian quality gates | — | Present in the codebase from earlier work but out of scope for this pass and not wired into `execute` / `run_sync`. Treat as experimental; several return fixed/fabricated numbers (documented inline where that's the case, e.g. `SparkTransformer::submit`). |
+| S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV implemented; Parquet/Avro/ORC/Iceberg/Delta return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
+| Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and JSON payload construction. |
+| CRM (`core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe. Verified against a local mock HTTP server. |
+| CRM (`core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Verified against a mock server. |
+| Marketing automation (`core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, delete, describe). Verified against a mock server. |
+| Other cloud object storage backends | source + destination | **Not implemented.** Returns an explicit error instead of a fake success. |
+| Kafka, HDFS, Spark/PySpark transforms, CLI dashboard, StatGuardian gates | — | Present from earlier work, out of scope for this pass, not wired into `execute`/`run_sync`. Treat as experimental. |
 
-If you need a connector marked "not implemented" above, that's an honest gap,
-not a documentation oversight — open an issue rather than assuming it works.
-The exact third-party API each CRM/marketing-automation adapter targets is
-named in the source file, not repeated here to avoid implying vendor
-endorsement.
+If you need a connector marked "not implemented" above, that's an honest gap, not a
+documentation oversight — open an issue rather than assuming it works. The exact
+third-party API each CRM/marketing adapter targets is named in the source file, not
+repeated here to avoid implying vendor endorsement.
 
-## Reliability
+## Project status
 
-All four wired into the real production sync path (`execute_sync`), not a
-separate/dead one:
+**Beta.** Version 3.1.1. The Postgres/MySQL/S3/webhook paths are real and verified against
+real services; the CRM/marketing adapters are real but mock-verified only; several
+modules from earlier work remain unwired and are called out as such above. For a blunt,
+file-and-line-referenced list of what's tested vs. untested vs. broken vs. not built, see
+[`ROADMAP_HONEST.md`](ROADMAP_HONEST.md). Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
-- **Retry with backoff**: every HubSpot/Salesforce/Marketo/webhook HTTP call
-  (upsert, delete, schema fetch, OAuth token exchange) automatically retries
-  transient failures (connection errors, timeouts, 429 rate limits) with
-  exponential backoff, instead of failing on the first blip.
-- **Dry run** (`--dry-run` / `dry_run=True`): reads from the real source and
-  runs the real compliance engine, but never writes to the destination.
-  `dry_run_preview` shows the exact payload each record would have sent, so
-  you can audit before committing.
-  ```bash
-  pyreverseetl execute my_activation --dry-run
-  ```
-- **Schema-drift detection** (`--schema-store <path>`): persists the
-  last-seen field-name/type shape for a source->destination pair to a real
-  SQLite file, and reports any field added/removed/type-changed since the
-  last run (`schema_changes`) — instead of only finding out via a per-record
-  HTTP error from the destination.
-  ```bash
-  pyreverseetl execute my_activation --schema-store .pyreverseetl/schema.db
-  ```
-- **Idempotency ledger** (`--idempotency-store <path>`): persists which
-  exact record content was already sent to which destination to a real
-  SQLite file. Re-running the same sync (e.g. after a crash mid-batch) skips
-  records already synced (`rows_skipped_idempotent`) instead of re-sending
-  them, while a record whose content genuinely changed is still sent — this
-  covers destinations with no upsert semantics of their own (the webhook
-  adapter just POSTs) as well as crash-mid-batch recovery.
-  ```bash
-  pyreverseetl execute my_activation --idempotency-store .pyreverseetl/idempotency.db
-  ```
-
-## Install
+## Installation
 
 ```bash
 pip install pyreverseetl
 # or
 uv pip install pyreverseetl
 
-pyreverseetl --version    # prints the installed version, read straight from the compiled Rust core
+pyreverseetl --version   # prints the installed version, read straight from the compiled Rust core
 ```
 
-This installs a compiled Rust extension (built with [maturin](https://github.com/PyO3/maturin)/PyO3) plus the `pyreverseetl` console command.
+This installs a compiled Rust extension (built with [maturin](https://github.com/PyO3/maturin)/PyO3)
+plus the `pyreverseetl` console command. Requires Python 3.9+.
 
-## Quick start: a real sync against a local Postgres
+## Quick start
 
-This spins up a real Postgres container, seeds a table, and syncs it to a
-webhook using the real engine end to end.
+This spins up a real Postgres container, seeds a table, and syncs it to a webhook using
+the real engine end to end.
 
 ```bash
 docker run --rm -d -p 5432:5432 \
@@ -139,9 +142,7 @@ pyreverseetl execute ltv_to_hook --compliance-rules \
   '[{"id":"mask_email","rule_type":"pii_masking","target_fields":["email"],"action":{"type":"mask","pattern":"****"}}]'
 ```
 
-Every one of these calls goes through the real Rust engine
-(`pyreverseetl._core.run_sync`) — `rows_synced` is the number of records the
-destination connector actually wrote, not a placeholder.
+## Usage
 
 ### Python API
 
@@ -170,27 +171,39 @@ print(pyreverseetl.lineage_json())
 print(pyreverseetl.lineage_dot())  # Graphviz DOT export
 ```
 
-## Lineage tracking
+### Reliability features
 
-Every `run_sync` call registers real source/destination nodes and appends a
-real edge — actual record count, actual start/completion timestamps — to an
-in-process lineage graph (`pyreverseetl_core::lineage::LineageGraph`). It
-supports upstream/downstream queries and exports to JSON or Graphviz DOT.
-This did not exist anywhere in the codebase before this pass; the README
-previously described "lineage tracking" as a feature with zero backing code.
+- **Retry with backoff**: every HubSpot/Salesforce/Marketo/webhook HTTP call (upsert,
+  delete, schema fetch, OAuth token exchange) retries transient failures (connection
+  errors, timeouts, 429 rate limits) with exponential backoff.
+- **Dry run** (`--dry-run` / `dry_run=True`): reads from the real source and runs the real
+  compliance engine, but never writes to the destination. `dry_run_preview` shows the exact
+  payload each record would have sent.
+  ```bash
+  pyreverseetl execute my_activation --dry-run
+  ```
+- **Schema-drift detection** (`--schema-store <path>`): persists the last-seen
+  field-name/type shape for a source→destination pair to a real SQLite file and reports any
+  field added/removed/type-changed since the last run (`schema_changes`).
+  ```bash
+  pyreverseetl execute my_activation --schema-store .pyreverseetl/schema.db
+  ```
+- **Idempotency ledger** (`--idempotency-store <path>`): persists which exact record content
+  was already sent to which destination to a real SQLite file. Re-running the same sync
+  (e.g. after a crash mid-batch) skips records already synced (`rows_skipped_idempotent`)
+  while still sending records whose content genuinely changed.
+  ```bash
+  pyreverseetl execute my_activation --idempotency-store .pyreverseetl/idempotency.db
+  ```
 
-## Compliance & PII handling
+### Compliance & PII handling
 
-`DefaultComplianceEngine` (`pyreverseetl_core::governance::compliance_rules`)
-applies real per-record rules before a write: mask a field, remove it,
-truncate it, or (for `Encrypt`) honestly report it as unresolved — there is
-no real encryption implementation, and the engine says so in
-`check_compliance` rather than silently claiming success. A `MockComplianceEngine`
-still exists but is `#[cfg(test)]`-only, so it can never run in a real build;
-it exists purely as a test double for exercising governance wiring without
-needing real masking behavior.
+`DefaultComplianceEngine` (`pyreverseetl_core::governance::compliance_rules`) applies real
+per-record rules before a write: mask a field, remove it, truncate it, or (for `Encrypt`)
+honestly report it as unresolved — there is no real encryption implementation, and the
+engine says so in `check_compliance` rather than silently claiming success.
 
-## Architecture
+### Architecture
 
 ```
 Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_core::execute_sync
@@ -204,22 +217,31 @@ Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_cor
                                                           lineage edge recorded
 ```
 
-- **`core/`** — the Rust engine: connectors, the compliance engine, lineage
-  tracking, the sync executor.
-- **`python/src/`** — PyO3 bindings (`run_sync`, `lineage_json`, `lineage_dot`,
-  plus the lower-level data-model classes `PyWorkflow`/`PyDestination`/etc.).
-- **`python/pyreverseetl/`** — the installed Python package: `cli.py` (the
-  `pyreverseetl` command), `server.py` (an optional Flask REST wrapper around
-  the same engine), both backed by the real engine rather than any
-  in-process simulation.
+- **`core/`** — the Rust engine: connectors, the compliance engine, lineage tracking, the
+  sync executor.
+- **`python/src/`** — PyO3 bindings (`run_sync`, `lineage_json`, `lineage_dot`, plus the
+  lower-level data-model classes `PyWorkflow`/`PyDestination`/etc.).
+- **`python/pyreverseetl/`** — the installed Python package: `cli.py` (the `pyreverseetl`
+  command) and `server.py` (an optional Flask REST wrapper around the same engine).
 
-## Development
+## Documentation
+
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — what's tested vs. untested vs. broken vs. not
+  built, plus known technical debt.
+- [docs/ROADMAP.md](docs/ROADMAP.md) — narrative roadmap.
+- [CHANGELOG.md](CHANGELOG.md) — release history.
+- [COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md) — compliance posture.
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
 
 ```bash
 # Rust: build, test, lint
 cargo build -p pyreverseetl-core
 cargo test -p pyreverseetl-core --lib          # unit tests (hermetic, no external services)
-cargo test -p pyreverseetl-core --lib -- --ignored   # real Docker-backed round-trip tests, see below
 cargo clippy -p pyreverseetl-core --lib
 cargo fmt
 
@@ -228,12 +250,8 @@ maturin develop --release
 pytest tests/ -v
 ```
 
-### Running the real, Docker-backed connector tests
-
-Unit tests are hermetic by design (no network, no containers). The
-round-trip tests that prove the Postgres/MySQL/S3 connectors actually talk to
-a real service are `#[ignore]`d by default; run them explicitly against real
-containers:
+The Docker-backed connector round-trip tests are `#[ignore]`d by default; run them
+explicitly against real containers:
 
 ```bash
 docker run --rm -d -p 5439:5432 -e POSTGRES_PASSWORD=postgres \
@@ -242,48 +260,25 @@ docker run --rm -d -p 3307:3306 -e MYSQL_ROOT_PASSWORD=mysql \
     -e MYSQL_DATABASE=pyreverseetl_test --name pyreverseetl-mysql-test mysql:8
 docker run --rm -d -p 9000:9000 -e MINIO_ROOT_USER=minioadmin \
     -e MINIO_ROOT_PASSWORD=minioadmin --name pyreverseetl-minio-test minio/minio server /data
-docker run --rm --entrypoint sh minio/mc -c \
-    "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mb local/pyreverseetl-test"
 
 PYREVERSEETL_TEST_PG_PORT=5439 PYREVERSEETL_TEST_MYSQL_PORT=3307 \
 PYREVERSEETL_TEST_MINIO_ENDPOINT=http://localhost:9000 \
     cargo test -p pyreverseetl-core --lib -- --ignored
 ```
 
-The same Docker services also back real, end-to-end Python-level tests in
-`tests/test_real_sync_docker.py` (they run the actual `pyreverseetl` CLI
-command as a subprocess and check real rows moved through it); those are
-skipped, not failed, when the containers aren't running.
+## Related projects
 
-### Contributing
+Other tools from the same family, for adjacent parts of the data platform:
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards. For a
-blunt, file-and-line-referenced list of what's tested vs. untested vs.
-broken vs. not built, plus known technical debt, see
-[ROADMAP_HONEST.md](ROADMAP_HONEST.md) (narrative version:
-[docs/ROADMAP.md](docs/ROADMAP.md)). Changes are tracked in
-[CHANGELOG.md](CHANGELOG.md).
+- [StatGuardian](https://github.com/Mullassery/StatGuardian) — fast, declarative data quality framework (Rust): schema validation, drift detection, anomaly detection.
+- [PyDBTGuard](https://github.com/Mullassery/PyDBTGuard) — analyzes a dbt project's `manifest.json` to flag risky tests, map blast radius, and estimate test cost from static metadata.
+- [PyAirflowTester](https://github.com/Mullassery/PyAirflowTester) — dependency intelligence and quality assurance for Airflow and dbt pipelines.
+- [PyBeamGuard](https://github.com/Mullassery/PyBeamGuard) — Apache Beam and Dataflow pipeline analysis for pre-deployment validation, cost forecasting, hot-key detection, and reliability.
+- [ClusterAudienceKit](https://github.com/Mullassery/ClusterAudienceKit) — Rust-powered customer segmentation: RFM, clustering, churn, CLV, and lookalike audiences.
+- [PyWeatherEnriched](https://github.com/Mullassery/PyWeatherEnriched) — real historical weather and geocoding enrichment for ML pipelines.
 
-## Known gaps (deliberately out of scope for this pass)
-
-- **Other cloud object storage backends**: return an explicit "not implemented" error.
-- **Kafka / CDC streaming, HDFS, PySpark transforms, the CLI dashboard,
-  StatGuardian quality-gate integration**: present in the codebase but not
-  wired into the real sync path (`execute` / `run_sync`); several of these
-  return fixed, non-real numbers if you call their APIs directly (this is
-  documented inline in the affected modules, e.g. `SparkTransformer::submit`).
-  Treat anything not listed in the connector table above as unverified.
-- The CRM/marketing-automation adapters (`core/src/adapters/`) are real API
-  implementations but were only verified against mocked HTTP responses (no
-  live account was available in this environment) — please report any
-  request-shape mismatches against a real account as issues.
+[Browse all projects →](https://github.com/Mullassery?tab=repositories)
 
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
-
-## Support
-
-- GitHub Issues: [PyReverseETL/issues](https://github.com/Mullassery/PyReverseETL/issues)
-- Discussions: [PyReverseETL/discussions](https://github.com/Mullassery/PyReverseETL/discussions)
