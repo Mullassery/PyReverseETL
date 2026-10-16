@@ -193,6 +193,12 @@ impl Default for TestDatabase {
     }
 }
 
+impl Default for ConnectorMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConnectorMetrics {
     pub fn new() -> Self {
         Self {

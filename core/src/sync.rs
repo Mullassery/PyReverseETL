@@ -9,8 +9,9 @@ pub struct SyncEngine {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SyncStatus {
+    #[default]
     Pending,
     Running,
     Success,
@@ -273,12 +274,6 @@ mod tests {
         let run = SyncRun::new("wf_1", "act_1");
         assert_eq!(run.total_records(), 0);
         assert_eq!(run.success_rate(), 0.0);
-    }
-}
-
-impl Default for SyncStatus {
-    fn default() -> Self {
-        SyncStatus::Pending
     }
 }
 

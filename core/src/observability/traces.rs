@@ -1,7 +1,4 @@
 use chrono::{DateTime, Utc};
-/// OpenTelemetry traces for distributed tracing
-/// Track execution flow from source through transformation to destination
-use std::time::Instant;
 
 /// Span for tracing a specific operation
 #[derive(Debug, Clone)]

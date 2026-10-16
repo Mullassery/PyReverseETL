@@ -69,12 +69,19 @@ pub enum SourceType {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SyncMode {
+    #[default]
     Batch,
-    Incremental { key_column: String },
-    CDC { stream_name: String },
-    Streaming { topic: String },
+    Incremental {
+        key_column: String,
+    },
+    CDC {
+        stream_name: String,
+    },
+    Streaming {
+        topic: String,
+    },
     EventDriven,
 }
 
@@ -112,12 +119,6 @@ impl Default for SourceType {
         SourceType::Table {
             table_name: "default".to_string(),
         }
-    }
-}
-
-impl Default for SyncMode {
-    fn default() -> Self {
-        SyncMode::Batch
     }
 }
 

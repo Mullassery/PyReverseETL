@@ -100,7 +100,7 @@ impl CheckpointManager {
             .cloned()
             .collect();
 
-        result.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        result.sort_by_key(|cp| std::cmp::Reverse(cp.created_at));
         result.truncate(limit);
 
         Ok(result)
@@ -110,7 +110,7 @@ impl CheckpointManager {
     pub async fn list_all(&self, limit: usize) -> crate::Result<Vec<Checkpoint>> {
         let checkpoints = self.checkpoints.lock().await;
         let mut result: Vec<Checkpoint> = checkpoints.values().cloned().collect();
-        result.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        result.sort_by_key(|cp| std::cmp::Reverse(cp.created_at));
         result.truncate(limit);
 
         Ok(result)

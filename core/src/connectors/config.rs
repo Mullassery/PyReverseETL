@@ -1,5 +1,3 @@
-/// Connector Configuration and Connection Pool Management
-use super::{DestinationConnector, SourceConnector};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -169,6 +167,60 @@ impl ConnectionPool {
             .values()
             .find(|c| c.is_default && c.connector_type == ConnectorType::Destination)
             .cloned())
+    }
+
+    /// Cache a live source connector instance under `id` for reuse.
+    pub fn register_source_instance(
+        &self,
+        id: &str,
+        instance: Arc<dyn std::any::Any + Send + Sync>,
+    ) -> crate::Result<()> {
+        let mut instances = self.source_instances.lock().map_err(|e| {
+            crate::Error::Internal(format!("Failed to acquire source instance lock: {}", e))
+        })?;
+        instances.insert(id.to_string(), instance);
+        Ok(())
+    }
+
+    /// Retrieve a previously cached source connector instance.
+    pub fn get_source_instance(
+        &self,
+        id: &str,
+    ) -> crate::Result<Option<Arc<dyn std::any::Any + Send + Sync>>> {
+        let instances = self.source_instances.lock().map_err(|e| {
+            crate::Error::Internal(format!("Failed to acquire source instance lock: {}", e))
+        })?;
+        Ok(instances.get(id).cloned())
+    }
+
+    /// Cache a live destination connector instance under `id` for reuse.
+    pub fn register_destination_instance(
+        &self,
+        id: &str,
+        instance: Arc<dyn std::any::Any + Send + Sync>,
+    ) -> crate::Result<()> {
+        let mut instances = self.destination_instances.lock().map_err(|e| {
+            crate::Error::Internal(format!(
+                "Failed to acquire destination instance lock: {}",
+                e
+            ))
+        })?;
+        instances.insert(id.to_string(), instance);
+        Ok(())
+    }
+
+    /// Retrieve a previously cached destination connector instance.
+    pub fn get_destination_instance(
+        &self,
+        id: &str,
+    ) -> crate::Result<Option<Arc<dyn std::any::Any + Send + Sync>>> {
+        let instances = self.destination_instances.lock().map_err(|e| {
+            crate::Error::Internal(format!(
+                "Failed to acquire destination instance lock: {}",
+                e
+            ))
+        })?;
+        Ok(instances.get(id).cloned())
     }
 }
 

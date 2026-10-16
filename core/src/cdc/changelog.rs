@@ -38,7 +38,7 @@ impl ChangeLog {
             .create(true)
             .append(true)
             .open(path)
-            .map_err(|e| crate::Error::from(e))?;
+            .map_err(crate::Error::from)?;
 
         Ok(Self {
             path: path.to_string(),
@@ -59,9 +59,9 @@ impl ChangeLog {
         let mut file = OpenOptions::new()
             .append(true)
             .open(&self.path)
-            .map_err(|e| crate::Error::from(e))?;
+            .map_err(crate::Error::from)?;
 
-        writeln!(file, "{}", json_line).map_err(|e| crate::Error::from(e))?;
+        writeln!(file, "{}", json_line).map_err(crate::Error::from)?;
 
         Ok(entry.id)
     }
@@ -122,11 +122,9 @@ impl ChangeLog {
         let reader = BufReader::new(file);
         let mut entries = Vec::new();
 
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                if let Ok(entry) = serde_json::from_str::<ChangeLogEntry>(&line) {
-                    entries.push(entry);
-                }
+        for line in reader.lines().map_while(Result::ok) {
+            if let Ok(entry) = serde_json::from_str::<ChangeLogEntry>(&line) {
+                entries.push(entry);
             }
         }
 
@@ -139,11 +137,11 @@ impl ChangeLog {
             .write(true)
             .truncate(true)
             .open(&self.path)
-            .map_err(|e| crate::Error::from(e))?;
+            .map_err(crate::Error::from)?;
 
         for entry in entries {
             let json_line = serde_json::to_string(entry)?;
-            writeln!(file, "{}", json_line).map_err(|e| crate::Error::from(e))?;
+            writeln!(file, "{}", json_line).map_err(crate::Error::from)?;
         }
 
         Ok(())
@@ -155,7 +153,7 @@ impl ChangeLog {
             .write(true)
             .truncate(true)
             .open(&self.path)
-            .map_err(|e| crate::Error::from(e))?;
+            .map_err(crate::Error::from)?;
         Ok(())
     }
 }

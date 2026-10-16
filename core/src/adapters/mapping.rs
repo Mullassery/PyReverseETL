@@ -1,6 +1,5 @@
 use crate::adapters::{FieldMapping, Transformation};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// YAML-based field mapping configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

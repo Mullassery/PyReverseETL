@@ -1,4 +1,4 @@
-use crate::{Event, EventSource, EventType};
+use crate::{Event, EventType};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::message::Message;
 use rdkafka::ClientConfig;
@@ -47,7 +47,7 @@ impl Default for KafkaConfig {
         Self {
             brokers: "localhost:9092".to_string(),
             topic: "events".to_string(),
-            group_id: format!("pyreverseetl-{}", Uuid::new_v4().to_string()),
+            group_id: format!("pyreverseetl-{}", Uuid::new_v4()),
             auto_offset_reset: "latest".to_string(),
             session_timeout_sec: 30,
             max_bytes: 1_048_576, // 1 MB
@@ -121,7 +121,12 @@ impl KafkaSource {
         let lag_multiplier = ((self.consumer_lag / 100).max(1) as u32).min(4);
 
         let recommended = throughput_multiplier.saturating_mul(lag_multiplier);
-        recommended.max(1).min(32) // Reasonable bounds: 1-32 partitions
+        recommended.clamp(1, 32) // Reasonable bounds: 1-32 partitions
+    }
+
+    /// Time at which the most recent message was consumed, if any.
+    pub fn last_message_time(&self) -> Option<std::time::Instant> {
+        self.last_message_time
     }
 
     /// Update consumer lag
@@ -243,6 +248,7 @@ impl super::EventSourceConnector for KafkaSource {
         match consumer.poll(Duration::from_millis(100)) {
             Some(Ok(borrowed_message)) => {
                 self.message_count += 1;
+                self.last_message_time = Some(std::time::Instant::now());
 
                 let key = borrowed_message
                     .key()

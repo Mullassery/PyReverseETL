@@ -1,8 +1,5 @@
 use chrono::{DateTime, Utc};
-/// OpenTelemetry metrics for sync operations
-/// Track throughput, latency, errors, and other KPIs
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Metrics collector for a sync operation
 #[derive(Debug, Clone)]

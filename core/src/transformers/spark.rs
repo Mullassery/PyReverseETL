@@ -106,7 +106,7 @@ impl SparkTransformer {
         let job_id = format!(
             "spark-{}-{}",
             chrono::Utc::now().timestamp(),
-            uuid::Uuid::new_v4().to_string()[..8].to_string()
+            &uuid::Uuid::new_v4().to_string()[..8]
         );
 
         Self { config, job_id }

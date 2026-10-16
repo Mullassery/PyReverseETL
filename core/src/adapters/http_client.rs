@@ -42,6 +42,16 @@ impl HttpClient {
         self
     }
 
+    /// Per-request timeout this client was constructed with.
+    pub fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    /// Base URL this client sends requests to.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     /// Make a POST request
     pub async fn post(&self, path: &str, body: &Value) -> Result<Value, AdapterError> {
         let url = format!("{}{}", self.base_url, path);

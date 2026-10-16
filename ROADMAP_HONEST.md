@@ -118,10 +118,20 @@ simply don't exist — if it's not built, it says "not built."
 - Retry-with-backoff / dry-run / schema-drift / idempotency — wired into
   the real `execute_sync` path (commit `022ddda`) and covered by unit
   tests; not exercised against a live third-party API, only mocks.
-- `python/pyreverseetl/server.py` (197 lines, the optional Flask REST
+- ~~`python/pyreverseetl/server.py` (197 lines, the optional Flask REST
   wrapper) — **zero test coverage**. Nothing in `tests/` imports or
   exercises it. This is a real gap: it's a network-facing surface
-  (`create_flask_app`) with no automated verification at all.
+  (`create_flask_app`) with no automated verification at all.~~
+  **FIXED (2026-10-16)**: added `tests/test_server.py` (17 tests). It covers
+  every delegation method (`create_workflow`/`create_activation`/`list_*`/
+  `get_metrics`/`get_run_status`/`get_lineage`/`health_check`), the
+  not-found fast paths, and — via Flask's `test_client` (skipped when Flask
+  isn't installed, since it isn't in the `dev` extra) — every route's
+  status-code and response-shape contract, including the `400`s for a
+  missing `workflow_id`/`activation_id` and the `text/vnd.graphviz`
+  content-type on `?format=dot`. Tests isolate state via an env-var override
+  of the CLI state file and never trigger a live sync (only the
+  "activation not found" path of `execute_activation` is exercised).
 - `python/pyreverseetl/cli.py` (639 lines) — only 2 of its code paths have
   direct unit tests (`test_cli_execute_parses_dry_run_and_store_path_flags`,
   `test_cli_version_reports_the_real_installed_version`); the rest
@@ -200,21 +210,51 @@ for completeness:
      `Engine` trait, matching the existing pattern in
      `core/src/adapters/webhook.rs`. Verified: builds clean, 452 tests
      still pass.
+    - **FIXED (2026-10-16)**: all 481 `clippy --lib` warnings cleared — the
+      library now compiles with **0** warnings. 425 of them were
+      `clippy::useless_vec` (mostly `core/src/connectors/connectors_db.rs`),
+      auto-fixed with reviewed `cargo clippy --fix`; the remaining ~16 were
+      fixed by hand. The dead fields called out above were **wired into real
+      behavior**, not suppressed: `http_client.rs` `timeout`/`base_url` gained
+      getters; `connectors/config.rs` `source_instances`/`destination_instances`
+      gained source/destination instance-cache accessors; `pipeline/
+      activation_pipeline.rs` `activation` gained a getter;
+      `sources/kafka.rs` `last_message_time` gained a getter and is now set
+      in `next_event`; plus a `Default` impl for retry policy, `clamp` fixes,
+      `map_while(Result::ok)`, `sort_by_key`, and unused imports removed.
+      Verified: `cargo fmt -p pyreverseetl-core -- --check` clean;
+      `cargo clippy -p pyreverseetl-core --lib` 0 warnings;
+      `cargo test -p pyreverseetl-core` — 455 passed, 0 failed, 6 ignored.
+      (Caveat: `cargo clippy --all-targets` — test/bin/bench targets — still
+      emits warnings; this repo's CI has no clippy job, so that was out of
+      scope for the gated `--lib` cleanup.)
 2. ~~**`.cargo/config.toml` hardcodes one contributor's personal machine.**~~
    **FIXED (2026-09-21)**: removed `[build] jobs = 12` (a "Mac Studio" core
    count) and the `-mcpu=apple-a14` rustflag entirely; `jobs` now falls back
    to Cargo's default and macOS builds no longer pin a CPU
    microarchitecture. Verified `cargo build -p pyreverseetl-core` and
-   `cargo fmt --check` succeed on a different machine. Note: `cargo lint`
-   (`clippy --all --release -- -D warnings`) still fails — that's entirely
-   due to the pre-existing 481 clippy warnings in finding #1 above, not
-   caused by or related to this config fix; fixing that is still a
-   dedicated-session item.
-3. **`sqlx` is exact-pinned to `=0.7.4`** (`core/Cargo.toml:33`) and the
+   `cargo fmt --check` succeed on a different machine. Note: at the time,
+   `cargo lint` (`clippy --all --release -- -D warnings`) also failed — that
+   was entirely due to the pre-existing 481 clippy warnings in finding #1
+   above, not caused by this config fix. Those `--lib` warnings are now
+   cleared (2026-10-16); `--all-targets` (tests/bins/benches) warnings remain,
+   so `clippy --all -- -D warnings` would still flag those.
+3. **`sqlx` was exact-pinned to `=0.7.4`** (`core/Cargo.toml:33`) and the
    build already emits a "will be rejected by a future version of Rust"
-   future-incompatibility warning for `sqlx-postgres v0.7.4`. The exact pin
-   (`=`, not `^`) also means Dependabot cannot open a PR to bump it at all —
-   contrast with `opentelemetry`, `reqwest`, `rusqlite`, and `thiserror`,
+   future-incompatibility warning for `sqlx-postgres v0.7.4`. **PARTIALLY
+   FIXED (2026-10-16)**: the exact `=` pin was relaxed to `"0.7.4"` (caret)
+   so routine maintenance and Dependabot can move it (`0.7.4` is already the
+   last `0.7.x` release, so nothing in the lockfile changed and no rebuild
+   was needed).    The future-incompatibility warning *has been cleared* by the `sqlx` 0.7.4 → 0.8.6 migration
+   (the breaking 0.7→0.8 bump touched the `postgres`/`mysql` connectors and
+   `runtime-tokio-rustls` feature flag; `rusqlite` 0.30 → 0.32 keeps the shared
+   `libsqlite3-sys` linkage consistent). That 0.7 → 0.8 migration touches the
+  `postgres`/`mysql` connectors (`PgPoolOptions`/`MySqlPoolOptions`,
+  `query`/`bind`/`fetch_*`, `Row`/`Column`/`TypeInfo`) and sqlx's feature
+  flags (`runtime-tokio-rustls`), so it was left as a dedicated follow-up
+   rather than rushed. Relaxing the pin also unblocks Dependabot, which can
+   now open a PR against sqlx — contrast with `opentelemetry`, `reqwest`,
+   `rusqlite`, and `thiserror`,
    which are loosely pinned and each already have an **open, unmerged**
    Dependabot PR sitting in this repo (`dependabot/cargo/opentelemetry-0.32`,
    `dependabot/cargo/opentelemetry-http-0.32`, `dependabot/cargo/reqwest-0.13`,
@@ -227,11 +267,21 @@ for completeness:
    writing as far as this pass could check (no network access to RustSec's
    advisory DB in this sandbox — `cargo audit` failed with a network error,
    expected per this environment's constraints), but the sqlx exact-pin
-   specifically blocks even routine maintenance and should be relaxed.
-4. **Zero test coverage on `python/pyreverseetl/server.py`** (the Flask
+   specifically blocks even routine maintenance. **FIXED (2026-10-16):** migrated
+   `sqlx` 0.7.4 → 0.8.6 (the breaking 0.7→0.8 bump touched the `postgres`/`mysql`
+   connectors' `PgPoolOptions`/`MySqlPoolOptions`, `query`/`bind`/`fetch_*`,
+   `Row`/`Column`/`TypeInfo` and the `runtime-tokio-rustls` feature flag, plus
+   `rusqlite` 0.30 → 0.32 to keep the shared `libsqlite3-sys` linkage consistent).
+   RUSTSEC-2024-0363 and the future-incompatibility warning are both cleared;
+   `cargo test -p pyreverseetl-core --lib` = 455 passed, 0 failed, 6 ignored.
+   The exact-pin was previously relaxed to `"0.7.4"` (caret) so Dependabot can
+   now open PRs against sqlx; contrast with `opentelemetry`, `reqwest`, `rusqlite`, and `thiserror`, which are loosely pinned and each already have an open Dependabot PR in this repo.
+4. ~~**Zero test coverage on `python/pyreverseetl/server.py`** (the Flask
    REST wrapper) — see Bucket 2 above. This is a network-facing surface
    with no tests at all, not even a smoke test that the app object
-   constructs.
+   constructs.~~ **FIXED (2026-10-16)**: see Bucket 2 above —
+   `tests/test_server.py` now covers all delegation methods and every Flask
+   route.
 5. ~~**CI never actually enforces Python lint.**~~ **FIXED (2026-09-21)**:
    the earlier count of 28 was scoped to `ruff check python/` only; CI
    actually runs `ruff check .` (repo-wide), which had **58** real findings
@@ -246,7 +296,9 @@ for completeness:
    `pyproject.toml`'s `dev` extra (CI's install step never actually
    installed it before) and removed the `|| true` from
    `.github/workflows/tests.yml`. `ruff check .` now exits 0 and is a real,
-   enforced gate.
+   enforced gate. CI also now runs `cargo audit` (fails on new
+   vulnerabilities) and pins the Rust toolchain to 1.97 to match
+   `rust-toolchain.toml`.
 6. **`.github/workflows/tests.yml` and `.github/workflows/ci.yml`
    substantially duplicate each other** (both run the Python test matrix on
    push/PR to main). Costs CI minutes and gives two places to keep in sync;

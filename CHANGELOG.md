@@ -12,6 +12,29 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.1.2] — 2026-10-16
+
+### Fixed
+
+- **Dependency vulnerabilities cleared.** `cargo audit` now reports only one
+  unfixable advisory (`rsa` 0.9.10, Marvin timing sidechannel, pulled in by
+  `sqlx-mysql` for MySQL auth and flagged "no fixed upgrade available" by the
+  advisory DB) plus three unmaintained-crate warnings. Fixed for real:
+  - `sqlx` 0.7.4 → 0.8.6 (clears RUSTSEC-2024-0363, binary-protocol
+    truncation/overflow), with `rusqlite` 0.30 → 0.32 to keep the shared
+    `libsqlite3-sys` native linkage consistent.
+  - `pyo3` 0.23.5 → 0.29 (clears RUSTSEC-2025-0020 buffer overflow and
+    RUSTSEC-2026-0177 missing-`Sync` bound at the Python/Rust FFI boundary).
+  - `reqwest` 0.11 → 0.12 and `aws-sdk-s3` default-features stripped of the
+    `rustls` legacy-TLS feature (clears RUSTSEC-2026-0258 on h2 0.3,
+    RUSTSEC-2026-0346/-0349 on rustls 0.21.12, and RUSTSEC-2026-0104/-0098/-
+    0099 on rustls-webpki 0.101.7).
+  - `cargo update` removed the unsound `lru` 0.16.4 (RUSTSEC-2026-0253)
+    and `paste`/`rustls-pemfile`.
+- **`cargo clippy -p pyreverseetl-core --lib -- -D warnings` is now clean
+  (0 warnings; was 481).** CI now enforces it via a new `cargo audit` job and
+  a pinned Rust toolchain (1.97) in `.github/workflows/ci.yml`.
+
 ## [3.1.1] — 2026-10-12
 
 ### Changed

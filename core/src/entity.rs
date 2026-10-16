@@ -12,8 +12,9 @@ pub struct Entity {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum EntityType {
+    #[default]
     Customer,
     Account,
     Company,
@@ -105,12 +106,6 @@ impl Entity {
         } else {
             0
         }
-    }
-}
-
-impl Default for EntityType {
-    fn default() -> Self {
-        EntityType::Customer
     }
 }
 

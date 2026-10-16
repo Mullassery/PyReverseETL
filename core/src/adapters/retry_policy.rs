@@ -1,6 +1,5 @@
 use crate::adapters::AdapterError;
 use std::future::Future;
-use std::pin::Pin;
 use std::time::Duration;
 use tokio::time::sleep;
 

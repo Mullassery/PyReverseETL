@@ -83,18 +83,14 @@ impl ChangeDetector {
     pub async fn detect_deletion(&self, entity_id: String) -> Option<Change> {
         let mut state = self.previous_state.lock().await;
 
-        if let Some(before) = state.remove(&entity_id) {
-            Some(Change {
-                entity_id,
-                change_type: ChangeType::Deleted,
-                before: Some(before.clone()),
-                after: Value::Null,
-                timestamp: Utc::now(),
-                changed_fields: vec![],
-            })
-        } else {
-            None
-        }
+        state.remove(&entity_id).map(|before| Change {
+            entity_id,
+            change_type: ChangeType::Deleted,
+            before: Some(before.clone()),
+            after: Value::Null,
+            timestamp: Utc::now(),
+            changed_fields: vec![],
+        })
     }
 
     /// Compare two JSON values and return list of changed field paths

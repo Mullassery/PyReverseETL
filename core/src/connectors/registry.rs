@@ -1,7 +1,7 @@
 /// Connector Registry and Discovery
 ///
 /// Central registry for discovering, registering, and managing all available connectors
-use super::{ConnectionPool, ConnectorConfig, DestinationConnector, SourceConnector};
+use super::ConnectionPool;
 use std::collections::HashMap;
 
 /// Built-in connector descriptors
@@ -16,11 +16,11 @@ impl BuiltInConnectors {
                 name: "PostgreSQL".to_string(),
                 description: "Read data from PostgreSQL databases".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "incremental_read", "schema_detection", "batch"]
+                capabilities: ["read", "incremental_read", "schema_detection", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["host", "port", "user", "password", "database"]
+                required_params: ["host", "port", "user", "password", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -30,11 +30,11 @@ impl BuiltInConnectors {
                 name: "MySQL".to_string(),
                 description: "Read data from MySQL databases".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "incremental_read", "schema_detection", "batch"]
+                capabilities: ["read", "incremental_read", "schema_detection", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["host", "port", "user", "password", "database"]
+                required_params: ["host", "port", "user", "password", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -44,33 +44,33 @@ impl BuiltInConnectors {
                 name: "CSV Files".to_string(),
                 description: "Read data from local or remote CSV files".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "schema_detection", "batch"]
+                capabilities: ["read", "schema_detection", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["path"].iter().map(|s| s.to_string()).collect(),
+                required_params: ["path"].iter().map(|s| s.to_string()).collect(),
             },
             ConnectorDescriptor {
                 id: "api".to_string(),
                 name: "REST API".to_string(),
                 description: "Read data from HTTP REST endpoints".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "incremental_read", "batch", "stream"]
+                capabilities: ["read", "incremental_read", "batch", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["url"].iter().map(|s| s.to_string()).collect(),
+                required_params: ["url"].iter().map(|s| s.to_string()).collect(),
             },
             ConnectorDescriptor {
                 id: "s3".to_string(),
                 name: "Amazon S3".to_string(),
                 description: "Read data from Amazon S3 buckets".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "schema_detection", "batch"]
+                capabilities: ["read", "schema_detection", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["bucket", "key", "region"]
+                required_params: ["bucket", "key", "region"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -80,14 +80,11 @@ impl BuiltInConnectors {
                 name: "Google Cloud Storage".to_string(),
                 description: "Read data from Google Cloud Storage buckets".to_string(),
                 connector_type: "source".to_string(),
-                capabilities: vec!["read", "schema_detection", "batch"]
+                capabilities: ["read", "schema_detection", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["bucket", "path"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                required_params: ["bucket", "path"].iter().map(|s| s.to_string()).collect(),
             },
         ]
     }
@@ -100,11 +97,11 @@ impl BuiltInConnectors {
                 name: "PostgreSQL".to_string(),
                 description: "Write data to PostgreSQL databases".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "schema_detection"]
+                capabilities: ["write", "batch", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["host", "port", "user", "password", "database"]
+                required_params: ["host", "port", "user", "password", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -114,11 +111,11 @@ impl BuiltInConnectors {
                 name: "MySQL".to_string(),
                 description: "Write data to MySQL databases".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "schema_detection"]
+                capabilities: ["write", "batch", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["host", "port", "user", "password", "database"]
+                required_params: ["host", "port", "user", "password", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -128,11 +125,11 @@ impl BuiltInConnectors {
                 name: "Snowflake".to_string(),
                 description: "Write data to Snowflake data warehouse".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "schema_detection", "stream"]
+                capabilities: ["write", "batch", "schema_detection", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["account", "user", "password", "warehouse", "database"]
+                required_params: ["account", "user", "password", "warehouse", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -142,11 +139,11 @@ impl BuiltInConnectors {
                 name: "Google BigQuery".to_string(),
                 description: "Write data to Google BigQuery".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "schema_detection", "stream"]
+                capabilities: ["write", "batch", "schema_detection", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["project_id", "dataset"]
+                required_params: ["project_id", "dataset"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -156,11 +153,11 @@ impl BuiltInConnectors {
                 name: "Amazon Redshift".to_string(),
                 description: "Write data to Amazon Redshift".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "schema_detection"]
+                capabilities: ["write", "batch", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["host", "port", "user", "password", "database"]
+                required_params: ["host", "port", "user", "password", "database"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -170,22 +167,19 @@ impl BuiltInConnectors {
                 name: "HTTP/Webhook".to_string(),
                 description: "Send data to HTTP endpoints".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch", "stream"]
+                capabilities: ["write", "batch", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                required_params: vec!["url"].iter().map(|s| s.to_string()).collect(),
+                required_params: ["url"].iter().map(|s| s.to_string()).collect(),
             },
             ConnectorDescriptor {
                 id: "s3".to_string(),
                 name: "Amazon S3".to_string(),
                 description: "Write data to Amazon S3 buckets".to_string(),
                 connector_type: "destination".to_string(),
-                capabilities: vec!["write", "batch"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                required_params: vec!["bucket", "key", "region"]
+                capabilities: ["write", "batch"].iter().map(|s| s.to_string()).collect(),
+                required_params: ["bucket", "key", "region"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),

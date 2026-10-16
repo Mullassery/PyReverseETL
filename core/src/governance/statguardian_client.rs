@@ -5,7 +5,6 @@
 use crate::{Entity, Error, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use std::time::Duration;
 
 /// Request to validate entity against quality contract

@@ -13,7 +13,7 @@ impl SchemaDetector {
         let mut field_counts: HashMap<String, usize> = HashMap::new();
 
         for entity in entities {
-            Self::analyze_entity(&entity, &mut field_types, &mut field_counts);
+            Self::analyze_entity(entity, &mut field_types, &mut field_counts);
         }
 
         // Aggregate detected types and determine most likely types
@@ -45,7 +45,7 @@ impl SchemaDetector {
                 let detected_type = Self::infer_type(value);
                 field_types
                     .entry(field_key.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(detected_type);
                 *field_counts.entry(field_key).or_insert(0) += 1;
             }
@@ -58,7 +58,7 @@ impl SchemaDetector {
                 let detected_type = Self::infer_type(value);
                 field_types
                     .entry(field_key.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(detected_type);
                 *field_counts.entry(field_key).or_insert(0) += 1;
             }
@@ -92,17 +92,15 @@ impl SchemaDetector {
         }
 
         // Check for email
-        if s.contains('@') && s.contains('.') && s.len() > 5 {
-            if is_valid_email(s) {
-                return FieldType::Email;
-            }
+        if s.contains('@') && s.contains('.') && s.len() > 5 && is_valid_email(s) {
+            return FieldType::Email;
         }
 
         // Check for URL
-        if s.starts_with("http://") || s.starts_with("https://") || s.starts_with("ftp://") {
-            if is_valid_url(s) {
-                return FieldType::Url;
-            }
+        if (s.starts_with("http://") || s.starts_with("https://") || s.starts_with("ftp://"))
+            && is_valid_url(s)
+        {
+            return FieldType::Url;
         }
 
         // Check for ISO 8601 datetime
@@ -112,7 +110,7 @@ impl SchemaDetector {
 
         // Default to string with estimated max length
         let max_len = (s.len() as f64 * 1.2).ceil() as u32;
-        let max_len = std::cmp::max(50, std::cmp::min(max_len, 65536));
+        let max_len = max_len.clamp(50, 65536);
         FieldType::String {
             max_length: Some(max_len),
         }

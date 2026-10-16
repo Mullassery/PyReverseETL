@@ -13,7 +13,7 @@ pub struct Destination {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum DestinationType {
     Salesforce,
     HubSpot,
@@ -26,6 +26,7 @@ pub enum DestinationType {
     Amplitude,
     PostHog,
     Kafka,
+    #[default]
     Webhook,
     Custom(String),
 }
@@ -66,12 +67,6 @@ impl Destination {
     pub fn increment_version(&mut self) {
         self.version += 1;
         self.update_timestamp();
-    }
-}
-
-impl Default for DestinationType {
-    fn default() -> Self {
-        DestinationType::Webhook
     }
 }
 

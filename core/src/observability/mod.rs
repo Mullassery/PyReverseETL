@@ -12,8 +12,6 @@ pub use metrics::{MetricsCollector, SyncMetrics};
 pub use metrics_server::{MetricsHistory, MetricsServer, MetricsSnapshot};
 pub use traces::{SyncTracer, TraceSpan, TraceSummary};
 
-use std::sync::Arc;
-
 /// Initialize OpenTelemetry for PyReverseETL
 pub fn init_otel(service_name: &str, version: &str) -> Result<(), String> {
     // Initialize OpenTelemetry with service metadata

@@ -47,7 +47,6 @@ pub use saas::{SaaSConfig, SaaSConnector};
 pub use source::{SourceConfig, SourceConnector};
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Universal data record type
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

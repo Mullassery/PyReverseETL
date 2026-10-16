@@ -164,11 +164,11 @@ impl ConnectorRegistry {
                 description: "Open-source relational database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental", "schema_detection"]
+                capabilities: ["read", "write", "incremental", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ssl", "kerberos"]
+                auth_methods: ["password", "ssl", "kerberos"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -180,14 +180,11 @@ impl ConnectorRegistry {
                 description: "Popular open-source relational database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental", "schema_detection"]
+                capabilities: ["read", "write", "incremental", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ssl"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "ssl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -196,14 +193,11 @@ impl ConnectorRegistry {
                 description: "NoSQL document database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental", "schema_detection"]
+                capabilities: ["read", "write", "incremental", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "x509"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "x509"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -212,11 +206,11 @@ impl ConnectorRegistry {
                 description: "Distributed NoSQL database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch"]
+                capabilities: ["read", "write", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "kerberos"]
+                auth_methods: ["password", "kerberos"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -228,14 +222,11 @@ impl ConnectorRegistry {
                 description: "In-memory data store".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "acl"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "acl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10000)),
             },
             ConnectorInfo {
@@ -244,11 +235,11 @@ impl ConnectorRegistry {
                 description: "Enterprise relational database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental"]
+                capabilities: ["read", "write", "incremental"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "kerberos"]
+                auth_methods: ["password", "kerberos"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -260,11 +251,11 @@ impl ConnectorRegistry {
                 description: "Microsoft SQL Server".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental"]
+                capabilities: ["read", "write", "incremental"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "windows_auth"]
+                auth_methods: ["password", "windows_auth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -276,14 +267,11 @@ impl ConnectorRegistry {
                 description: "Open-source relational database (MySQL fork)".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental"]
+                capabilities: ["read", "write", "incremental"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ssl"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "ssl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -292,11 +280,11 @@ impl ConnectorRegistry {
                 description: "Search and analytics engine".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch", "schema_detection"]
+                capabilities: ["read", "write", "batch", "schema_detection"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "api_key", "mtls"]
+                auth_methods: ["password", "api_key", "mtls"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -308,11 +296,11 @@ impl ConnectorRegistry {
                 description: "Serverless NoSQL database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["iam", "access_key"]
+                auth_methods: ["iam", "access_key"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -324,11 +312,8 @@ impl ConnectorRegistry {
                 description: "Graph database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password", "kerberos"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password", "kerberos"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -340,14 +325,11 @@ impl ConnectorRegistry {
                 description: "Distributed SQL database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental"]
+                capabilities: ["read", "write", "incremental"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "cert"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "cert"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -356,11 +338,11 @@ impl ConnectorRegistry {
                 description: "Cloud NoSQL database".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["service_account", "oauth"]
+                auth_methods: ["service_account", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -372,11 +354,11 @@ impl ConnectorRegistry {
                 description: "Distributed wide-column store".to_string(),
                 category: ConnectorCategory::Database,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch"]
+                capabilities: ["read", "write", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["kerberos"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["kerberos"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -390,11 +372,11 @@ impl ConnectorRegistry {
                 description: "Cloud data warehouse".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load", "streaming"]
+                capabilities: ["read", "write", "bulk_load", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "oauth", "mfa"]
+                auth_methods: ["password", "oauth", "mfa"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -409,11 +391,11 @@ impl ConnectorRegistry {
                 description: "Serverless data warehouse".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load", "streaming"]
+                capabilities: ["read", "write", "bulk_load", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["service_account", "oauth"]
+                auth_methods: ["service_account", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -428,14 +410,11 @@ impl ConnectorRegistry {
                 description: "Data warehouse service".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load"]
+                capabilities: ["read", "write", "bulk_load"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "iam"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "iam"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -444,11 +423,11 @@ impl ConnectorRegistry {
                 description: "Analytics data warehouse".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load"]
+                capabilities: ["read", "write", "bulk_load"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "azure_ad"]
+                auth_methods: ["password", "azure_ad"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -460,14 +439,11 @@ impl ConnectorRegistry {
                 description: "Unified analytics platform".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "sql"]
+                capabilities: ["read", "write", "sql"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["token", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["token", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -476,14 +452,11 @@ impl ConnectorRegistry {
                 description: "Columnar analytics database".to_string(),
                 category: ConnectorCategory::DataWarehouse,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load"]
+                capabilities: ["read", "write", "bulk_load"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ldap"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "ldap"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -497,11 +470,11 @@ impl ConnectorRegistry {
                 description: "Object storage service".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete", "batch"]
+                capabilities: ["read", "write", "delete", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["iam", "access_key"]
+                auth_methods: ["iam", "access_key"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -513,11 +486,11 @@ impl ConnectorRegistry {
                 description: "Cloud object storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete", "batch"]
+                capabilities: ["read", "write", "delete", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["service_account", "oauth"]
+                auth_methods: ["service_account", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -529,11 +502,11 @@ impl ConnectorRegistry {
                 description: "Cloud blob storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete", "batch"]
+                capabilities: ["read", "write", "delete", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["connection_string", "sas", "azure_ad"]
+                auth_methods: ["connection_string", "sas", "azure_ad"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -545,11 +518,11 @@ impl ConnectorRegistry {
                 description: "Hierarchical object storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete", "batch"]
+                capabilities: ["read", "write", "delete", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["connection_string", "sas"]
+                auth_methods: ["connection_string", "sas"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -561,11 +534,11 @@ impl ConnectorRegistry {
                 description: "S3-compatible object storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["access_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["access_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -574,11 +547,11 @@ impl ConnectorRegistry {
                 description: "S3-compatible object storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["access_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["access_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -587,11 +560,11 @@ impl ConnectorRegistry {
                 description: "S3-compatible hot cloud storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["access_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["access_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -600,11 +573,11 @@ impl ConnectorRegistry {
                 description: "Cloud storage service".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -613,11 +586,11 @@ impl ConnectorRegistry {
                 description: "S3-compatible object storage".to_string(),
                 category: ConnectorCategory::CloudStorage,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["access_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["access_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -631,11 +604,11 @@ impl ConnectorRegistry {
                 description: "Event streaming platform".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream", "batch"]
+                capabilities: ["read", "write", "stream", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["plaintext", "ssl", "sasl"]
+                auth_methods: ["plaintext", "ssl", "sasl"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -647,11 +620,11 @@ impl ConnectorRegistry {
                 description: "Message broker".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ssl", "oauth"]
+                auth_methods: ["password", "ssl", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -663,11 +636,8 @@ impl ConnectorRegistry {
                 description: "Fully managed message queue".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["iam", "access_key"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["iam", "access_key"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -679,11 +649,8 @@ impl ConnectorRegistry {
                 description: "Message broker service".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["connection_string", "azure_ad"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["connection_string", "azure_ad"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -695,11 +662,11 @@ impl ConnectorRegistry {
                 description: "Messaging service".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["service_account", "oauth"]
+                auth_methods: ["service_account", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -711,11 +678,11 @@ impl ConnectorRegistry {
                 description: "Lightweight messaging protocol".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "certificate"]
+                auth_methods: ["password", "certificate"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -727,14 +694,8 @@ impl ConnectorRegistry {
                 description: "Advanced Message Queuing Protocol".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password", "ssl"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password", "ssl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -743,14 +704,8 @@ impl ConnectorRegistry {
                 description: "Message broker".to_string(),
                 category: ConnectorCategory::MessageQueue,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password", "ssl"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password", "ssl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -764,11 +719,11 @@ impl ConnectorRegistry {
                 description: "Real-time streaming service".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["iam", "access_key"]
+                auth_methods: ["iam", "access_key"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -780,11 +735,11 @@ impl ConnectorRegistry {
                 description: "Big data streaming platform".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["connection_string", "azure_ad"]
+                auth_methods: ["connection_string", "azure_ad"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -796,11 +751,11 @@ impl ConnectorRegistry {
                 description: "Distributed messaging system".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["token", "tls"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["token", "tls"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -809,11 +764,11 @@ impl ConnectorRegistry {
                 description: "Stream data structure".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10000)),
             },
             ConnectorInfo {
@@ -822,11 +777,11 @@ impl ConnectorRegistry {
                 description: "Kafka-compatible streaming platform".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["ssl", "sasl"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["ssl", "sasl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -835,11 +790,11 @@ impl ConnectorRegistry {
                 description: "Cloud native messaging system".to_string(),
                 category: ConnectorCategory::Streaming,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["token", "nkey", "password"]
+                auth_methods: ["token", "nkey", "password"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -856,11 +811,11 @@ impl ConnectorRegistry {
                 description: "Generic REST API endpoint".to_string(),
                 category: ConnectorCategory::API,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch"]
+                capabilities: ["read", "write", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["bearer", "basic", "api_key", "oauth"]
+                auth_methods: ["bearer", "basic", "api_key", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -872,11 +827,8 @@ impl ConnectorRegistry {
                 description: "GraphQL API".to_string(),
                 category: ConnectorCategory::API,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["bearer", "api_key"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bearer", "api_key"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -888,11 +840,8 @@ impl ConnectorRegistry {
                 description: "Receive events via webhooks".to_string(),
                 category: ConnectorCategory::API,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["signature", "bearer"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["signature", "bearer"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -904,11 +853,8 @@ impl ConnectorRegistry {
                 description: "SOAP web service".to_string(),
                 category: ConnectorCategory::API,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["wssecurity", "basic"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["wssecurity", "basic"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -920,14 +866,11 @@ impl ConnectorRegistry {
                 description: "gRPC service".to_string(),
                 category: ConnectorCategory::API,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["mtls", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["mtls", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -941,11 +884,11 @@ impl ConnectorRegistry {
                 description: "CRM platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "bulk_load", "streaming"]
+                capabilities: ["read", "write", "bulk_load", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth", "jwt", "basic"]
+                auth_methods: ["oauth", "jwt", "basic"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -957,14 +900,11 @@ impl ConnectorRegistry {
                 description: "CRM and marketing automation".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch"]
+                capabilities: ["read", "write", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10)),
             },
             ConnectorInfo {
@@ -973,14 +913,8 @@ impl ConnectorRegistry {
                 description: "Enterprise CRM".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "basic"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "basic"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -989,11 +923,8 @@ impl ConnectorRegistry {
                 description: "Sales CRM".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1002,14 +933,8 @@ impl ConnectorRegistry {
                 description: "Customer support platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10)),
             },
             ConnectorInfo {
@@ -1018,11 +943,8 @@ impl ConnectorRegistry {
                 description: "Customer communication platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["access_token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["access_token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1031,11 +953,8 @@ impl ConnectorRegistry {
                 description: "Customer support software".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1044,11 +963,8 @@ impl ConnectorRegistry {
                 description: "E-commerce platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "access_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "access_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1060,14 +976,8 @@ impl ConnectorRegistry {
                 description: "WordPress e-commerce plugin".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "basic"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "basic"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1076,14 +986,8 @@ impl ConnectorRegistry {
                 description: "E-commerce platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "token"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1092,11 +996,8 @@ impl ConnectorRegistry {
                 description: "Customer data platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1105,11 +1006,8 @@ impl ConnectorRegistry {
                 description: "Payment processing".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             // Singer/Meltano inspired additions
@@ -1119,14 +1017,8 @@ impl ConnectorRegistry {
                 description: "Time tracking and invoicing".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1135,11 +1027,8 @@ impl ConnectorRegistry {
                 description: "Customer communication platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "access_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "access_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1151,8 +1040,8 @@ impl ConnectorRegistry {
                 description: "Meeting scheduling and calendaring".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["oauth", "personal_token"]
+                capabilities: ["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "personal_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1164,11 +1053,8 @@ impl ConnectorRegistry {
                 description: "Online form and survey platform".to_string(),
                 category: ConnectorCategory::SaaS,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             // Fitness & Wearables
@@ -1178,11 +1064,11 @@ impl ConnectorRegistry {
                 description: "Wearable fitness tracking and health data".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(3)),
             },
             ConnectorInfo {
@@ -1191,11 +1077,11 @@ impl ConnectorRegistry {
                 description: "Apple's health and fitness data platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental_read"]
+                capabilities: ["read", "write", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1204,11 +1090,11 @@ impl ConnectorRegistry {
                 description: "Google Fit activity and health metrics".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental_read"]
+                capabilities: ["read", "write", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -1217,11 +1103,11 @@ impl ConnectorRegistry {
                 description: "Garmin sports watches and fitness data".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
@@ -1230,11 +1116,11 @@ impl ConnectorRegistry {
                 description: "Sleep and wellness metrics from Oura Ring".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth", "personal_token"]
+                auth_methods: ["oauth", "personal_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1246,11 +1132,11 @@ impl ConnectorRegistry {
                 description: "Health monitoring devices and metrics".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
@@ -1259,11 +1145,11 @@ impl ConnectorRegistry {
                 description: "Sports watch and diving computer data".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1272,11 +1158,11 @@ impl ConnectorRegistry {
                 description: "Polar sports watches and training data".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
@@ -1285,11 +1171,11 @@ impl ConnectorRegistry {
                 description: "Athlete activity and performance tracking".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read", "incremental_read"]
+                capabilities: ["read", "incremental_read"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
@@ -1298,8 +1184,8 @@ impl ConnectorRegistry {
                 description: "Nutrition tracking and fitness data".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Source,
-                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1314,11 +1200,11 @@ impl ConnectorRegistry {
                 description: "Customer engagement platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -1327,11 +1213,8 @@ impl ConnectorRegistry {
                 description: "Customer communication platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1340,11 +1223,8 @@ impl ConnectorRegistry {
                 description: "Email marketing and SMS platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1353,14 +1233,8 @@ impl ConnectorRegistry {
                 description: "Email marketing platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1369,11 +1243,8 @@ impl ConnectorRegistry {
                 description: "Marketing automation platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1382,11 +1253,8 @@ impl ConnectorRegistry {
                 description: "Email marketing and automation".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1395,11 +1263,8 @@ impl ConnectorRegistry {
                 description: "Email marketing service".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1408,11 +1273,8 @@ impl ConnectorRegistry {
                 description: "Creator platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1421,11 +1283,8 @@ impl ConnectorRegistry {
                 description: "Conversational marketing platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             // Marketing Automation & CDP
@@ -1435,11 +1294,8 @@ impl ConnectorRegistry {
                 description: "Marketing automation platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1448,11 +1304,8 @@ impl ConnectorRegistry {
                 description: "B2B marketing automation".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1461,11 +1314,8 @@ impl ConnectorRegistry {
                 description: "Marketing automation platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1474,11 +1324,8 @@ impl ConnectorRegistry {
                 description: "All-in-one sales and marketing software".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1487,11 +1334,8 @@ impl ConnectorRegistry {
                 description: "Business automation platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1500,11 +1344,8 @@ impl ConnectorRegistry {
                 description: "CRM and marketing automation".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1513,11 +1354,8 @@ impl ConnectorRegistry {
                 description: "Email marketing and marketing automation".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1526,11 +1364,8 @@ impl ConnectorRegistry {
                 description: "Behavioral email platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1539,11 +1374,8 @@ impl ConnectorRegistry {
                 description: "All-in-one marketing platform".to_string(),
                 category: ConnectorCategory::Marketing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1557,11 +1389,8 @@ impl ConnectorRegistry {
                 description: "Facebook/Instagram advertising".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "access_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "access_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1573,11 +1402,8 @@ impl ConnectorRegistry {
                 description: "Google advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10)),
             },
             ConnectorInfo {
@@ -1586,11 +1412,8 @@ impl ConnectorRegistry {
                 description: "LinkedIn advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1599,11 +1422,8 @@ impl ConnectorRegistry {
                 description: "TikTok advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1612,11 +1432,8 @@ impl ConnectorRegistry {
                 description: "Bing advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1625,11 +1442,8 @@ impl ConnectorRegistry {
                 description: "Amazon advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1638,11 +1452,8 @@ impl ConnectorRegistry {
                 description: "Google DV360 programmatic buying".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1651,11 +1462,8 @@ impl ConnectorRegistry {
                 description: "Programmatic advertising platform".to_string(),
                 category: ConnectorCategory::Advertising,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1669,11 +1477,8 @@ impl ConnectorRegistry {
                 description: "Analytics platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "service_account"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "service_account"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1685,14 +1490,11 @@ impl ConnectorRegistry {
                 description: "Analytics and engagement platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -1701,11 +1503,11 @@ impl ConnectorRegistry {
                 description: "Product analytics platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -1714,11 +1516,8 @@ impl ConnectorRegistry {
                 description: "Customer data platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1727,11 +1526,8 @@ impl ConnectorRegistry {
                 description: "Product analytics platform".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1740,11 +1536,8 @@ impl ConnectorRegistry {
                 description: "Open-source product analytics".to_string(),
                 category: ConnectorCategory::Analytics,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1758,11 +1551,11 @@ impl ConnectorRegistry {
                 description: "Open-source search and analytics".to_string(),
                 category: ConnectorCategory::Search,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "iam", "oauth"]
+                auth_methods: ["password", "iam", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1774,11 +1567,8 @@ impl ConnectorRegistry {
                 description: "Search platform".to_string(),
                 category: ConnectorCategory::Search,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["basic", "kerberos"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["basic", "kerberos"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1790,11 +1580,8 @@ impl ConnectorRegistry {
                 description: "Search-as-a-service platform".to_string(),
                 category: ConnectorCategory::Search,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1803,11 +1590,8 @@ impl ConnectorRegistry {
                 description: "Open-source search engine".to_string(),
                 category: ConnectorCategory::Search,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1816,11 +1600,8 @@ impl ConnectorRegistry {
                 description: "Typo-tolerant search engine".to_string(),
                 category: ConnectorCategory::Search,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1834,14 +1615,11 @@ impl ConnectorRegistry {
                 description: "Time series database".to_string(),
                 category: ConnectorCategory::TimeSeries,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["token", "basic"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["token", "basic"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(10000)),
             },
             ConnectorInfo {
@@ -1850,14 +1628,8 @@ impl ConnectorRegistry {
                 description: "Metrics monitoring system".to_string(),
                 category: ConnectorCategory::TimeSeries,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["bearer", "basic"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bearer", "basic"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1866,11 +1638,8 @@ impl ConnectorRegistry {
                 description: "Time series extension for PostgreSQL".to_string(),
                 category: ConnectorCategory::TimeSeries,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1879,11 +1648,8 @@ impl ConnectorRegistry {
                 description: "Time series database".to_string(),
                 category: ConnectorCategory::TimeSeries,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["bearer"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bearer"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1892,11 +1658,11 @@ impl ConnectorRegistry {
                 description: "Fast time series database".to_string(),
                 category: ConnectorCategory::TimeSeries,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["bearer"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bearer"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -1910,14 +1676,11 @@ impl ConnectorRegistry {
                 description: "Team messaging platform".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth", "token"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["oauth", "token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(1)),
             },
             ConnectorInfo {
@@ -1926,11 +1689,8 @@ impl ConnectorRegistry {
                 description: "Team collaboration platform".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1939,11 +1699,8 @@ impl ConnectorRegistry {
                 description: "Voice, video, text communication".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["bot_token", "oauth"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bot_token", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -1955,11 +1712,8 @@ impl ConnectorRegistry {
                 description: "Messaging platform".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["bot_token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["bot_token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -1968,11 +1722,8 @@ impl ConnectorRegistry {
                 description: "SMS, voice, video communications".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["auth_token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["auth_token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -1981,8 +1732,8 @@ impl ConnectorRegistry {
                 description: "Email delivery service".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["write"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(600)),
             },
             ConnectorInfo {
@@ -1991,8 +1742,8 @@ impl ConnectorRegistry {
                 description: "Email API service".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["write"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(600)),
             },
             ConnectorInfo {
@@ -2001,11 +1752,8 @@ impl ConnectorRegistry {
                 description: "Incident response platform".to_string(),
                 category: ConnectorCategory::Communication,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2019,11 +1767,11 @@ impl ConnectorRegistry {
                 description: "Unified analytics engine".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch", "streaming"]
+                capabilities: ["read", "write", "batch", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["kerberos"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["kerberos"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2032,7 +1780,7 @@ impl ConnectorRegistry {
                 description: "Stream processing framework".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "streaming"]
+                capabilities: ["read", "write", "streaming"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2045,11 +1793,11 @@ impl ConnectorRegistry {
                 description: "Data warehouse infrastructure".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "batch"]
+                capabilities: ["read", "write", "batch"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["kerberos"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["kerberos"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2058,11 +1806,8 @@ impl ConnectorRegistry {
                 description: "Query engine for Hadoop".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["kerberos"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["kerberos"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2071,10 +1816,7 @@ impl ConnectorRegistry {
                 description: "ACID table format for data lakes".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec![],
                 rate_limit_default: None,
             },
@@ -2084,10 +1826,7 @@ impl ConnectorRegistry {
                 description: "Table format with hidden partitioning".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec![],
                 rate_limit_default: None,
             },
@@ -2097,7 +1836,7 @@ impl ConnectorRegistry {
                 description: "Incremental processing framework for data lakes".to_string(),
                 category: ConnectorCategory::BigData,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "incremental"]
+                capabilities: ["read", "write", "incremental"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2128,11 +1867,8 @@ impl ConnectorRegistry {
                 description: "Cloud accounting software".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -2141,11 +1877,8 @@ impl ConnectorRegistry {
                 description: "Online accounting software".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2154,14 +1887,8 @@ impl ConnectorRegistry {
                 description: "ERP and financial management".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "token"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2170,11 +1897,8 @@ impl ConnectorRegistry {
                 description: "Subscription and invoice management".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(100)),
             },
             ConnectorInfo {
@@ -2183,11 +1907,8 @@ impl ConnectorRegistry {
                 description: "Invoicing and accounting software".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2196,11 +1917,8 @@ impl ConnectorRegistry {
                 description: "Accounting software for small business".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2209,11 +1927,8 @@ impl ConnectorRegistry {
                 description: "Enterprise accounting and ERP".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2222,11 +1937,8 @@ impl ConnectorRegistry {
                 description: "Subscription billing platform".to_string(),
                 category: ConnectorCategory::Finance,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2240,11 +1952,8 @@ impl ConnectorRegistry {
                 description: "Enterprise HCM and payroll".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2253,11 +1962,8 @@ impl ConnectorRegistry {
                 description: "HR software".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2266,11 +1972,8 @@ impl ConnectorRegistry {
                 description: "Payroll and HR services".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2279,11 +1982,8 @@ impl ConnectorRegistry {
                 description: "Payroll and HR platform".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2292,11 +1992,8 @@ impl ConnectorRegistry {
                 description: "HR, IT, and payroll software".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2305,11 +2002,8 @@ impl ConnectorRegistry {
                 description: "Payroll and HR solutions".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2318,11 +2012,8 @@ impl ConnectorRegistry {
                 description: "Workforce management and payroll".to_string(),
                 category: ConnectorCategory::HRPayroll,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2336,14 +2027,8 @@ impl ConnectorRegistry {
                 description: "Project and task management".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2352,11 +2037,8 @@ impl ConnectorRegistry {
                 description: "Work management platform".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2365,14 +2047,8 @@ impl ConnectorRegistry {
                 description: "Workspace and knowledge base".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2381,14 +2057,8 @@ impl ConnectorRegistry {
                 description: "Spreadsheet-database hybrid".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(30)),
             },
             ConnectorInfo {
@@ -2397,11 +2067,8 @@ impl ConnectorRegistry {
                 description: "Issue tracking for software teams".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2410,11 +2077,8 @@ impl ConnectorRegistry {
                 description: "Issue and project tracking".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2426,11 +2090,8 @@ impl ConnectorRegistry {
                 description: "Wiki and documentation platform".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2442,14 +2103,8 @@ impl ConnectorRegistry {
                 description: "Card-based project management".to_string(),
                 category: ConnectorCategory::ProjectManagement,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2463,11 +2118,8 @@ impl ConnectorRegistry {
                 description: "Enterprise e-commerce platform".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(2)),
             },
             ConnectorInfo {
@@ -2476,11 +2128,8 @@ impl ConnectorRegistry {
                 description: "E-commerce platform".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2489,11 +2138,8 @@ impl ConnectorRegistry {
                 description: "Website builder and e-commerce".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2502,11 +2148,8 @@ impl ConnectorRegistry {
                 description: "Omnichannel commerce platform".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2515,11 +2158,8 @@ impl ConnectorRegistry {
                 description: "Shopping cart software".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2528,11 +2168,8 @@ impl ConnectorRegistry {
                 description: "Web design and hosting platform".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2541,11 +2178,8 @@ impl ConnectorRegistry {
                 description: "E-commerce and payments".to_string(),
                 category: ConnectorCategory::Ecommerce,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2559,14 +2193,8 @@ impl ConnectorRegistry {
                 description: "Identity and access management".to_string(),
                 category: ConnectorCategory::Identity,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2575,11 +2203,8 @@ impl ConnectorRegistry {
                 description: "Identity and access management".to_string(),
                 category: ConnectorCategory::Identity,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2588,11 +2213,8 @@ impl ConnectorRegistry {
                 description: "Identity and access management".to_string(),
                 category: ConnectorCategory::Identity,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "service_principal"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "service_principal"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2604,11 +2226,8 @@ impl ConnectorRegistry {
                 description: "Open-source identity platform".to_string(),
                 category: ConnectorCategory::Identity,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_token"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2617,8 +2236,8 @@ impl ConnectorRegistry {
                 description: "Financial API and identity".to_string(),
                 category: ConnectorCategory::Identity,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2632,11 +2251,8 @@ impl ConnectorRegistry {
                 description: "Social network and data".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2645,11 +2261,8 @@ impl ConnectorRegistry {
                 description: "Social media platform".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2658,14 +2271,8 @@ impl ConnectorRegistry {
                 description: "Social network platform".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(300)),
             },
             ConnectorInfo {
@@ -2674,11 +2281,8 @@ impl ConnectorRegistry {
                 description: "Social media platform".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2687,11 +2291,8 @@ impl ConnectorRegistry {
                 description: "Social media platform".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2700,8 +2301,8 @@ impl ConnectorRegistry {
                 description: "Social media analytics".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read"].iter().map(|s| s.to_string()).collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2710,11 +2311,8 @@ impl ConnectorRegistry {
                 description: "Video platform and analytics".to_string(),
                 category: ConnectorCategory::SocialMedia,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2728,14 +2326,8 @@ impl ConnectorRegistry {
                 description: "Publishing platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "api_key"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2744,11 +2336,8 @@ impl ConnectorRegistry {
                 description: "Blogging and CMS platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2757,11 +2346,8 @@ impl ConnectorRegistry {
                 description: "Newsletter platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2770,11 +2356,8 @@ impl ConnectorRegistry {
                 description: "Publishing platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2783,11 +2366,8 @@ impl ConnectorRegistry {
                 description: "Developer community platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2796,14 +2376,8 @@ impl ConnectorRegistry {
                 description: "Developer blogging platform".to_string(),
                 category: ConnectorCategory::Publishing,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["api_key", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["api_key", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2817,11 +2391,8 @@ impl ConnectorRegistry {
                 description: "Developer collaboration platform".to_string(),
                 category: ConnectorCategory::Developer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "personal_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "personal_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2833,11 +2404,8 @@ impl ConnectorRegistry {
                 description: "DevOps platform".to_string(),
                 category: ConnectorCategory::Developer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "personal_token"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "personal_token"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2849,11 +2417,8 @@ impl ConnectorRegistry {
                 description: "Git repository hosting".to_string(),
                 category: ConnectorCategory::Developer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "app_password"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "app_password"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2865,11 +2430,11 @@ impl ConnectorRegistry {
                 description: "In-process analytical database".to_string(),
                 category: ConnectorCategory::Developer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "sql"]
+                capabilities: ["read", "write", "sql"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["file_path"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["file_path"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -2883,11 +2448,11 @@ impl ConnectorRegistry {
                 description: "SSH file transfer protocol".to_string(),
                 category: ConnectorCategory::FileTransfer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ssh_key", "certificate"]
+                auth_methods: ["password", "ssh_key", "certificate"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2899,11 +2464,11 @@ impl ConnectorRegistry {
                 description: "File transfer protocol".to_string(),
                 category: ConnectorCategory::FileTransfer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2912,14 +2477,11 @@ impl ConnectorRegistry {
                 description: "Windows file sharing".to_string(),
                 category: ConnectorCategory::FileTransfer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["password", "ntlm"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                auth_methods: ["password", "ntlm"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2928,11 +2490,11 @@ impl ConnectorRegistry {
                 description: "Cloud file storage".to_string(),
                 category: ConnectorCategory::FileTransfer,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "delete"]
+                capabilities: ["read", "write", "delete"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: Some(RateLimitDefault::conservative(150)),
             },
         ]
@@ -2946,11 +2508,8 @@ impl ConnectorRegistry {
                 description: "Collaborative spreadsheets".to_string(),
                 category: ConnectorCategory::Other,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "service_account"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "service_account"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -2962,11 +2521,8 @@ impl ConnectorRegistry {
                 description: "Excel files via OneDrive".to_string(),
                 category: ConnectorCategory::Other,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -2975,10 +2531,7 @@ impl ConnectorRegistry {
                 description: "Local .xlsx and .xls files".to_string(),
                 category: ConnectorCategory::Other,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
                 auth_methods: vec![],
                 rate_limit_default: None,
             },
@@ -2993,11 +2546,8 @@ impl ConnectorRegistry {
                 description: "SAP Enterprise Resource Planning".to_string(),
                 category: ConnectorCategory::Enterprise,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["basic", "sso"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["basic", "sso"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3006,14 +2556,8 @@ impl ConnectorRegistry {
                 description: "Oracle E-Business Suite".to_string(),
                 category: ConnectorCategory::Enterprise,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["basic", "oauth"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["basic", "oauth"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3022,14 +2566,8 @@ impl ConnectorRegistry {
                 description: "Oracle NetSuite (already covered in Finance)".to_string(),
                 category: ConnectorCategory::Enterprise,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["oauth", "token"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["oauth", "token"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3038,14 +2576,8 @@ impl ConnectorRegistry {
                 description: "Enterprise data warehouse".to_string(),
                 category: ConnectorCategory::Enterprise,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password", "ldap"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password", "ldap"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3054,11 +2586,8 @@ impl ConnectorRegistry {
                 description: "Distributed data warehouse".to_string(),
                 category: ConnectorCategory::Enterprise,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]
@@ -3072,11 +2601,8 @@ impl ConnectorRegistry {
                 description: "IBM relational database".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3085,11 +2611,8 @@ impl ConnectorRegistry {
                 description: "Sybase adaptive server".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3098,11 +2621,8 @@ impl ConnectorRegistry {
                 description: "Open source relational database".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3111,11 +2631,8 @@ impl ConnectorRegistry {
                 description: "Embedded relational database".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password"].iter().map(|s| s.to_string()).collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3124,11 +2641,8 @@ impl ConnectorRegistry {
                 description: "Document-oriented database".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["password", "oauth"]
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["password", "oauth"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
@@ -3140,11 +2654,11 @@ impl ConnectorRegistry {
                 description: "Java message queue standard".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write", "stream"]
+                capabilities: ["read", "write", "stream"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
-                auth_methods: vec!["basic", "ssl"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["basic", "ssl"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
             ConnectorInfo {
@@ -3153,14 +2667,8 @@ impl ConnectorRegistry {
                 description: "Legacy mainframe systems".to_string(),
                 category: ConnectorCategory::Legacy,
                 connector_type: ConnectorTypeInfo::Both,
-                capabilities: vec!["read", "write"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
-                auth_methods: vec!["basic", "custom"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect(),
+                capabilities: ["read", "write"].iter().map(|s| s.to_string()).collect(),
+                auth_methods: ["basic", "custom"].iter().map(|s| s.to_string()).collect(),
                 rate_limit_default: None,
             },
         ]

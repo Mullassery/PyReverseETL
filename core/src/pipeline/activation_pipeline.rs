@@ -103,6 +103,11 @@ impl ActivationPipeline {
         self
     }
 
+    /// The activation this pipeline executes.
+    pub fn activation(&self) -> &Arc<Activation> {
+        &self.activation
+    }
+
     /// Start the pipeline
     pub async fn start(&self) -> crate::Result<()> {
         self.running.store(true, Ordering::Release);

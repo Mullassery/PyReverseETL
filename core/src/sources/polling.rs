@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Duration, Local, Timelike, Utc, Weekday};
+use chrono::{DateTime, Datelike, Duration, Timelike, Utc, Weekday};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Preset sync frequency intervals
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum SyncFrequency {
     /// Every 5 minutes
     FiveMinutes,
@@ -16,6 +16,7 @@ pub enum SyncFrequency {
     /// Every 30 minutes
     ThirtyMinutes,
     /// Every hour
+    #[default]
     Hourly,
     /// Every 4 hours
     FourHourly,
@@ -54,12 +55,6 @@ impl SyncFrequency {
             SyncFrequency::Daily => "daily",
             SyncFrequency::Custom(_) => "custom interval",
         }
-    }
-}
-
-impl Default for SyncFrequency {
-    fn default() -> Self {
-        SyncFrequency::Hourly
     }
 }
 

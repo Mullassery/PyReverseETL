@@ -1,5 +1,4 @@
 use crate::Error;
-use backoff::future::retry;
 use backoff::ExponentialBackoff;
 /// Retry Policy for StatGuardian API Requests
 ///
@@ -20,6 +19,18 @@ pub struct RetryPolicy {
     pub multiplier: f64,
 }
 
+impl Default for RetryPolicy {
+    /// Default retry policy (3 retries, 100ms initial backoff)
+    fn default() -> Self {
+        Self {
+            max_retries: 3,
+            initial_backoff_ms: 100,
+            max_backoff_ms: 30_000,
+            multiplier: 2.0,
+        }
+    }
+}
+
 impl RetryPolicy {
     /// Create a new retry policy
     pub fn new(max_retries: u32, initial_backoff_ms: u64) -> Self {
@@ -27,16 +38,6 @@ impl RetryPolicy {
             max_retries,
             initial_backoff_ms,
             max_backoff_ms: 30_000, // 30 seconds max
-            multiplier: 2.0,
-        }
-    }
-
-    /// Default retry policy (3 retries, 100ms initial backoff)
-    pub fn default() -> Self {
-        Self {
-            max_retries: 3,
-            initial_backoff_ms: 100,
-            max_backoff_ms: 30_000,
             multiplier: 2.0,
         }
     }

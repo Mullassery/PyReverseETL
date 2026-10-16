@@ -64,6 +64,12 @@ pub struct ConfigurationDetails {
     pub transformation_has_error_handling: bool,
 }
 
+impl Default for ConfigurationDetails {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigurationDetails {
     pub fn new() -> Self {
         Self {
@@ -437,11 +443,12 @@ impl SyncConfiguration {
                         .join(", ")
                 ));
             }
-            if source.no_sync_after_hour.is_some() && source.sync_resume_hour.is_some() {
+            if let (Some(after), Some(resume)) =
+                (source.no_sync_after_hour, source.sync_resume_hour)
+            {
                 parts.push(format!(
                     "      No-sync window: {}:00 - {}:00",
-                    source.no_sync_after_hour.unwrap(),
-                    source.sync_resume_hour.unwrap()
+                    after, resume
                 ));
             }
         } else {
@@ -489,11 +496,10 @@ impl SyncConfiguration {
                         .join(", ")
                 ));
             }
-            if dest.no_sync_after_hour.is_some() && dest.sync_resume_hour.is_some() {
+            if let (Some(after), Some(resume)) = (dest.no_sync_after_hour, dest.sync_resume_hour) {
                 parts.push(format!(
                     "      No-sync window: {}:00 - {}:00",
-                    dest.no_sync_after_hour.unwrap(),
-                    dest.sync_resume_hour.unwrap()
+                    after, resume
                 ));
             }
         } else {

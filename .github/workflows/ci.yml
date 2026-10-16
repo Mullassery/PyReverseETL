@@ -23,7 +23,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake libsasl2-dev libssl-dev zlib1g-dev libkrb5-dev libcurl4-openssl-dev liblz4-dev libzstd-dev
 
+      # Pin the Rust toolchain to 1.97 so CI matches rust-toolchain.toml
+      # (reproducible builds across contributors/CI) rather than whatever
+      # `stable` happens to be on the day. Bump deliberately and re-verify
+      # `cargo test`/`cargo clippy`/`cargo audit` when changing.
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.97"
+          profile: minimal
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -45,6 +52,13 @@ jobs:
 
       - name: Test Rust
         run: cargo test --release -p pyreverseetl-core
+
+      - name: Audit Rust dependencies
+        # Fails the build if any dependency carries a known vulnerability,
+        # so new advisories can't ship unnoticed (see PVT-007).
+        run: |
+          cargo install cargo-audit
+          cargo audit
 
   python-tests:
     name: Python Tests (Python ${{ matrix.python-version }})
