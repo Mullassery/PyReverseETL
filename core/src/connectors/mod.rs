@@ -48,6 +48,36 @@ pub use source::{SourceConfig, SourceConnector};
 
 use serde::{Deserialize, Serialize};
 
+/// Validate a SQL identifier that is about to be interpolated into a query
+/// string.
+///
+/// SQL does not allow binding identifiers (table/column names) as query
+/// parameters, so the SQL connectors build those queries by `format!`-ing
+/// names straight into the statement. Every such identifier is therefore an
+/// injection surface and must be validated rather than trusted. This accepts
+/// a bare identifier matching `[A-Za-z_][A-Za-z0-9_]*`, or a schema-qualified
+/// one whose dot-separated parts each match that pattern (e.g.
+/// `public.orders`). Anything else — quotes, semicolons, whitespace, empty
+/// parts — is rejected with the offending identifier in the error.
+pub fn validate_sql_identifier(identifier: &str) -> crate::Result<()> {
+    fn is_valid_part(part: &str) -> bool {
+        let mut chars = part.chars();
+        match chars.next() {
+            Some(c) if c == '_' || c.is_ascii_alphabetic() => {}
+            _ => return false,
+        }
+        chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
+    }
+
+    if identifier.is_empty() || !identifier.split('.').all(is_valid_part) {
+        return Err(crate::Error::ConfigError(format!(
+            "invalid SQL identifier {identifier:?}: expected [A-Za-z_][A-Za-z0-9_]* \
+             (optionally schema-qualified with dots)"
+        )));
+    }
+    Ok(())
+}
+
 /// Universal data record type
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Record {
@@ -174,5 +204,41 @@ mod tests {
         );
         assert!(!failure.success);
         assert!(failure.details.is_some());
+    }
+
+    #[test]
+    fn test_validate_sql_identifier_accepts_valid() {
+        for ok in [
+            "customers",
+            "_internal",
+            "t1",
+            "public.orders",
+            "db.schema.table",
+        ] {
+            assert!(
+                validate_sql_identifier(ok).is_ok(),
+                "expected {ok:?} to be accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn test_validate_sql_identifier_rejects_injection() {
+        for bad in [
+            "",
+            "customers; DROP TABLE users",
+            "customers\"",
+            "a b",
+            "1table",
+            "public.",
+            ".orders",
+            "public..orders",
+            "users--",
+        ] {
+            assert!(
+                validate_sql_identifier(bad).is_err(),
+                "expected {bad:?} to be rejected"
+            );
+        }
     }
 }

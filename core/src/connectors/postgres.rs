@@ -68,6 +68,22 @@ impl PostgreSQLConfig {
             self.username, self.password, self.host, self.port, self.database
         )
     }
+
+    /// Validate every identifier this config feeds into generated SQL. The
+    /// table name and the optional incremental/upsert column names are
+    /// interpolated directly into query strings (SQL can't bind identifiers
+    /// as parameters), so they must match [`validate_sql_identifier`] before
+    /// any query is built.
+    fn validate_identifiers(&self) -> crate::Result<()> {
+        crate::connectors::validate_sql_identifier(&self.table)?;
+        if let Some(col) = &self.incremental_column {
+            crate::connectors::validate_sql_identifier(col)?;
+        }
+        if let Some(key) = &self.upsert_key {
+            crate::connectors::validate_sql_identifier(key)?;
+        }
+        Ok(())
+    }
 }
 
 /// Convert a JSON value into something we can bind as a SQL parameter,
@@ -162,6 +178,11 @@ impl PostgreSQLConnector {
     }
 
     async fn pool(&self) -> crate::Result<&PgPool> {
+        // Validate the config's SQL identifiers before any connection is used:
+        // every read/write method below goes through here before building a
+        // query, so this is the single choke point that keeps an unvalidated
+        // table/column name from ever reaching `format!`-built SQL.
+        self.config.validate_identifiers()?;
         self.pool
             .get_or_try_init(|| async {
                 PgPoolOptions::new()
