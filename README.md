@@ -236,9 +236,10 @@ pyreverseetl execute-activation my-activation --validation-report statguardian-r
 pyreverseetl execute-activation my-activation --statguardian-url http://127.0.0.1:8000
 ```
 
-The report must be a JSON object with `"passed": true`; anything else blocks
-the sync before reading or writing data. This is a file-based gate until a live
-StatGuardian service endpoint is available.
+A file report must have `"passed": true`; anything else blocks the sync. The
+live `--statguardian-url` gate dry-runs a sample and calls the service's
+`/validate`; a failure or network error blocks the real sync. It is a sample
+gate, not a full-table scan.
 
 ## Documentation
 

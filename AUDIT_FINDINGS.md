@@ -49,9 +49,10 @@ Invest; connector verification is the entry ticket.
 
 ## Implementation status
 
-Added a file-based StatGuardian validation gate:
-`execute-activation --validation-report <json>` blocks before any source read or
-destination write unless the report has `"passed": true`. Missing/malformed
-reports fail closed. `tests/test_validation_gate.py`: 3 passed. Version
-`3.2.0`. This is not a live StatGuardian service call; wiring the existing
-Rust `ValidationGate` into the real sync path remains open.
+Added file-based and live StatGuardian gates:
+
+- `--validation-report <json>` blocks on a failing/malformed report (fail closed).
+- `--statguardian-url <url>` dry-runs a source sample, POSTs rows to
+  `/validate`, and blocks the real sync on any row failure or network error.
+- Tests: 3 file-gate + 3 live-gate = 6 passed. Version `3.3.0`. The live gate
+  is a sample check, not a full-table scan.
