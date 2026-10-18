@@ -3,6 +3,7 @@ pub mod adapters;
 pub mod cdc;
 pub mod connectors;
 pub mod destination;
+pub mod dlq;
 pub mod entity;
 pub mod error;
 pub mod executor;
@@ -28,6 +29,7 @@ pub use cdc::{
     Change, ChangeDetector, ChangeLog, ChangeLogEntry, ChangeType, Checkpoint, CheckpointManager,
 };
 pub use destination::Destination;
+pub use dlq::{DeadLetter, DeadLetterQueue};
 pub use entity::Entity;
 pub use error::{Error, Result};
 pub use executor::{execute_sync, DestinationSpec, ExecuteOptions, ExecutionResult, SourceSpec};

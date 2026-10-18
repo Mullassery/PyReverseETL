@@ -12,6 +12,20 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.1.6] — 2026-10-18
+
+### Added
+
+- **Dead-letter queue (quarantine) for failed records.** Passing
+  `dlq_store_path` to `run_sync` (or `--dlq-store <path>` to
+  `pyreverseetl execute`) persists every record the destination rejects to a
+  real SQLite dead-letter queue — run id, reason, and the exact payload — so
+  a partial batch failure can be inspected and re-driven deliberately
+  instead of re-reading the whole source. The count is reported as
+  `rows_dead_lettered` on `PySyncResult` and in the CLI response. Applies to
+  the adapter-based destinations (webhook/salesforce/hubspot/marketo), where
+  per-record success/failure is observable. Addresses RECHECK-018.
+
 ## [3.1.5] — 2026-10-18
 
 ### Added

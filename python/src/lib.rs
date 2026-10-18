@@ -503,6 +503,12 @@ pub struct PySyncResult {
     /// disabled.
     #[pyo3(get)]
     pub rows_skipped_idempotent: u64,
+    /// Records quarantined into the dead-letter queue (see `dlq_store_path`)
+    /// because the destination rejected them. Always 0 when no DLQ path is
+    /// configured; equals `rows_failed` for the adapter-based destinations
+    /// (webhook/salesforce/hubspot/marketo) when a DLQ path is set.
+    #[pyo3(get)]
+    pub rows_dead_lettered: u64,
 }
 
 /// Run a real sync: read from `source_type`/`source_config` (JSON string),
@@ -524,8 +530,14 @@ pub struct PySyncResult {
 /// records already synced instead of re-sending them -- see
 /// `PySyncResult.rows_skipped_idempotent`. Only applies to the
 /// adapter-based destinations (webhook/salesforce/hubspot/marketo).
+/// With `dlq_store_path` set, every record the destination rejects is
+/// persisted to a real SQLite dead-letter queue at that path (run id, reason,
+/// and exact payload), so a partial batch failure can be inspected and
+/// re-driven deliberately instead of re-running the whole sync -- see
+/// `PySyncResult.rows_dead_lettered`. Only applies to the adapter-based
+/// destinations.
 #[pyfunction]
-#[pyo3(signature = (source_type, source_config, destination_type, destination_config, limit=None, compliance_rules=None, dry_run=false, schema_store_path=None, idempotency_store_path=None))]
+#[pyo3(signature = (source_type, source_config, destination_type, destination_config, limit=None, compliance_rules=None, dry_run=false, schema_store_path=None, idempotency_store_path=None, dlq_store_path=None))]
 pub fn run_sync(
     source_type: &str,
     source_config: &str,
@@ -536,6 +548,7 @@ pub fn run_sync(
     dry_run: bool,
     schema_store_path: Option<&str>,
     idempotency_store_path: Option<&str>,
+    dlq_store_path: Option<&str>,
 ) -> PyResult<PySyncResult> {
     let source_cfg_value = parse_json(source_config)?;
     let dest_cfg_value = parse_json(destination_config)?;
@@ -550,6 +563,7 @@ pub fn run_sync(
         dry_run,
         schema_store_path: schema_store_path.map(std::path::PathBuf::from),
         idempotency_store_path: idempotency_store_path.map(std::path::PathBuf::from),
+        dlq_store_path: dlq_store_path.map(std::path::PathBuf::from),
     };
 
     let runtime = tokio::runtime::Runtime::new().map_err(py_err)?;
@@ -568,6 +582,7 @@ pub fn run_sync(
         duration_ms: result.duration_ms,
         schema_changes: result.schema_changes,
         rows_skipped_idempotent: result.rows_skipped_idempotent,
+        rows_dead_lettered: result.rows_dead_lettered,
         dry_run: result.dry_run,
         dry_run_preview: result.dry_run_preview,
     })

@@ -161,6 +161,7 @@ class CLIInterface:
         dry_run: bool = False,
         schema_store_path: str | None = None,
         idempotency_store_path: str | None = None,
+        dlq_store_path: str | None = None,
     ) -> dict:
         """Execute an activation: run a real sync through the Rust engine.
 
@@ -199,6 +200,14 @@ class CLIInterface:
                 changed is still sent. Only applies to the adapter-based
                 destinations (webhook/salesforce/hubspot/marketo). Omit to
                 disable idempotency checking entirely (default).
+            dlq_store_path: Optional path to a SQLite file used as a
+                dead-letter queue (quarantine) for records the destination
+                rejects. Each failed record is stored with its run id, the
+                reason for rejection, and its exact payload, so a partial
+                batch failure can be inspected and re-driven deliberately
+                instead of re-running the whole sync. Only applies to the
+                adapter-based destinations. Omit to disable quarantine
+                (default).
 
         Returns:
             JSON response with real execution details, or a real error if
@@ -241,6 +250,7 @@ class CLIInterface:
                 dry_run=dry_run,
                 schema_store_path=schema_store_path,
                 idempotency_store_path=idempotency_store_path,
+                dlq_store_path=dlq_store_path,
             )
         except Exception as e:  # noqa: BLE001 - surface real engine errors verbatim
             return {
@@ -258,6 +268,7 @@ class CLIInterface:
                 "dry_run": True,
                 "rows_read": result.rows_read,
                 "rows_would_write": len(result.dry_run_preview),
+                "rows_dead_lettered": result.rows_dead_lettered,
                 "dry_run_preview": [json.loads(p) for p in result.dry_run_preview],
                 "compliance_violations": result.compliance_violations,
                 "schema_changes": result.schema_changes,
@@ -277,6 +288,7 @@ class CLIInterface:
             "rows_read": result.rows_read,
             "rows_failed": result.rows_failed,
             "rows_skipped_idempotent": result.rows_skipped_idempotent,
+            "rows_dead_lettered": result.rows_dead_lettered,
             "compliance_violations": result.compliance_violations,
             "schema_changes": result.schema_changes,
             "destination": activation["destination"],
@@ -294,6 +306,7 @@ class CLIInterface:
             "rows_read": result.rows_read,
             "rows_failed": result.rows_failed,
             "rows_skipped_idempotent": result.rows_skipped_idempotent,
+            "rows_dead_lettered": result.rows_dead_lettered,
             "compliance_violations": result.compliance_violations,
             "schema_changes": result.schema_changes,
             "duration_ms": result.duration_ms,
@@ -480,6 +493,13 @@ def main():
                     print(json.dumps({"error": "--idempotency-store requires a file path"}))
                     sys.exit(1)
                 idempotency_store_path = sys.argv[idx + 1]
+            dlq_store_path = None
+            if "--dlq-store" in sys.argv:
+                idx = sys.argv.index("--dlq-store")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--dlq-store requires a file path"}))
+                    sys.exit(1)
+                dlq_store_path = sys.argv[idx + 1]
 
             result = cli.execute_activation(
                 activation_id,
@@ -488,6 +508,7 @@ def main():
                 dry_run,
                 schema_store_path,
                 idempotency_store_path,
+                dlq_store_path,
             )
             print(json.dumps(result))
 
@@ -584,7 +605,7 @@ COMMANDS:
             pyreverseetl create-activation ltv_to_hook ltv_sync webhook \\
                 --dest-config '{"url":"https://example.com/hook","auth":{"type":"bearer","token":"secret"}}'
 
-    execute <activation_id> [limit] [--compliance-rules <json|@file>] [--dry-run] [--schema-store <path>] [--idempotency-store <path>]
+    execute <activation_id> [limit] [--compliance-rules <json|@file>] [--dry-run] [--schema-store <path>] [--idempotency-store <path>] [--dlq-store <path>]
         Execute a REAL data synchronization through the Rust engine
         - activation_id: Activation to execute (required)
         - limit: Max rows to read from the source (optional)
@@ -606,12 +627,19 @@ COMMANDS:
           re-sending them, while a record whose content genuinely changed
           is still sent. Only applies to webhook/salesforce/hubspot/marketo
           destinations.
+        - --dlq-store <path>: Persist every record the destination rejects to
+          a real SQLite dead-letter queue at <path>, with the run id, reason,
+          and exact payload (rows_dead_lettered), so a partial batch failure
+          can be inspected and re-driven deliberately instead of re-running
+          the whole sync. Only applies to webhook/salesforce/hubspot/marketo
+          destinations.
 
         Example:
             pyreverseetl execute ltv_to_hook 5000
             pyreverseetl execute ltv_to_hook --dry-run
             pyreverseetl execute ltv_to_hook --schema-store .pyreverseetl/schema.db
             pyreverseetl execute ltv_to_hook --idempotency-store .pyreverseetl/idempotency.db
+            pyreverseetl execute ltv_to_hook --dlq-store .pyreverseetl/dlq.db
 
     status <run_id>
         Get status of a sync run

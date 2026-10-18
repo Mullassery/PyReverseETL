@@ -17,6 +17,7 @@ use crate::connectors::{
     ObjectStorageDestination, ObjectStorageSource, PostgreSQLConfig, PostgreSQLConnector,
     Record as ConnRecord, SourceConnector, WebConfig, WebSource,
 };
+use crate::dlq::DeadLetterQueue;
 use crate::entity::{Entity, EntityType};
 use crate::governance::{
     ComplianceEngine, ComplianceRule, DefaultComplianceEngine, DefaultSchemaEvolution,
@@ -91,6 +92,14 @@ pub struct ExecuteOptions {
     /// adapter-based destinations (webhook/Salesforce/HubSpot/Marketo) --
     /// `None` disables idempotency checking (matches prior behavior).
     pub idempotency_store_path: Option<PathBuf>,
+    /// When set, enables a real dead-letter queue (quarantine): every record
+    /// the destination rejected is persisted to a SQLite file at this path
+    /// with its run id, reason, and exact payload, so a partial batch failure
+    /// can be inspected and re-driven deliberately instead of re-running the
+    /// whole sync. Only applies to the adapter-based destinations
+    /// (webhook/Salesforce/HubSpot/Marketo), where per-record success/failure
+    /// is observable. `None` disables quarantine (matches prior behavior).
+    pub dlq_store_path: Option<PathBuf>,
 }
 
 /// The real result of a sync: actual counts, actual timestamps -- never
@@ -119,6 +128,13 @@ pub struct ExecutionResult {
     /// content marked as synced to this destination. Always 0 when
     /// idempotency checking is disabled.
     pub rows_skipped_idempotent: u64,
+    /// Records quarantined into the dead-letter queue (see
+    /// `ExecuteOptions::dlq_store_path`) because the destination rejected
+    /// them. Always 0 when no DLQ path is configured. Equals `rows_failed`
+    /// for the adapter-based destinations when a DLQ path is set (every
+    /// observed failure is persisted); stays 0 for batch connectors, which
+    /// report only an aggregate count and cannot identify individual rows.
+    pub rows_dead_lettered: u64,
     /// Only populated when `ExecuteOptions::schema_store_path` is set: a
     /// human-readable description of every field-name/type change detected
     /// against the last-known shape for this source->destination pair.
@@ -206,21 +222,45 @@ async fn execute_with_records(
         Vec::new()
     };
 
-    let (rows_written, rows_failed, rows_skipped_idempotent, dry_run_preview, destination_node) =
+    let (rows_written, rows_failed, rows_skipped_idempotent, rows_dead_lettered, dry_run_preview, destination_node) =
         if options.dry_run {
             let preview = compliant_records
                 .iter()
                 .map(|r| r.data.to_string())
                 .collect();
-            (0, 0, 0, preview, None)
+            (0, 0, 0, 0, preview, None)
         } else {
-            let (written, failed, skipped, node) = write_to_destination(
+            let (written, failed_count, skipped, failed, node) = write_to_destination(
                 &destination,
                 &compliant_records,
                 options.idempotency_store_path.as_deref(),
             )
             .await?;
-            (written, failed, skipped, Vec::new(), Some(node))
+
+            // Quarantine real per-record failures for deliberate re-drive.
+            // Only records whose individual rejection was observed are
+            // persisted (the adapter path); batch connectors report an
+            // aggregate failure count but not which rows, so they don't
+            // contribute here.
+            let mut dead_lettered = 0u64;
+            if let Some(dlq_path) = &options.dlq_store_path {
+                if !failed.is_empty() {
+                    let dlq = DeadLetterQueue::open(dlq_path)?;
+                    let destination_key = destination_schema_key(&destination);
+                    for (record, reason) in &failed {
+                        dlq.record(
+                            &run_id,
+                            &destination_key,
+                            &record.id,
+                            reason,
+                            &record.data.to_string(),
+                        )?;
+                        dead_lettered += 1;
+                    }
+                }
+            }
+
+            (written, failed_count, skipped, dead_lettered, Vec::new(), Some(node))
         };
 
     let completed_at = Utc::now();
@@ -243,6 +283,7 @@ async fn execute_with_records(
         dry_run: options.dry_run,
         dry_run_preview,
         rows_skipped_idempotent,
+        rows_dead_lettered,
         schema_changes,
         compliance_violations,
         started_at,
@@ -424,7 +465,7 @@ async fn write_to_destination(
     destination: &DestinationSpec,
     records: &[ConnRecord],
     idempotency_store_path: Option<&Path>,
-) -> crate::Result<(u64, u64, u64, LineageNode)> {
+) -> crate::Result<(u64, u64, u64, Vec<(ConnRecord, String)>, LineageNode)> {
     match destination {
         DestinationSpec::Postgres(cfg) => {
             let connector = PostgreSQLConnector::new(cfg.clone());
@@ -439,6 +480,7 @@ async fn write_to_destination(
                 written,
                 (records.len() as u64).saturating_sub(written),
                 0,
+                Vec::new(),
                 node,
             ))
         }
@@ -455,6 +497,7 @@ async fn write_to_destination(
                 written,
                 (records.len() as u64).saturating_sub(written),
                 0,
+                Vec::new(),
                 node,
             ))
         }
@@ -473,11 +516,12 @@ async fn write_to_destination(
                 written,
                 (records.len() as u64).saturating_sub(written),
                 0,
+                Vec::new(),
                 node,
             ))
         }
         DestinationSpec::Webhook { config, auth } => {
-            let (written, failed, skipped) = write_via_adapter(
+            let (written, skipped, failed) = write_via_adapter(
                 "webhook",
                 config.clone(),
                 auth.clone(),
@@ -502,10 +546,10 @@ async fn write_to_destination(
                     .unwrap_or("webhook")
                     .to_string(),
             );
-            Ok((written, failed, skipped, node))
+            Ok((written, failed.len() as u64, skipped, failed, node))
         }
         DestinationSpec::Salesforce { config, auth } => {
-            let (written, failed, skipped) = write_via_adapter(
+            let (written, skipped, failed) = write_via_adapter(
                 "salesforce",
                 config.clone(),
                 auth.clone(),
@@ -531,10 +575,10 @@ async fn write_to_destination(
                 "salesforce",
                 object.to_string(),
             );
-            Ok((written, failed, skipped, node))
+            Ok((written, failed.len() as u64, skipped, failed, node))
         }
         DestinationSpec::HubSpot { config, auth } => {
-            let (written, failed, skipped) = write_via_adapter(
+            let (written, skipped, failed) = write_via_adapter(
                 "hubspot",
                 config.clone(),
                 auth.clone(),
@@ -553,10 +597,10 @@ async fn write_to_destination(
                 "hubspot",
                 object.to_string(),
             );
-            Ok((written, failed, skipped, node))
+            Ok((written, failed.len() as u64, skipped, failed, node))
         }
         DestinationSpec::Marketo { config, auth } => {
-            let (written, failed, skipped) = write_via_adapter(
+            let (written, skipped, failed) = write_via_adapter(
                 "marketo",
                 config.clone(),
                 auth.clone(),
@@ -577,7 +621,7 @@ async fn write_to_destination(
                 "marketo",
                 "leads".to_string(),
             );
-            Ok((written, failed, skipped, node))
+            Ok((written, failed.len() as u64, skipped, failed, node))
         }
     }
 }
@@ -599,8 +643,8 @@ async fn write_via_adapter(
     records: Vec<ConnRecord>,
     idempotency_store_path: Option<PathBuf>,
     destination_key: String,
-) -> crate::Result<(u64, u64, u64)> {
-    tokio::task::spawn_blocking(move || -> crate::Result<(u64, u64, u64)> {
+) -> crate::Result<(u64, u64, Vec<(ConnRecord, String)>)> {
+    tokio::task::spawn_blocking(move || -> crate::Result<(u64, u64, Vec<(ConnRecord, String)>)> {
         let adapter = AdapterFactory::create_adapter(adapter_type, &config, &auth)?;
         let ledger = idempotency_store_path
             .as_deref()
@@ -608,8 +652,10 @@ async fn write_via_adapter(
             .transpose()?;
 
         let mut written = 0u64;
-        let mut failed = 0u64;
         let mut skipped = 0u64;
+        // Records the destination rejected, with the reason, captured so a
+        // caller can quarantine them (DLQ) rather than only seeing a count.
+        let mut failed: Vec<(ConnRecord, String)> = Vec::new();
         for record in &records {
             if let Some(ledger) = &ledger {
                 let hash = idempotency::content_hash(&record.data);
@@ -623,17 +669,29 @@ async fn write_via_adapter(
                         ledger.mark_synced(&destination_key, &record.id, &hash)?;
                         written += 1;
                     }
-                    _ => failed += 1,
+                    Ok(result) => {
+                        let reason = result
+                            .error_message
+                            .unwrap_or_else(|| "destination rejected record".to_string());
+                        failed.push((record.clone(), reason));
+                    }
+                    Err(e) => failed.push((record.clone(), e.to_string())),
                 }
             } else {
                 let entity = record_to_entity(record);
                 match adapter.upsert(&entity, &[]) {
                     Ok(result) if result.success => written += 1,
-                    _ => failed += 1,
+                    Ok(result) => {
+                        let reason = result
+                            .error_message
+                            .unwrap_or_else(|| "destination rejected record".to_string());
+                        failed.push((record.clone(), reason));
+                    }
+                    Err(e) => failed.push((record.clone(), e.to_string())),
                 }
             }
         }
-        Ok((written, failed, skipped))
+        Ok((written, skipped, failed))
     })
     .await
     .map_err(|e| crate::Error::Internal(format!("destination adapter task panicked: {e}")))?
@@ -747,6 +805,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -793,6 +852,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -829,6 +889,7 @@ mod tests {
                 dry_run: true,
                 schema_store_path: None,
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -886,6 +947,7 @@ mod tests {
                 dry_run: true,
                 schema_store_path: None,
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -932,6 +994,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -950,6 +1013,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -974,6 +1038,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1022,6 +1087,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1042,6 +1108,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1072,6 +1139,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: Some(store_path.clone()),
                 idempotency_store_path: None,
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1117,6 +1185,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: Some(ledger_path.clone()),
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1143,6 +1212,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: Some(ledger_path.clone()),
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1190,6 +1260,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: Some(ledger_path.clone()),
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1212,6 +1283,7 @@ mod tests {
                 dry_run: false,
                 schema_store_path: None,
                 idempotency_store_path: Some(ledger_path.clone()),
+                dlq_store_path: None,
             },
             &lineage,
         )
@@ -1266,6 +1338,87 @@ mod tests {
             server.requests().len(),
             4,
             "with no idempotency store configured, every run resends every record (prior behavior)"
+        );
+    }
+
+    #[tokio::test]
+    async fn failed_records_are_quarantined_in_dead_letter_queue() {
+        let dir = std::env::temp_dir().join(format!("pyreverseetl_dlq_{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let dlq_path = dir.join("dlq.db");
+
+        // Destination rejects every record with a 500.
+        let server = MockHttpServer::start(500, "{}");
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!(server.base_url.clone()));
+        let destination = DestinationSpec::Webhook {
+            config,
+            auth: AdapterAuth::Bearer {
+                token: "tok".to_string(),
+            },
+        };
+        let lineage = LineageStore::new();
+
+        let result = execute_with_records(
+            sample_records(),
+            source_node(),
+            destination,
+            ExecuteOptions {
+                dlq_store_path: Some(dlq_path.clone()),
+                ..Default::default()
+            },
+            &lineage,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.rows_written, 0);
+        assert_eq!(result.rows_failed, 2);
+        assert_eq!(
+            result.rows_dead_lettered, 2,
+            "every observed per-record failure is quarantined"
+        );
+
+        let dlq = DeadLetterQueue::open(&dlq_path).unwrap();
+        let letters = dlq.list_for_run(&result.run_id).unwrap();
+        assert_eq!(letters.len(), 2);
+        assert!(
+            letters.iter().all(|l| !l.reason.is_empty()),
+            "each quarantined record carries a reason"
+        );
+        assert!(
+            letters.iter().all(|l| !l.payload.is_empty()),
+            "each quarantined record carries its payload for replay"
+        );
+    }
+
+    #[tokio::test]
+    async fn no_dlq_path_means_no_quarantine() {
+        let server = MockHttpServer::start(500, "{}");
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!(server.base_url.clone()));
+        let destination = DestinationSpec::Webhook {
+            config,
+            auth: AdapterAuth::Bearer {
+                token: "tok".to_string(),
+            },
+        };
+        let lineage = LineageStore::new();
+
+        let result = execute_with_records(
+            sample_records(),
+            source_node(),
+            destination,
+            ExecuteOptions::default(),
+            &lineage,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.rows_failed, 2);
+        assert_eq!(
+            result.rows_dead_lettered, 0,
+            "no quarantine store configured -> nothing persisted (prior behavior)"
         );
     }
 }
