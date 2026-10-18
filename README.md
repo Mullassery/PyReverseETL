@@ -226,6 +226,16 @@ Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_cor
 - **`python/pyreverseetl/`** — the installed Python package: `cli.py` (the `pyreverseetl`
   command) and `server.py` (an optional Flask REST wrapper around the same engine).
 
+## Validation gate
+
+```bash
+pyreverseetl execute-activation my-activation --validation-report statguardian-report.json
+```
+
+The report must be a JSON object with `"passed": true`; anything else blocks
+the sync before reading or writing data. This is a file-based gate until a live
+StatGuardian service endpoint is available.
+
 ## Documentation
 
 - [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — what's tested vs. untested vs. broken vs. not

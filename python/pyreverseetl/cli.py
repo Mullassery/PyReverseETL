@@ -31,6 +31,28 @@ import sys
 DEFAULT_STATE_PATH = os.path.join(os.path.expanduser("~"), ".pyreverseetl", "state.json")
 
 
+def validation_report_allows(path: str) -> tuple[bool, dict]:
+    """Read a StatGuardian-style JSON report and decide whether sync may run.
+
+    Expected shape: ``{"passed": bool, "violations": [...], ...}``. A missing
+    or malformed file fails closed. This is a file-based gate until
+    StatGuardian exposes a service endpoint; it does not call StatGuardian.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            report = json.load(handle)
+    except (OSError, ValueError) as exc:
+        return False, {"reason": f"cannot read validation report: {exc}"}
+    if not isinstance(report, dict) or "passed" not in report:
+        return False, {"reason": "validation report must be a JSON object with a 'passed' field"}
+    if report.get("passed") is not True:
+        return False, {
+            "reason": "validation report did not pass",
+            "violations": report.get("violations", []),
+        }
+    return True, {}
+
+
 class CLIInterface:
     """Command-line interface for PyReverseETL workflow integration."""
 
@@ -162,6 +184,7 @@ class CLIInterface:
         schema_store_path: str | None = None,
         idempotency_store_path: str | None = None,
         dlq_store_path: str | None = None,
+        validation_report_path: str | None = None,
     ) -> dict:
         """Execute an activation: run a real sync through the Rust engine.
 
@@ -200,6 +223,11 @@ class CLIInterface:
                 changed is still sent. Only applies to the adapter-based
                 destinations (webhook/salesforce/hubspot/marketo). Omit to
                 disable idempotency checking entirely (default).
+            validation_report_path: Optional path to a JSON validation report
+                (``{"passed": bool, ...}``). If supplied and not passing, the
+                sync is blocked before any source read or destination write.
+                This is a file-based StatGuardian gate; it does not call the
+                StatGuardian service.
             dlq_store_path: Optional path to a SQLite file used as a
                 dead-letter queue (quarantine) for records the destination
                 rejects. Each failed record is stored with its run id, the
@@ -220,6 +248,15 @@ class CLIInterface:
             }
 
         activation = self.activations[activation_id]
+        if validation_report_path:
+            allowed, detail = validation_report_allows(validation_report_path)
+            if not allowed:
+                return {
+                    "status": "error",
+                    "activation_id": activation_id,
+                    "message": "Blocked by validation gate",
+                    "validation": detail,
+                }
         workflow = self.workflows.get(activation["workflow_id"])
         if workflow is None:
             return {
@@ -501,6 +538,14 @@ def main():
                     sys.exit(1)
                 dlq_store_path = sys.argv[idx + 1]
 
+            validation_report_path = None
+            if "--validation-report" in sys.argv:
+                idx = sys.argv.index("--validation-report")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--validation-report requires a file path"}))
+                    sys.exit(1)
+                validation_report_path = sys.argv[idx + 1]
+
             result = cli.execute_activation(
                 activation_id,
                 limit,
@@ -509,6 +554,7 @@ def main():
                 schema_store_path,
                 idempotency_store_path,
                 dlq_store_path,
+                validation_report_path,
             )
             print(json.dumps(result))
 

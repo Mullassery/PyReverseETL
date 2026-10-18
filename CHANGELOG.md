@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.0] - 2026-10-19
+
+### Added
+- `execute-activation --validation-report report.json`: a file-based
+  StatGuardian gate. A report must be a JSON object with `"passed": true`;
+  missing/malformed/failing reports block before any source read or
+  destination write. This is not a live StatGuardian service call.
+
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
