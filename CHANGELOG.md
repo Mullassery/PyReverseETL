@@ -12,6 +12,21 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.1.7] — 2026-10-18
+
+### Fixed
+
+- **The advanced-database connector no longer fakes success (RECHECK-054).**
+  `AdvancedDatabaseDestination` (Snowflake/BigQuery/Redshift/DuckDB) previously
+  returned `Ok` from `write_batch`/`write_record` and `ConnectionTest::success`
+  without opening a connection or writing a row, so a sync reported thousands
+  of rows written when none were; `AdvancedDatabaseSource` read methods
+  likewise returned empty results as if the table were empty. All of these are
+  stubs with no real driver and now return an explicit
+  "not implemented" error (and a failing connection test) instead of a
+  misleading success. Use the concrete `PostgreSQL`/`MySQL` connectors for
+  real writes.
+
 ## [3.1.6] — 2026-10-18
 
 ### Added

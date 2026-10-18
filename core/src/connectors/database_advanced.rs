@@ -222,27 +222,29 @@ impl super::DestinationConnector for AdvancedDatabaseDestination {
     }
 
     async fn test_connection(&self) -> crate::Result<ConnectionTest> {
-        Ok(ConnectionTest::success(&format!(
-            "Connected to {} database",
+        // Honest: this connector has no real driver, so it cannot connect.
+        Ok(ConnectionTest::failure(
+            &format!(
+                "{} destination is not implemented: no real connection was attempted",
+                self.config.database_type
+            ),
+            Some("advanced database connector is a stub (RECHECK-054)".to_string()),
+        ))
+    }
+
+    async fn write_record(&self, _record: &Record) -> crate::Result<()> {
+        Err(crate::Error::ConnectorError(format!(
+            "{} destination write is not implemented; refusing to report a write that did not happen",
             self.config.database_type
         )))
     }
 
-    async fn write_record(&self, _record: &Record) -> crate::Result<()> {
-        // In production: execute INSERT/UPDATE based on strategy
-        Ok(())
-    }
-
-    async fn write_batch(&self, records: &[Record]) -> crate::Result<usize> {
-        // In production:
-        // 1. If schema defined: CREATE TABLE IF NOT EXISTS
-        // 2. Choose strategy:
-        //    - INSERT: simple insert all
-        //    - UPSERT: use ON CONFLICT or MERGE
-        //    - BULK_LOAD: write to S3/GCS, COPY into database
-        // 3. Handle partitioning for warehouses
-        // 4. Create clustering indexes for BigQuery
-        Ok(records.len())
+    async fn write_batch(&self, _records: &[Record]) -> crate::Result<usize> {
+        Err(crate::Error::ConnectorError(format!(
+            "{} destination batch write is not implemented; refusing to report {} rows written when none were",
+            self.config.database_type,
+            _records.len()
+        )))
     }
 
     async fn validate_records(&self, _records: &[Record]) -> crate::Result<()> {
@@ -283,38 +285,42 @@ impl super::SourceConnector for AdvancedDatabaseSource {
     }
 
     async fn test_connection(&self) -> crate::Result<ConnectionTest> {
-        Ok(ConnectionTest::success(&format!(
-            "Connected to {} database: {}",
-            self.config.database_type, self.config.table
-        )))
+        // Honest: this connector has no real driver, so it cannot connect.
+        Ok(ConnectionTest::failure(
+            &format!(
+                "{} source is not implemented: no real connection was attempted",
+                self.config.database_type
+            ),
+            Some("advanced database connector is a stub (RECHECK-054)".to_string()),
+        ))
     }
 
     async fn detect_schema(&self) -> crate::Result<super::Schema> {
-        // In production: query database metadata
-        // SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ?
-        Ok(super::Schema {
-            fields: vec![],
-            sample_records: vec![],
-        })
+        Err(crate::Error::ConnectorError(format!(
+            "{} schema detection is not implemented",
+            self.config.database_type
+        )))
     }
 
     async fn read_all(&self) -> crate::Result<Vec<Record>> {
-        // In production: SELECT * FROM table
-        Ok(vec![])
+        Err(crate::Error::ConnectorError(format!(
+            "{} read is not implemented; refusing to report an empty result as a successful read",
+            self.config.database_type
+        )))
     }
 
     async fn read_batch(&self, _offset: u64, _limit: u64) -> crate::Result<Vec<Record>> {
-        // In production: SELECT * FROM table OFFSET ? LIMIT ?
-        Ok(vec![])
+        Err(crate::Error::ConnectorError(format!(
+            "{} read_batch is not implemented",
+            self.config.database_type
+        )))
     }
 
     async fn read_incremental(&self, _last_value: &str) -> crate::Result<Vec<Record>> {
-        // In production:
-        // If incremental_column is timestamp:
-        //   SELECT * FROM table WHERE incremental_column > ? ORDER BY incremental_column
-        // If incremental_column is id:
-        //   SELECT * FROM table WHERE id > ? ORDER BY id LIMIT ?
-        Ok(vec![])
+        Err(crate::Error::ConnectorError(format!(
+            "{} read_incremental is not implemented",
+            self.config.database_type
+        )))
     }
 
     fn capabilities(&self) -> Vec<Capability> {
@@ -370,8 +376,13 @@ mod tests {
         let dest = AdvancedDatabaseDestination { config };
         assert_eq!(dest.name(), "Snowflake");
 
+        // The connector is a stub: it must report failure, not fake success.
         let test = dest.test_connection().await.unwrap();
-        assert!(test.success);
+        assert!(!test.success);
+        assert!(test.message.contains("not implemented"));
+
+        // And a write must error rather than silently claim rows were written.
+        assert!(dest.write_batch(&[]).await.is_err());
     }
 
     #[tokio::test]
