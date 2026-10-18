@@ -15,7 +15,7 @@ use crate::adapters::{AdapterFactory, AuthMethod as AdapterAuth};
 use crate::connectors::{
     DestinationConnector, MySQLConfig, MySQLConnector, ObjectStorageConfig,
     ObjectStorageDestination, ObjectStorageSource, PostgreSQLConfig, PostgreSQLConnector,
-    Record as ConnRecord, SourceConnector,
+    Record as ConnRecord, SourceConnector, WebConfig, WebSource,
 };
 use crate::entity::{Entity, EntityType};
 use crate::governance::{
@@ -35,6 +35,7 @@ pub enum SourceSpec {
     Postgres(PostgreSQLConfig),
     MySQL(MySQLConfig),
     S3(ObjectStorageConfig),
+    Web(WebConfig),
 }
 
 /// Where `execute_sync` writes real records to.
@@ -399,6 +400,20 @@ async fn read_from_source(
                 LineageNodeKind::Source,
                 "s3",
                 format!("s3://{}/{}", cfg.bucket, cfg.path),
+            );
+            Ok((records, node))
+        }
+        SourceSpec::Web(cfg) => {
+            let connector = WebSource::new(cfg.clone());
+            let records = match limit {
+                Some(l) => SourceConnector::read_batch(&connector, 0, l).await?,
+                None => SourceConnector::read_all(&connector).await?,
+            };
+            let node = LineageNode::new(
+                format!("web:{}", cfg.seed_url),
+                LineageNodeKind::Source,
+                "web",
+                cfg.seed_url.clone(),
             );
             Ok((records, node))
         }

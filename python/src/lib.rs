@@ -2,7 +2,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyreverseetl_core::adapters::AuthMethod as AdapterAuth;
 use pyreverseetl_core::connectors::{
-    MySQLConfig, ObjectStorageConfig, PostgreSQLConfig, TableFormat,
+    MySQLConfig, ObjectStorageConfig, PostgreSQLConfig, TableFormat, WebConfig,
 };
 use pyreverseetl_core::destination::DestinationType;
 use pyreverseetl_core::entity::EntityType;
@@ -301,8 +301,27 @@ fn build_source_spec(source_type: &str, config: &Value) -> PyResult<SourceSpec> 
             Ok(SourceSpec::MySQL(cfg))
         }
         "s3" => Ok(SourceSpec::S3(build_object_storage_config(config)?)),
+        "web" => {
+            let mut cfg = WebConfig {
+                seed_url: get_str(config, "seed_url")?.to_string(),
+                ..Default::default()
+            };
+            if let Some(v) = config.get("max_depth").and_then(|v| v.as_u64()) {
+                cfg.max_depth = v as usize;
+            }
+            if let Some(v) = config.get("max_urls").and_then(|v| v.as_u64()) {
+                cfg.max_urls = v as usize;
+            }
+            if let Some(v) = config.get("same_domain").and_then(|v| v.as_bool()) {
+                cfg.same_domain = v;
+            }
+            if let Some(v) = config.get("render_js").and_then(|v| v.as_bool()) {
+                cfg.render_js = v;
+            }
+            Ok(SourceSpec::Web(cfg))
+        }
         other => Err(py_err(format!(
-            "unsupported source_type '{other}' (supported: postgres, mysql, s3)"
+            "unsupported source_type '{other}' (supported: postgres, mysql, s3, web)"
         ))),
     }
 }
@@ -489,7 +508,9 @@ pub struct PySyncResult {
 /// Run a real sync: read from `source_type`/`source_config` (JSON string),
 /// apply `compliance_rules` (JSON string, optional), write to
 /// `destination_type`/`destination_config` (JSON string), and record a real
-/// lineage edge. Supported `source_type`: `postgres`, `mysql`, `s3`.
+/// lineage edge. Supported `source_type`: `postgres`, `mysql`, `s3`, `web`
+/// (MudFish-backed site crawl; `source_config` takes `seed_url` plus optional
+/// `max_depth`, `max_urls`, `same_domain`, `render_js`).
 /// Supported `destination_type`: all of those plus `webhook`, `salesforce`,
 /// `hubspot`, `marketo`. With `dry_run=True`, records are still read and run
 /// through the real compliance engine, but the destination is never

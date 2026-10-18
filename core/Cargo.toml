@@ -46,6 +46,12 @@ aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-credential-types = "1"
 bytes = "1"
 
+# Web source connector: crawl sites with the MudFish engine. Pinned to the
+# Rust workspace release tag (not a raw commit) so upgrades are deliberate.
+mudfish-core = { git = "https://github.com/Mullassery/MudFish", tag = "rust-v0.1.3" }
+mudfish-engine = { git = "https://github.com/Mullassery/MudFish", tag = "rust-v0.1.3" }
+url = "2"
+
 [[bin]]
 name = "pyreverseetl-dashboard"
 path = "bin/pyreverseetl_dashboard.rs"

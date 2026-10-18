@@ -86,6 +86,18 @@ impl BuiltInConnectors {
                     .collect(),
                 required_params: ["bucket", "path"].iter().map(|s| s.to_string()).collect(),
             },
+            ConnectorDescriptor {
+                id: "web".to_string(),
+                name: "Web (MudFish)".to_string(),
+                description: "Crawl a website with the MudFish engine and read one record per page"
+                    .to_string(),
+                connector_type: "source".to_string(),
+                capabilities: ["read", "schema_detection", "batch"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                required_params: ["seed_url"].iter().map(|s| s.to_string()).collect(),
+            },
         ]
     }
 

@@ -21,6 +21,7 @@ pub mod rate_limiting;
 pub mod registry;
 pub mod saas;
 pub mod source;
+pub mod web;
 
 pub use config::{ConnectionPool, ConnectorConfig, ConnectorType};
 pub use connectors_db::{
@@ -45,6 +46,7 @@ pub use rate_limiting::{
 pub use registry::{BuiltInConnectors, ConnectorDescriptor, ConnectorRegistry};
 pub use saas::{SaaSConfig, SaaSConnector};
 pub use source::{SourceConfig, SourceConnector};
+pub use web::{WebConfig, WebSource};
 
 use serde::{Deserialize, Serialize};
 

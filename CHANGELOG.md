@@ -12,6 +12,33 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.1.5] — 2026-10-18
+
+### Added
+
+- **The `web` source connector is now reachable from Python via
+  `run_sync`.** `pyreverseetl.run_sync(source_type="web", source_config=...)`
+  accepts `seed_url` (required) plus optional `max_depth`, `max_urls`,
+  `same_domain`, and `render_js`, so a Python sync can crawl a site with the
+  MudFish engine and write one record per page to any destination —
+  no Rust code required.
+
+## [3.1.4] — 2026-10-18
+
+### Added
+
+- **Web source connector (`web` / `WebSource`), backed by the MudFish
+  crawling engine.** A sync can now crawl a site (bounded by `max_depth` and
+  a hard `max_urls` cap) and read one record per crawled page
+  (`url`, `status_code`, `content_type`, `depth`, `title`,
+  `meta_description`, `links`, `body_bytes`). It uses `mudfish_engine::crawl`
+  directly, inheriting MudFish's post-resolution SSRF protection (private/
+  loopback/link-local targets refused), robots.txt and per-host politeness,
+  and streaming response-size caps, so it is safe to point at arbitrary
+  URLs. Wired into `SourceSpec::Web` (`executor.rs`) and registered as a
+  built-in source (`registry.rs`); `mudfish-core`/`mudfish-engine` are pinned
+  to the `rust-v0.1.3` release tag.
+
 ## [3.1.3] — 2026-10-18
 
 ### Fixed
