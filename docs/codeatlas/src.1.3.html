@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CodeAtlas</title>
+<script src="https://unpkg.com/cytoscape@3.23.0/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://unpkg.com/cytoscape-dagre@2.4.0/cytoscape-dagre.js"></script>
+<style>
+  body { margin: 0; font-family: -apple-system, sans-serif; }
+  #cy { width: 100vw; height: 100vh; }
+  header { padding: 12px 16px; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+<header>
+  <strong>CodeAtlas</strong>
+  <p>Owns 224 symbols across 13 file(s).</p>
+</header>
+<div id="cy"></div>
+<script>
+const data = {"nodes": [{"data": {"id": "adapters", "label": "adapters", "description": "Owns 229 symbols across 12 file(s)."}}, {"data": {"id": "cdc", "label": "cdc", "description": "Owns 52 symbols across 4 file(s)."}}, {"data": {"id": "connectors", "label": "connectors", "description": "Owns 422 symbols across 15 file(s)."}}, {"data": {"id": "governance", "label": "governance", "description": "Owns 170 symbols across 8 file(s)."}}, {"data": {"id": "observability", "label": "observability", "description": "Owns 98 symbols across 6 file(s)."}}, {"data": {"id": "pipeline", "label": "pipeline", "description": "Owns 60 symbols across 4 file(s)."}}, {"data": {"id": "sources", "label": "sources", "description": "Owns 142 symbols across 4 file(s)."}}, {"data": {"id": "storage", "label": "storage", "description": "Owns 22 symbols across 3 file(s)."}}, {"data": {"id": "streaming", "label": "streaming", "description": "Owns 34 symbols across 3 file(s)."}}, {"data": {"id": "testing", "label": "testing", "description": "Owns 115 symbols across 6 file(s)."}}, {"data": {"id": "transformers", "label": "transformers", "description": "Owns 56 symbols across 2 file(s)."}}], "edges": [{"data": {"id": "edge_0", "source": "src", "target": "adapters", "label": "calls"}}, {"data": {"id": "edge_1", "source": "src", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_2", "source": "src", "target": "governance", "label": "calls"}}, {"data": {"id": "edge_3", "source": "adapters", "target": "src", "label": "calls"}}, {"data": {"id": "edge_4", "source": "adapters", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_5", "source": "adapters", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_6", "source": "adapters", "target": "sources", "label": "calls"}}, {"data": {"id": "edge_7", "source": "testing", "target": "adapters", "label": "calls"}}, {"data": {"id": "edge_8", "source": "testing", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_9", "source": "testing", "target": "sources", "label": "calls"}}, {"data": {"id": "edge_10", "source": "testing", "target": "streaming", "label": "calls"}}, {"data": {"id": "edge_11", "source": "transformers", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_12", "source": "transformers", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_13", "source": "cdc", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_14", "source": "connectors", "target": "adapters", "label": "calls"}}, {"data": {"id": "edge_15", "source": "connectors", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_16", "source": "connectors", "target": "observability", "label": "calls"}}, {"data": {"id": "edge_17", "source": "governance", "target": "src", "label": "calls"}}, {"data": {"id": "edge_18", "source": "governance", "target": "adapters", "label": "calls"}}, {"data": {"id": "edge_19", "source": "governance", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_20", "source": "governance", "target": "cdc", "label": "calls"}}, {"data": {"id": "edge_21", "source": "governance", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_22", "source": "observability", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_23", "source": "pipeline", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_24", "source": "pipeline", "target": "cdc", "label": "calls"}}, {"data": {"id": "edge_25", "source": "pipeline", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_26", "source": "pipeline", "target": "governance", "label": "calls"}}, {"data": {"id": "edge_27", "source": "pipeline", "target": "streaming", "label": "calls"}}, {"data": {"id": "edge_28", "source": "sources", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_29", "source": "sources", "target": "cdc", "label": "calls"}}, {"data": {"id": "edge_30", "source": "sources", "target": "connectors", "label": "calls"}}, {"data": {"id": "edge_31", "source": "sources", "target": "streaming", "label": "calls"}}, {"data": {"id": "edge_32", "source": "streaming", "target": "testing", "label": "calls"}}, {"data": {"id": "edge_33", "source": "streaming", "target": "cdc", "label": "calls"}}]};
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: data,
+  style: [
+    { selector: 'node', style: {
+      'label': 'data(label)',
+      'shape': 'round-rectangle',
+      'background-color': '#eef2ff',
+      'border-color': '#6366f1',
+      'border-width': 1,
+      'width': 'label',
+      'padding': '10px',
+      'text-valign': 'center',
+      'text-halign': 'center',
+      'font-size': '12px',
+    }},
+    { selector: 'edge', style: {
+      'label': 'data(label)',
+      'curve-style': 'bezier',
+      'target-arrow-shape': 'triangle',
+      'font-size': '10px',
+      'text-rotation': 'autorotate',
+    }}
+  ],
+  layout: { name: 'dagre', rankDir: 'LR' }
+});
+cy.on('tap', 'node', evt => {
+  const node = evt.target;
+  if (node.data('linkUrl')) { window.location.href = node.data('linkUrl'); }
+});
+</script>
+</body>
+</html>
