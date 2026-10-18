@@ -22,6 +22,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+# Embedded architecture/knowledge-graph engine behind tools/codeatlas.
+architecture = ["codeatlas-rs>=0.3.0"]
 dev = ["pytest>=7.0", "ruff>=0.6"]
 
 [project.scripts]
