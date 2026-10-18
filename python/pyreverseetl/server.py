@@ -17,8 +17,14 @@ from .cli import CLIInterface
 class PyReverseETLServer:
     """REST API server for workflow integration, backed by the real sync engine."""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8000):
-        """Initialize server."""
+    def __init__(self, host: str = "127.0.0.1", port: int = 8000):
+        """Initialize server.
+
+        Binds to loopback by default. The REST API has no authentication, so
+        exposing it on a routable interface is an explicit, deliberate choice:
+        pass `host="0.0.0.0"` (or set `PYREVERSEETL_HOST`) only behind a
+        trusted network/authenticating proxy.
+        """
         self.host = host
         self.port = port
         self._cli = CLIInterface()
@@ -188,8 +194,17 @@ def create_flask_app(server: PyReverseETLServer | None = None):
     return app
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8000):
-    """Run the REST API server."""
+def run_server(host: str | None = None, port: int = 8000):
+    """Run the REST API server.
+
+    Defaults to loopback (`127.0.0.1`). Override with `host=...` or the
+    `PYREVERSEETL_HOST` environment variable to expose the (unauthenticated)
+    API on a routable interface.
+    """
+    import os
+
+    if host is None:
+        host = os.environ.get("PYREVERSEETL_HOST", "127.0.0.1")
     app = create_flask_app()
     app.run(host=host, port=port, debug=False)
 

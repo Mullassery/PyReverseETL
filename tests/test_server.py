@@ -26,6 +26,13 @@ def server(tmp_path, monkeypatch):
     return PyReverseETLServer()
 
 
+def test_server_defaults_to_loopback(server):
+    # The REST API has no authentication, so the default bind address must be
+    # loopback rather than every interface (RECHECK-002).
+    assert server.host == "127.0.0.1"
+    assert PyReverseETLServer().host == "127.0.0.1"
+
+
 def test_health_check(server):
     result = server.health_check()
     assert result["status"] == "healthy"

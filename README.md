@@ -80,7 +80,7 @@ repeated here to avoid implying vendor endorsement.
 
 ## Project status
 
-**Beta.** Version 3.1.2. The Postgres/MySQL/S3/webhook paths are real and verified against
+**Beta.** Version 3.1.3. The Postgres/MySQL/S3/webhook paths are real and verified against
 real services; the CRM/marketing adapters are real but mock-verified only; several
 modules from earlier work remain unwired and are called out as such above. For a blunt,
 file-and-line-referenced list of what's tested vs. untested vs. broken vs. not built, see

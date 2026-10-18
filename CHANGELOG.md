@@ -12,6 +12,16 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.1.3] — 2026-10-18
+
+### Fixed
+
+- **REST server now binds to loopback by default.** `PyReverseETLServer`
+  and `run_server()` previously defaulted to `0.0.0.0`, exposing the
+  unauthenticated REST API on every interface. They now default to
+  `127.0.0.1`; exposing the API is an explicit choice via `host=` or the
+  `PYREVERSEETL_HOST` environment variable (RECHECK-002).
+
 ## [3.1.2] — 2026-10-16
 
 ### Fixed

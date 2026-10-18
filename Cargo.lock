@@ -2266,7 +2266,7 @@ dependencies = [
 
 [[package]]
 name = "pyreverseetl"
-version = "3.1.2"
+version = "3.1.3"
 dependencies = [
  "chrono",
  "pyo3",
@@ -2277,7 +2277,7 @@ dependencies = [
 
 [[package]]
 name = "pyreverseetl-core"
-version = "3.1.2"
+version = "3.1.3"
 dependencies = [
  "async-trait",
  "aws-config",
