@@ -27,8 +27,47 @@ from __future__ import annotations
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 
 DEFAULT_STATE_PATH = os.path.join(os.path.expanduser("~"), ".pyreverseetl", "state.json")
+
+
+def validate_activation_rows(
+    rows: list[dict],
+    service_url: str,
+    *,
+    limit: int = 100,
+    timeout_seconds: float = 10.0,
+) -> tuple[bool, dict]:
+    """POST sample rows to StatGuardian's ``/validate`` endpoint.
+
+    Fails closed on network/HTTP/parse errors. Only the first ``limit`` rows
+    are checked; this is a pre-activation sample gate, not a full-table scan.
+    """
+    url = service_url.rstrip("/") + "/validate"
+    checked = 0
+    for row in rows[: max(1, limit)]:
+        checked += 1
+        body = json.dumps({"entity": {"attributes": row}}).encode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            return False, {"reason": f"StatGuardian request failed: {exc}", "checked": checked}
+        if payload.get("passed") is not True:
+            return False, {
+                "reason": "StatGuardian rejected a sample row",
+                "checked": checked,
+                "issues": payload.get("issues", []),
+            }
+    return True, {"checked": checked}
 
 
 def validation_report_allows(path: str) -> tuple[bool, dict]:
@@ -185,6 +224,8 @@ class CLIInterface:
         idempotency_store_path: str | None = None,
         dlq_store_path: str | None = None,
         validation_report_path: str | None = None,
+        statguardian_url: str | None = None,
+        statguardian_limit: int = 100,
     ) -> dict:
         """Execute an activation: run a real sync through the Rust engine.
 
@@ -226,8 +267,13 @@ class CLIInterface:
             validation_report_path: Optional path to a JSON validation report
                 (``{"passed": bool, ...}``). If supplied and not passing, the
                 sync is blocked before any source read or destination write.
-                This is a file-based StatGuardian gate; it does not call the
-                StatGuardian service.
+                This is a file-based StatGuardian gate.
+            statguardian_url: Optional base URL of a running StatGuardian
+                service. A dry-run reads a sample of source rows and POSTs them
+                to ``/validate``; any failure (or network error) blocks the real
+                sync. This doubles the source read for the sample pass.
+            statguardian_limit: Maximum sample rows sent to StatGuardian
+                (default 100).
             dlq_store_path: Optional path to a SQLite file used as a
                 dead-letter queue (quarantine) for records the destination
                 rejects. Each failed record is stored with its run id, the
@@ -275,6 +321,38 @@ class CLIInterface:
         source_config = dict(workflow.get("source_config") or {})
         source_config.setdefault("table", workflow.get("table"))
         destination_config = activation.get("destination_config") or {}
+
+        if statguardian_url:
+            try:
+                preview = _core.run_sync(
+                    source_type=workflow["source"],
+                    source_config=json.dumps(source_config),
+                    destination_type=activation["destination"],
+                    destination_config=json.dumps(destination_config),
+                    limit=limit,
+                    compliance_rules=json.dumps(compliance_rules) if compliance_rules else None,
+                    dry_run=True,
+                    schema_store_path=None,
+                    idempotency_store_path=None,
+                    dlq_store_path=None,
+                )
+            except Exception as exc:  # noqa: BLE001
+                return {
+                    "status": "error",
+                    "activation_id": activation_id,
+                    "message": f"StatGuardian sample read failed: {exc}",
+                }
+            sample_rows = [json.loads(row) for row in preview.dry_run_preview]
+            allowed, detail = validate_activation_rows(
+                sample_rows, statguardian_url, limit=statguardian_limit
+            )
+            if not allowed:
+                return {
+                    "status": "error",
+                    "activation_id": activation_id,
+                    "message": "Blocked by StatGuardian sample validation",
+                    "validation": detail,
+                }
 
         try:
             result = _core.run_sync(
@@ -546,6 +624,21 @@ def main():
                     sys.exit(1)
                 validation_report_path = sys.argv[idx + 1]
 
+            statguardian_url = None
+            if "--statguardian-url" in sys.argv:
+                idx = sys.argv.index("--statguardian-url")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--statguardian-url requires a URL"}))
+                    sys.exit(1)
+                statguardian_url = sys.argv[idx + 1]
+            statguardian_limit = 100
+            if "--statguardian-limit" in sys.argv:
+                idx = sys.argv.index("--statguardian-limit")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--statguardian-limit requires a number"}))
+                    sys.exit(1)
+                statguardian_limit = int(sys.argv[idx + 1])
+
             result = cli.execute_activation(
                 activation_id,
                 limit,
@@ -555,6 +648,8 @@ def main():
                 idempotency_store_path,
                 dlq_store_path,
                 validation_report_path,
+                statguardian_url,
+                statguardian_limit,
             )
             print(json.dumps(result))
 

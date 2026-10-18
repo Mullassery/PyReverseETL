@@ -12,6 +12,16 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.3.0] - 2026-10-19
+
+### Added
+- `execute-activation --statguardian-url http://127.0.0.1:8000` (optional
+  `--statguardian-limit`, default 100): runs a dry-run source read, POSTs the
+  sample rows to StatGuardian's `/validate`, and blocks the real sync if any
+  row fails or the service is unreachable. This doubles the source read for
+  the sample pass and is a sample gate, not a full-table scan.
+- Tests use a stdlib HTTP server for pass/fail/unreachable behavior.
+
 ## [3.2.0] - 2026-10-19
 
 ### Added

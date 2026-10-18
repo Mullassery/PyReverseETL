@@ -229,7 +229,11 @@ Python CLI / API  →  pyreverseetl._core (PyO3 bindings)  →  pyreverseetl_cor
 ## Validation gate
 
 ```bash
+# File-based report
 pyreverseetl execute-activation my-activation --validation-report statguardian-report.json
+
+# Live StatGuardian service: validate a sample before the real sync
+pyreverseetl execute-activation my-activation --statguardian-url http://127.0.0.1:8000
 ```
 
 The report must be a JSON object with `"passed": true`; anything else blocks
