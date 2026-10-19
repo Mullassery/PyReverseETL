@@ -25,9 +25,10 @@ offered as an option and not silently faked.
   Basic) and JSON payload construction; CRM/marketing-automation REST adapters for
   Salesforce, HubSpot, and Marketo.
 - **Connector plugin SDK (Python path).** A documented `pyreverseetl.connectors`
-  entry-point group plus a real local SQLite source/destination
-  (`run_with_connector`). Third-party plugins are Python-level; the Rust
-  `run_sync` engine still owns the built-in Postgres/MySQL/S3/webhook/CRM path.
+  entry-point group plus real local SQLite and optional DuckDB source/destination
+  connectors, and an optional Postgres `psycopg` skeleton (`run_with_connector`).
+  Third-party plugins are Python-level; the Rust `run_sync` engine still owns
+  the built-in Postgres/MySQL/S3/webhook/CRM path.
 - **Compliance/PII handling before data leaves the process.** Mask, remove, or truncate
   fields per-record; `Encrypt` is honestly reported as unresolved rather than faked.
 - **Lineage tracking.** Every sync registers real source/destination nodes and appends a
@@ -80,6 +81,8 @@ offered as an option and not silently faked.
 | S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV implemented; Parquet/Avro/ORC/Iceberg/Delta return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
 | Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and JSON payload construction. |
 | SQLite (`python/pyreverseetl/connectors.py`) | source + destination | Real local reads/writes via stdlib `sqlite3`, exposed through the Python connector-plugin path (`run_with_connector`), **not** the Rust `run_sync` engine. |
+| DuckDB (`python/pyreverseetl/connectors.py`) | source + destination | Optional real local reads/writes via `duckdb`, including append/replace/upsert, tested against temporary database files. Python plugin path only; install with `PyReverseETL[duckdb]`. |
+| Postgres (`python/pyreverseetl/connectors.py`) | source + destination | Optional `psycopg` skeleton for a local server, including read/append/replace/upsert. Python plugin path only; not live-warehouse support. Install with `PyReverseETL[postgres]`. |
 | CRM (`core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe. Verified against a local mock HTTP server. |
 | CRM (`core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Verified against a mock server. |
 | Marketing automation (`core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, delete, describe). Verified against a mock server. |
@@ -225,8 +228,45 @@ my_connector = "my_package.connectors:MyConnector"
 ```
 
 The bundled `sqlite` connector is a real source/destination backed by stdlib
-`sqlite3` (append, replace, and upsert with `upsert_key`). It is tested against
-temporary databases. Kafka, HDFS, Spark/PySpark transforms, and the CLI
+`sqlite3` (append, replace, and upsert with `upsert_key`). The optional
+`duckdb` connector mirrors that behavior and is tested against temporary DuckDB
+databases:
+
+```bash
+pip install "PyReverseETL[duckdb]"
+```
+
+```python
+from pyreverseetl.connectors import run_with_connector
+
+result = run_with_connector(
+    "duckdb",
+    {"path": "source.duckdb", "table": "customers"},
+    "duckdb",
+    {"path": "destination.duckdb", "table": "customers", "upsert_key": "id"},
+)
+print(result.rows_read, result.rows_written)
+```
+
+The optional `postgres` connector is a `psycopg` skeleton for a local server;
+configure it with a `dsn`/`database_url` or host/database/user/password fields:
+
+```bash
+pip install "PyReverseETL[postgres]"
+```
+
+```python
+result = run_with_connector(
+    "postgres",
+    {"dsn": "postgresql://user:pass@localhost:5432/demo", "table": "customers"},
+    "postgres",
+    {"dsn": "postgresql://user:pass@localhost:5432/demo", "table": "customers_copy"},
+)
+```
+
+Neither Python driver is bundled. Missing drivers raise a clear install hint,
+and Postgres tests skip unless `PYREVERSEETL_TEST_POSTGRES_DSN` points at a
+reachable local server. Kafka, HDFS, Spark/PySpark transforms, and the CLI
 dashboard remain experimental/unwired; no Python plugin path changes that.
 
 ## Changelog

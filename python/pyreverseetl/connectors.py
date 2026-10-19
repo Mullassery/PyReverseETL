@@ -21,8 +21,11 @@ connectors. A connector plugin declares itself with::
     my_connector = "my_package.connectors:MyConnector"
 
 The entry point may be a ``BaseConnector`` subclass or a zero-argument factory
-returning one. The bundled real implementation is ``SQLiteConnector``, backed
-by the stdlib ``sqlite3`` module.
+returning one. Bundled implementations are ``SQLiteConnector`` (stdlib
+``sqlite3``), ``DuckDBConnector`` (optional ``duckdb``), and
+``PostgresConnector`` (optional ``psycopg`` skeleton for a local server). The
+optional drivers are not installed by default; using the connector without its
+driver raises a clear install hint.
 """
 
 from __future__ import annotations
@@ -33,7 +36,8 @@ import sqlite3
 import time
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from importlib import metadata
 from pathlib import Path
@@ -106,14 +110,16 @@ def _quote(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
 
 
-def _database_path(config: Mapping[str, Any]) -> str:
+def _database_path(config: Mapping[str, Any], connector: str = "sqlite") -> str:
     path = config.get("path", config.get("database"))
     if not isinstance(path, str) or not path:
-        raise ConnectorError("sqlite connector requires a 'path' (or 'database')")
+        raise ConnectorError(
+            f"{connector} connector requires a 'path' (or 'database')"
+        )
     return path
 
 
-def _sqlite_columns(rows: Sequence[Mapping[str, Any]]) -> list[str]:
+def _row_columns(rows: Sequence[Mapping[str, Any]]) -> list[str]:
     columns: list[str] = []
     for row in rows:
         for key in row:
@@ -195,7 +201,7 @@ class SQLiteConnector(BaseConnector):
         if not rows:
             return 0
         table = _identifier(config.get("table"), "table")
-        columns = _sqlite_columns(rows)
+        columns = _row_columns(rows)
         if not columns:
             raise ConnectorError("cannot write rows with no columns")
         for column in columns:
@@ -282,7 +288,408 @@ class SQLiteConnector(BaseConnector):
             raise ConnectorError(f"sqlite write failed: {exc}") from exc
 
 
-_REGISTRY: dict[str, Any] = {"sqlite": SQLiteConnector}
+def _import_duckdb() -> Any:
+    try:
+        import duckdb
+    except ImportError as exc:
+        raise ConnectorError(
+            "duckdb connector requires the optional 'duckdb' package; install "
+            "it with: pip install \"PyReverseETL[duckdb]\""
+        ) from exc
+    return duckdb
+
+
+def _duckdb_value(value: Any) -> Any:
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, sort_keys=True)
+    return value
+
+
+def _duckdb_type(values: Iterable[Any]) -> str:
+    seen = [value for value in values if value is not None]
+    if not seen:
+        return "VARCHAR"
+    if all(isinstance(value, bool) for value in seen):
+        return "BOOLEAN"
+    if all(isinstance(value, int) and not isinstance(value, bool) for value in seen):
+        return "BIGINT"
+    if all(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in seen
+    ):
+        return "DOUBLE"
+    if all(isinstance(value, bytes) for value in seen):
+        return "BLOB"
+    if all(isinstance(value, str) for value in seen):
+        return "VARCHAR"
+    return "VARCHAR"
+
+
+class DuckDBConnector(BaseConnector):
+    """Read from and write to a real local DuckDB database.
+
+    DuckDB is an optional dependency (``pip install "PyReverseETL[duckdb]"``).
+    The configuration mirrors ``SQLiteConnector``::
+
+        read:  {"path": "/tmp/source.duckdb", "table": "customers"}
+        write: {"path": "/tmp/destination.duckdb", "table": "customers",
+                "if_exists": "append" | "replace" | "fail",
+                "upsert_key": "id"}
+
+    ``upsert_key`` may be a string or a list of strings. A table created with
+    an upsert key gets a composite primary key; upserting into a pre-existing
+    table requires a matching unique/primary key constraint. This is the
+    Python plugin path, not the Rust ``run_sync`` engine.
+    """
+
+    name = "duckdb"
+
+    def read(
+        self, config: Mapping[str, Any], limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        table = _identifier(config.get("table"), "table")
+        if limit is not None and limit < 0:
+            raise ConnectorError("limit must be >= 0")
+        database_path = _database_path(config, "duckdb")
+        if not Path(database_path).is_file():
+            raise ConnectorError(f"duckdb database not found: {database_path}")
+        duckdb = _import_duckdb()
+        query = f"SELECT * FROM {_quote(table)}"
+        params: tuple[Any, ...] = ()
+        if limit is not None:
+            query += " LIMIT ?"
+            params = (int(limit),)
+        try:
+            connection = duckdb.connect(database_path, read_only=True)
+            try:
+                cursor = connection.execute(query, params)
+                columns = [column[0] for column in cursor.description]
+                return [
+                    dict(zip(columns, row)) for row in cursor.fetchall()
+                ]
+            finally:
+                connection.close()
+        except duckdb.Error as exc:
+            raise ConnectorError(f"duckdb read failed: {exc}") from exc
+
+    def write(
+        self, config: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]
+    ) -> int:
+        if not rows:
+            return 0
+        table = _identifier(config.get("table"), "table")
+        columns = _row_columns(rows)
+        if not columns:
+            raise ConnectorError("cannot write rows with no columns")
+        for column in columns:
+            _identifier(column, "column")
+
+        if_exists = config.get("if_exists", "append")
+        if if_exists not in ("append", "replace", "fail"):
+            raise ConnectorError("if_exists must be 'append', 'replace', or 'fail'")
+
+        key_config = config.get("upsert_key")
+        if key_config is None:
+            key_columns: list[str] = []
+        elif isinstance(key_config, str):
+            key_columns = [_identifier(key_config, "upsert_key")]
+        else:
+            key_columns = [_identifier(key, "upsert_key") for key in key_config]
+        for key in key_columns:
+            if key not in columns:
+                raise ConnectorError(f"upsert_key {key!r} is not a column in the rows")
+
+        database_path = _database_path(config, "duckdb")
+        duckdb = _import_duckdb()
+        try:
+            connection = duckdb.connect(database_path)
+            try:
+                exists = (
+                    connection.execute(
+                        "SELECT 1 FROM information_schema.tables "
+                        "WHERE table_schema = 'main' AND table_name = ?",
+                        (table,),
+                    ).fetchone()
+                    is not None
+                )
+                if exists and if_exists == "fail":
+                    raise ConnectorError(f"table {table!r} already exists")
+                if exists and if_exists == "replace":
+                    connection.execute(f"DROP TABLE {_quote(table)}")
+                    exists = False
+
+                if not exists:
+                    definitions = []
+                    for column in columns:
+                        column_type = _duckdb_type(row.get(column) for row in rows)
+                        definitions.append(f"{_quote(column)} {column_type}")
+                    if key_columns:
+                        keys = ", ".join(_quote(key) for key in key_columns)
+                        definitions.append(f"PRIMARY KEY ({keys})")
+                    connection.execute(
+                        f"CREATE TABLE {_quote(table)} ({', '.join(definitions)})"
+                    )
+
+                placeholders = ", ".join("?" for _ in columns)
+                column_list = ", ".join(_quote(column) for column in columns)
+                values = [
+                    tuple(_duckdb_value(row.get(column)) for column in columns)
+                    for row in rows
+                ]
+
+                if key_columns:
+                    updates = [column for column in columns if column not in key_columns]
+                    conflict = ", ".join(_quote(key) for key in key_columns)
+                    if updates:
+                        assignments = ", ".join(
+                            f"{_quote(column)} = excluded.{_quote(column)}"
+                            for column in updates
+                        )
+                        statement = (
+                            f"INSERT INTO {_quote(table)} ({column_list}) VALUES "
+                            f"({placeholders}) ON CONFLICT ({conflict}) DO UPDATE SET "
+                            f"{assignments}"
+                        )
+                    else:
+                        statement = (
+                            f"INSERT INTO {_quote(table)} ({column_list}) VALUES "
+                            f"({placeholders}) ON CONFLICT ({conflict}) DO NOTHING"
+                        )
+                else:
+                    statement = (
+                        f"INSERT INTO {_quote(table)} ({column_list}) VALUES "
+                        f"({placeholders})"
+                    )
+
+                connection.executemany(statement, values)
+            finally:
+                connection.close()
+            return len(rows)
+        except ConnectorError:
+            raise
+        except duckdb.Error as exc:
+            raise ConnectorError(f"duckdb write failed: {exc}") from exc
+
+
+def _import_psycopg() -> Any:
+    try:
+        import psycopg
+    except ImportError as exc:
+        raise ConnectorError(
+            "postgres connector requires the optional 'psycopg' package; install "
+            "it with: pip install \"PyReverseETL[postgres]\""
+        ) from exc
+    return psycopg
+
+
+def _postgres_connect_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
+    dsn = config.get("dsn", config.get("database_url"))
+    if dsn is not None:
+        if not isinstance(dsn, str) or not dsn:
+            raise ConnectorError("postgres 'dsn' must be a non-empty string")
+        return {"conninfo": dsn}
+    kwargs: dict[str, Any] = {
+        "host": config.get("host", "localhost"),
+        "port": config.get("port", 5432),
+        "connect_timeout": config.get("connect_timeout", 5),
+    }
+    database = config.get("dbname", config.get("database"))
+    if database:
+        kwargs["dbname"] = database
+    user = config.get("user", config.get("username"))
+    if user:
+        kwargs["user"] = user
+    if config.get("password"):
+        kwargs["password"] = config["password"]
+    if config.get("sslmode"):
+        kwargs["sslmode"] = config["sslmode"]
+    return kwargs
+
+
+@contextmanager
+def _postgres_connection(
+    config: Mapping[str, Any], *, read_only: bool
+) -> Iterator[Any]:
+    psycopg = _import_psycopg()
+    kwargs = _postgres_connect_kwargs(config)
+    try:
+        connection = psycopg.connect(**kwargs)
+    except psycopg.Error as exc:
+        raise ConnectorError(f"postgres connection failed: {exc}") from exc
+    try:
+        connection.read_only = read_only
+        yield connection
+    finally:
+        connection.close()
+
+
+def _postgres_value(value: Any) -> Any:
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, sort_keys=True)
+    return value
+
+
+def _postgres_type(values: Iterable[Any]) -> str:
+    seen = [value for value in values if value is not None]
+    if not seen:
+        return "TEXT"
+    if all(isinstance(value, bool) for value in seen):
+        return "BOOLEAN"
+    if all(isinstance(value, int) and not isinstance(value, bool) for value in seen):
+        return "BIGINT"
+    if all(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in seen
+    ):
+        return "DOUBLE PRECISION"
+    if all(isinstance(value, bytes) for value in seen):
+        return "BYTEA"
+    return "TEXT"
+
+
+class PostgresConnector(BaseConnector):
+    """Skeleton source/destination for a local Postgres server via ``psycopg``.
+
+    No driver is bundled and no live-warehouse support is claimed. Install the
+    optional driver with ``pip install "PyReverseETL[postgres]"``. Read config
+    requires ``table`` plus either ``dsn``/``database_url`` or individual
+    connection fields. Write config additionally supports ``if_exists`` and
+    ``upsert_key`` like the other bundled connectors.
+    """
+
+    name = "postgres"
+
+    def read(
+        self, config: Mapping[str, Any], limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        table = _identifier(config.get("table"), "table")
+        if limit is not None and limit < 0:
+            raise ConnectorError("limit must be >= 0")
+        query = f"SELECT * FROM {_quote(table)}"
+        params: tuple[Any, ...] = ()
+        if limit is not None:
+            query += " LIMIT %s"
+            params = (int(limit),)
+        psycopg = _import_psycopg()
+        try:
+            with (
+                _postgres_connection(config, read_only=True) as connection,
+                connection.cursor() as cursor,
+            ):
+                cursor.execute(query, params)
+                columns = [column[0] for column in cursor.description]
+                return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except psycopg.Error as exc:
+            raise ConnectorError(f"postgres read failed: {exc}") from exc
+
+    def write(
+        self, config: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]
+    ) -> int:
+        if not rows:
+            return 0
+        table = _identifier(config.get("table"), "table")
+        columns = _row_columns(rows)
+        if not columns:
+            raise ConnectorError("cannot write rows with no columns")
+        for column in columns:
+            _identifier(column, "column")
+
+        if_exists = config.get("if_exists", "append")
+        if if_exists not in ("append", "replace", "fail"):
+            raise ConnectorError("if_exists must be 'append', 'replace', or 'fail'")
+
+        key_config = config.get("upsert_key")
+        if key_config is None:
+            key_columns: list[str] = []
+        elif isinstance(key_config, str):
+            key_columns = [_identifier(key_config, "upsert_key")]
+        else:
+            key_columns = [_identifier(key, "upsert_key") for key in key_config]
+        for key in key_columns:
+            if key not in columns:
+                raise ConnectorError(f"upsert_key {key!r} is not a column in the rows")
+
+        psycopg = _import_psycopg()
+        try:
+            with _postgres_connection(config, read_only=False) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT 1 FROM information_schema.tables "
+                        "WHERE table_schema = 'public' AND table_name = %s",
+                        (table,),
+                    )
+                    exists = cursor.fetchone() is not None
+                    if exists and if_exists == "fail":
+                        raise ConnectorError(f"table {table!r} already exists")
+                    if exists and if_exists == "replace":
+                        cursor.execute(f"DROP TABLE {_quote(table)}")
+                        exists = False
+
+                    if not exists:
+                        definitions = []
+                        for column in columns:
+                            column_type = _postgres_type(
+                                row.get(column) for row in rows
+                            )
+                            definitions.append(f"{_quote(column)} {column_type}")
+                        if key_columns:
+                            keys = ", ".join(_quote(key) for key in key_columns)
+                            definitions.append(f"PRIMARY KEY ({keys})")
+                        cursor.execute(
+                            f"CREATE TABLE {_quote(table)} "
+                            f"({', '.join(definitions)})"
+                        )
+
+                    placeholders = ", ".join("%s" for _ in columns)
+                    column_list = ", ".join(_quote(column) for column in columns)
+                    values = [
+                        tuple(
+                            _postgres_value(row.get(column)) for column in columns
+                        )
+                        for row in rows
+                    ]
+
+                    if key_columns:
+                        updates = [
+                            column for column in columns if column not in key_columns
+                        ]
+                        conflict = ", ".join(_quote(key) for key in key_columns)
+                        if updates:
+                            assignments = ", ".join(
+                                f"{_quote(column)} = excluded.{_quote(column)}"
+                                for column in updates
+                            )
+                            statement = (
+                                f"INSERT INTO {_quote(table)} ({column_list}) "
+                                f"VALUES ({placeholders}) ON CONFLICT ({conflict}) "
+                                f"DO UPDATE SET {assignments}"
+                            )
+                        else:
+                            statement = (
+                                f"INSERT INTO {_quote(table)} ({column_list}) "
+                                f"VALUES ({placeholders}) ON CONFLICT ({conflict}) "
+                                f"DO NOTHING"
+                            )
+                    else:
+                        statement = (
+                            f"INSERT INTO {_quote(table)} ({column_list}) "
+                            f"VALUES ({placeholders})"
+                        )
+
+                    cursor.executemany(statement, values)
+                connection.commit()
+            return len(rows)
+        except ConnectorError:
+            raise
+        except psycopg.Error as exc:
+            raise ConnectorError(f"postgres write failed: {exc}") from exc
+
+
+_REGISTRY: dict[str, Any] = {
+    "sqlite": SQLiteConnector,
+    "duckdb": DuckDBConnector,
+    "postgres": PostgresConnector,
+}
 
 
 def register_connector(name: str, factory: Any) -> None:
@@ -436,6 +843,8 @@ __all__ = [
     "BaseConnector",
     "ConnectorError",
     "ConnectorSyncResult",
+    "DuckDBConnector",
+    "PostgresConnector",
     "SQLiteConnector",
     "available_connectors",
     "get_connector",

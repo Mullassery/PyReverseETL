@@ -12,6 +12,24 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [Unreleased]
+
+### Added
+- Optional `DuckDBConnector` for the Python connector-plugin path: real local
+  reads/writes with append/replace/upsert. Install with
+  `pip install "PyReverseETL[duckdb]"`; tests use temporary DuckDB databases.
+- Optional `PostgresConnector` skeleton using `psycopg` for a local server
+  (read/append/replace/upsert). Install with
+  `pip install "PyReverseETL[postgres]"`; tests skip unless
+  `PYREVERSEETL_TEST_POSTGRES_DSN` points at a reachable local server.
+- Both connectors are registered in the built-in registry and exported from
+  `pyreverseetl`.
+
+### Changed
+- The Python connector docs and connector-status table now describe the
+  optional drivers. No live-warehouse support is claimed; these are Python
+  plugin-path connectors, not Rust `run_sync` connectors.
+
 ## [3.4.0] - 2026-10-20
 
 ### Added
