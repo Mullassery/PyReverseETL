@@ -16,6 +16,7 @@ from ._core import (
     lineage_json,
     run_sync,
 )
+from .singer import SingerBatch, SingerSchema, jsonl_sink, parse_messages, run_target
 
 __all__ = [
     "PyActivation",
@@ -24,8 +25,13 @@ __all__ = [
     "PySyncResult",
     "PySyncRun",
     "PyWorkflow",
+    "SingerBatch",
+    "SingerSchema",
     "__version__",
+    "jsonl_sink",
     "lineage_dot",
     "lineage_json",
+    "parse_messages",
     "run_sync",
+    "run_target",
 ]

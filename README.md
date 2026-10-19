@@ -144,6 +144,43 @@ pyreverseetl execute ltv_to_hook --compliance-rules \
   '[{"id":"mask_email","rule_type":"pii_masking","target_fields":["email"],"action":{"type":"mask","pattern":"****"}}]'
 ```
 
+## Singer target protocol
+
+Consume Singer NDJSON and forward RECORD batches to a sink:
+
+```bash
+cat singer-output.ndjson | pyreverseetl-singer-target --output records.jsonl
+```
+
+```python
+from pyreverseetl.singer import run_target, jsonl_sink
+run_target(lines, jsonl_sink("records.jsonl"))
+```
+
+Supported messages: SCHEMA, RECORD (batched) and STATE (flushes the batch).
+This is a protocol adapter; native Rust connectors remain the execution path.
+
+## Changelog
+
+### 3.3.1
+- Encrypted CLI state (Fernet/keyring) with legacy plaintext migration.
+- Key export/import for backup and recovery.
+- Singer SCHEMA/RECORD/STATE target adapter.
+
+## Encrypted local state
+
+Workflow/activation credentials are no longer stored as plaintext JSON. The CLI
+state file is encrypted with Fernet; the key lives in the OS keyring, or in
+`PYREVERSEETL_STATE_KEY` for headless CI:
+
+```bash
+export PYREVERSEETL_STATE_KEY="$(python -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())')"
+```
+
+Existing plaintext state is read and transparently re-encrypted on the next
+save. Losing the key means losing the local state file (re-enter credentials);
+the error is explicit rather than silently falling back to plaintext.
+
 ## Usage
 
 ### Python API

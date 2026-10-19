@@ -4,6 +4,7 @@ This file records what was shipped, what is blocked/failed, and what is rejected
 
 ## Shipped
 - File-based and live StatGuardian sample gates (3.3.0).
+- Fernet-encrypted local CLI state with keyring/env key and legacy migration; Singer target protocol adapter (3.3.1).
 
 ## Blocked / failed
 - Live Salesforce/HubSpot/Marketo verification (no accounts).

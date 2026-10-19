@@ -103,25 +103,20 @@ class CLIInterface:
         self._load_state()
 
     def _load_state(self):
-        try:
-            with open(self.state_path) as f:
-                data = json.load(f)
-            self.workflows = data.get("workflows", {})
-            self.activations = data.get("activations", {})
-            self.runs = data.get("runs", {})
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+        from .secure_state import load_state
+
+        data = load_state(self.state_path)
+        self.workflows = data.get("workflows", {})
+        self.activations = data.get("activations", {})
+        self.runs = data.get("runs", {})
 
     def _save_state(self):
-        directory = os.path.dirname(self.state_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        with open(self.state_path, "w") as f:
-            json.dump(
-                {"workflows": self.workflows, "activations": self.activations, "runs": self.runs},
-                f,
-                indent=2,
-            )
+        from .secure_state import save_state
+
+        save_state(
+            self.state_path,
+            {"workflows": self.workflows, "activations": self.activations, "runs": self.runs},
+        )
 
     def create_workflow(
         self,
