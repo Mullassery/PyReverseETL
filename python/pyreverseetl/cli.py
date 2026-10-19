@@ -634,6 +634,14 @@ def main():
                     sys.exit(1)
                 statguardian_limit = int(sys.argv[idx + 1])
 
+            output_path = None
+            if "--output" in sys.argv:
+                idx = sys.argv.index("--output")
+                if idx + 1 >= len(sys.argv):
+                    print(json.dumps({"error": "--output requires a file path"}))
+                    sys.exit(1)
+                output_path = sys.argv[idx + 1]
+
             result = cli.execute_activation(
                 activation_id,
                 limit,
@@ -646,6 +654,10 @@ def main():
                 statguardian_url,
                 statguardian_limit,
             )
+            if output_path:
+                with open(output_path, "w", encoding="utf-8") as handle:
+                    json.dump(result, handle, indent=2)
+                    handle.write("\n")
             print(json.dumps(result))
 
         elif command == "status":
@@ -741,7 +753,7 @@ COMMANDS:
             pyreverseetl create-activation ltv_to_hook ltv_sync webhook \\
                 --dest-config '{"url":"https://example.com/hook","auth":{"type":"bearer","token":"secret"}}'
 
-    execute <activation_id> [limit] [--compliance-rules <json|@file>] [--dry-run] [--schema-store <path>] [--idempotency-store <path>] [--dlq-store <path>]
+    execute <activation_id> [limit] [--compliance-rules <json|@file>] [--dry-run] [--schema-store <path>] [--idempotency-store <path>] [--dlq-store <path>] [--output <path>]
         Execute a REAL data synchronization through the Rust engine
         - activation_id: Activation to execute (required)
         - limit: Max rows to read from the source (optional)

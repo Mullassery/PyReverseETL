@@ -1,5 +1,6 @@
 """Test Python bindings for PyReverseETL Rust core."""
 
+import json
 import sys
 
 import pytest
@@ -131,3 +132,19 @@ def test_cli_execute_parses_dry_run_and_store_path_flags(monkeypatch, tmp_path):
     assert captured["schema_store_path"] == str(tmp_path / "schema.db")
     assert captured["idempotency_store_path"] == str(tmp_path / "idempotency.db")
     assert captured["dlq_store_path"] is None
+
+
+def test_cli_execute_writes_dry_run_report(monkeypatch, tmp_path):
+    """--output writes the structured dry-run result to disk for CI review."""
+    from pyreverseetl.cli import CLIInterface, main
+
+    expected = {"dry_run": True, "dry_run_preview": [{"id": 1}]}
+    monkeypatch.setattr(CLIInterface, "execute_activation", lambda *a, **k: expected)
+    output = tmp_path / "dry-run.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["pyreverseetl", "execute", "act", "--dry-run", "--output", str(output)],
+    )
+    main()
+    assert json.loads(output.read_text()) == expected
