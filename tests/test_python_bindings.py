@@ -83,13 +83,28 @@ def test_cli_execute_parses_dry_run_and_store_path_flags(monkeypatch, tmp_path):
 
     captured = {}
 
-    def fake_execute_activation(self, activation_id, limit, compliance_rules, dry_run, schema_store_path, idempotency_store_path, dlq_store_path=None):
+    def fake_execute_activation(
+        self,
+        activation_id,
+        limit,
+        compliance_rules,
+        dry_run,
+        schema_store_path,
+        idempotency_store_path,
+        dlq_store_path=None,
+        validation_report_path=None,
+        statguardian_url=None,
+        statguardian_limit=100,
+    ):
         captured["activation_id"] = activation_id
         captured["limit"] = limit
         captured["dry_run"] = dry_run
         captured["schema_store_path"] = schema_store_path
         captured["idempotency_store_path"] = idempotency_store_path
         captured["dlq_store_path"] = dlq_store_path
+        captured["validation_report_path"] = validation_report_path
+        captured["statguardian_url"] = statguardian_url
+        captured["statguardian_limit"] = statguardian_limit
         return {"status": "success", "run_id": "fake"}
 
     monkeypatch.setattr(CLIInterface, "execute_activation", fake_execute_activation)

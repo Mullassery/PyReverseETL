@@ -50,8 +50,11 @@ offered as an option and not silently faked.
 - **Not a Spark/PySpark transform engine.** The transformer is present from earlier work
   but not wired into `execute`/`run_sync`; several such modules return fixed, non-real
   numbers if called directly (documented inline, e.g. `SparkTransformer::submit`).
-- **Not a StatGuardian quality-gate integration.** Present in the codebase but not wired
-  into the real sync path; treat it as experimental.
+- **StatGuardian gates are CLI-level, not core-level.** `execute-activation`
+  supports a live `--statguardian-url` sample gate and a file-based
+  `--validation-report` gate. The Rust `run_sync` core itself does not call
+  StatGuardian. A real cross-repo test lives in
+  `tests/test_statguardian_live.py` (skipped when StatGuardian is not installed).
 - **Not verified against live CRM accounts.** The Salesforce/HubSpot/Marketo adapters are
   real REST clients, but they were verified against local mock HTTP servers that assert
   the exact request shape (no live account was available). Please report request-shape
@@ -71,7 +74,8 @@ offered as an option and not silently faked.
 | CRM (`core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Verified against a mock server. |
 | Marketing automation (`core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, delete, describe). Verified against a mock server. |
 | Other cloud object storage backends | source + destination | **Not implemented.** Returns an explicit error instead of a fake success. |
-| Kafka, HDFS, Spark/PySpark transforms, CLI dashboard, StatGuardian gates | — | Present from earlier work, out of scope for this pass, not wired into `execute`/`run_sync`. Treat as experimental. |
+| StatGuardian gate | pre-sync gate | Wired in the CLI `execute-activation` path (`--statguardian-url` live `/validate`, or `--validation-report`); not in the Rust `run_sync` core. |
+| Kafka, HDFS, Spark/PySpark transforms, CLI dashboard | — | Present from earlier work, out of scope for this pass, not wired into `execute`/`run_sync`. Treat as experimental. |
 
 If you need a connector marked "not implemented" above, that's an honest gap, not a
 documentation oversight — open an issue rather than assuming it works. The exact
