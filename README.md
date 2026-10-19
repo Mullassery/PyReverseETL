@@ -250,6 +250,18 @@ gate, not a full-table scan.
 - [COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md) — compliance posture.
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability.
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- Live Salesforce/HubSpot/Marketo verification (no accounts).
+- Scheduler/run-history observability.
+- CDC/streaming.
+
+**Rejected / deferred:**
+- Spark transforms and streaming CDC now — outside the proven sync path.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
