@@ -250,6 +250,11 @@ gate, not a full-table scan.
 - [COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md) — compliance posture.
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability.
 
+## Queue status
+
+Shipped, blocked/failed, and rejected work for this repository is documented in
+[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and
