@@ -24,6 +24,10 @@ offered as an option and not silently faked.
 - **Real HTTP destinations.** Webhook destination with real auth (Bearer / API key /
   Basic) and JSON payload construction; CRM/marketing-automation REST adapters for
   Salesforce, HubSpot, and Marketo.
+- **Connector plugin SDK (Python path).** A documented `pyreverseetl.connectors`
+  entry-point group plus a real local SQLite source/destination
+  (`run_with_connector`). Third-party plugins are Python-level; the Rust
+  `run_sync` engine still owns the built-in Postgres/MySQL/S3/webhook/CRM path.
 - **Compliance/PII handling before data leaves the process.** Mask, remove, or truncate
   fields per-record; `Encrypt` is honestly reported as unresolved rather than faked.
 - **Lineage tracking.** Every sync registers real source/destination nodes and appends a
@@ -50,6 +54,11 @@ offered as an option and not silently faked.
 - **Not a Spark/PySpark transform engine.** The transformer is present from earlier work
   but not wired into `execute`/`run_sync`; several such modules return fixed, non-real
   numbers if called directly (documented inline, e.g. `SparkTransformer::submit`).
+- **Python connector plugins are not loaded by the Rust core.** `run_sync` accepts
+  only its fixed built-in connector set. Plugins registered under
+  `pyreverseetl.connectors` run through the Python-level `run_with_connector`
+  path, which does not write the Rust lineage graph. See
+  [Connector plugins](#connector-plugins-python-path).
 - **StatGuardian gates are CLI-level, not core-level.** `execute-activation`
   supports a live `--statguardian-url` sample gate and a file-based
   `--validation-report` gate. The Rust `run_sync` core itself does not call
@@ -70,6 +79,7 @@ offered as an option and not silently faked.
 | MySQL | source + destination | Real, via `sqlx`. Same capabilities as Postgres. Verified with a real MySQL container. |
 | S3 / S3-compatible object storage (MinIO, etc.) | source + destination | Real, via [`aws-sdk-s3`](https://github.com/awslabs/aws-sdk-rust), with a custom-endpoint / path-style option for MinIO. JSON-lines and CSV implemented; Parquet/Avro/ORC/Iceberg/Delta return an explicit "not implemented" error rather than silently no-op'ing. Verified with a real MinIO container. |
 | Webhook | destination | Real HTTP POST/PATCH/DELETE via `reqwest`, with real auth headers (Bearer/API key/Basic) and JSON payload construction. |
+| SQLite (`python/pyreverseetl/connectors.py`) | source + destination | Real local reads/writes via stdlib `sqlite3`, exposed through the Python connector-plugin path (`run_with_connector`), **not** the Rust `run_sync` engine. |
 | CRM (`core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe. Verified against a local mock HTTP server. |
 | CRM (`core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Verified against a mock server. |
 | Marketing automation (`core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, delete, describe). Verified against a mock server. |
@@ -84,7 +94,7 @@ repeated here to avoid implying vendor endorsement.
 
 ## Project status
 
-**Beta.** Version 3.1.6. The Postgres/MySQL/S3/webhook paths are real and verified against
+**Beta.** Version 3.4.0. The Postgres/MySQL/S3/webhook paths are real and verified against
 real services; the `web` source connector (MudFish-backed site crawling) is implemented
 and unit-tested but not yet exercised end-to-end against a live site; the CRM/marketing
 adapters are real but mock-verified only; several
@@ -164,7 +174,71 @@ run_target(lines, jsonl_sink("records.jsonl"))
 Supported messages: SCHEMA, RECORD (batched) and STATE (flushes the batch).
 This is a protocol adapter; native Rust connectors remain the execution path.
 
+## Connector plugins (Python path)
+
+The Rust engine's connector set is fixed, so third-party connectors use a
+separate Python-level interface. A plugin subclasses `BaseConnector` and
+implements `read(config, limit)` and `write(config, rows)`:
+
+```python
+from pyreverseetl.connectors import (
+    BaseConnector, get_connector, register_connector, run_with_connector,
+)
+
+class MyConnector(BaseConnector):
+    name = "my_connector"
+
+    def read(self, config, limit=None):
+        return [{"id": 1, "name": "Alice"}]  # real I/O here
+
+    def write(self, config, rows):
+        return len(rows)  # real I/O here; raise instead of faking a count
+
+register_connector("my_connector", MyConnector)
+result = run_with_connector(
+    "sqlite",
+    {"path": "source.db", "table": "customers"},
+    "sqlite",
+    {"path": "destination.db", "table": "customers"},
+    compliance_rules=[
+        {
+            "id": "mask_email",
+            "rule_type": "pii_masking",
+            "target_fields": ["email"],
+            "action": {"type": "mask", "pattern": "****"},
+        }
+    ],
+)
+print(result.rows_read, result.rows_written, result.compliance_violations)
+```
+
+`run_with_connector` applies the same mask/remove/truncate actions as the core
+compliance engine; `encrypt` is reported as an unresolved violation, never
+faked. Set `dry_run=True` to read and apply compliance rules without calling
+the destination's `write`.
+
+Package a plugin by declaring an entry point (no core changes needed):
+
+```toml
+[project.entry-points."pyreverseetl.connectors"]
+my_connector = "my_package.connectors:MyConnector"
+```
+
+The bundled `sqlite` connector is a real source/destination backed by stdlib
+`sqlite3` (append, replace, and upsert with `upsert_key`). It is tested against
+temporary databases. Kafka, HDFS, Spark/PySpark transforms, and the CLI
+dashboard remain experimental/unwired; no Python plugin path changes that.
+
 ## Changelog
+
+### 3.4.0
+- `pyreverseetl.connectors` plugin interface with the `pyreverseetl.connectors`
+  entry-point group.
+- Real local SQLite source/destination connector (stdlib `sqlite3`) wired into
+  the Python-level `run_with_connector` path, including compliance actions and
+  dry-run previews.
+- Tests use temporary SQLite databases for real reads/writes; the Rust
+  `run_sync` path is unchanged.
 
 ### 3.3.1
 - Encrypted CLI state (Fernet/keyring) with legacy plaintext migration.

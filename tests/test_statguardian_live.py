@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+
 def _statguardian_binary() -> str | None:
     """Find the CLI even when the venv was not activated onto PATH."""
     found = shutil.which("statguardian")

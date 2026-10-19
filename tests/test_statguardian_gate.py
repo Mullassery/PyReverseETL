@@ -35,7 +35,7 @@ def _serve(passed: bool):
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    return server, "http://127.0.0.1:%d" % server.server_address[1]
+    return server, f"http://127.0.0.1:{server.server_address[1]}"
 
 
 def test_passing_rows_allow_activation():

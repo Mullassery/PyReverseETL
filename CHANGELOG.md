@@ -12,6 +12,19 @@ tags were applied inconsistently). Rather than fabricate a clean history
 that didn't happen, gaps are left as gaps. For full detail, use
 `git log --oneline`.
 
+## [3.4.0] - 2026-10-20
+
+### Added
+- Python connector plugin interface: subclass
+  `pyreverseetl.connectors.BaseConnector`, register programmatically or via the
+  `pyreverseetl.connectors` entry-point group, and run through
+  `run_with_connector`.
+- Real local SQLite source/destination connector (stdlib `sqlite3`) with
+  append/replace/upsert writes and mask/remove/truncate compliance actions.
+  This is a Python-level path; the Rust `run_sync` engine still owns the
+  built-in Postgres/MySQL/S3/webhook/CRM connectors and its lineage store.
+- Tests exercise real reads/writes against temporary SQLite databases.
+
 ## [3.3.0] - 2026-10-19
 
 ### Added
