@@ -97,7 +97,7 @@ repeated here to avoid implying vendor endorsement.
 
 ## Project status
 
-**Beta.** Version 3.4.0. The Postgres/MySQL/S3/webhook paths are real and verified against
+**Beta.** Version 3.5.0. The Postgres/MySQL/S3/webhook paths are real and verified against
 real services; the `web` source connector (MudFish-backed site crawling) is implemented
 and unit-tested but not yet exercised end-to-end against a live site; the CRM/marketing
 adapters are real but mock-verified only; several
@@ -270,6 +270,12 @@ reachable local server. Kafka, HDFS, Spark/PySpark transforms, and the CLI
 dashboard remain experimental/unwired; no Python plugin path changes that.
 
 ## Changelog
+
+### 3.5.0
+- Optional `DuckDBConnector` (real local reads/writes) and
+  `PostgresConnector` (local server via `psycopg`) for the Python connector
+  plugin path, registered in the built-in registry and exported from
+  `pyreverseetl`.
 
 ### 3.4.0
 - `pyreverseetl.connectors` plugin interface with the `pyreverseetl.connectors`

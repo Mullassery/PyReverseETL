@@ -14,6 +14,8 @@ that didn't happen, gaps are left as gaps. For full detail, use
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-20
+
 ### Added
 - Optional `DuckDBConnector` for the Python connector-plugin path: real local
   reads/writes with append/replace/upsert. Install with
