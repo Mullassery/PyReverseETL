@@ -97,7 +97,7 @@ repeated here to avoid implying vendor endorsement.
 
 ## Project status
 
-**Beta.** Version 3.5.0. The Postgres/MySQL/S3/webhook paths are real and verified against
+**Beta.** Version 3.5.2. The Postgres/MySQL/S3/webhook paths are real and verified against
 real services; the `web` source connector (MudFish-backed site crawling) is implemented
 and unit-tested but not yet exercised end-to-end against a live site; the CRM/marketing
 adapters are real but mock-verified only; several
