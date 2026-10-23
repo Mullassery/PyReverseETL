@@ -23,7 +23,7 @@ offered as an option and not silently faked.
   (MinIO) as source and destination; generic-schema read/write, incremental reads, upsert.
 - **Real HTTP destinations.** Webhook destination with real auth (Bearer / API key /
   Basic) and JSON payload construction; CRM/marketing-automation REST adapters for
-  Salesforce, HubSpot, and Marketo.
+  Salesforce, HubSpot, Marketo, and Squid-CRM.
 - **Connector plugin SDK (Python path).** A documented `pyreverseetl.connectors`
   entry-point group plus real local SQLite and optional DuckDB source/destination
   connectors, and an optional Postgres `psycopg` skeleton (`run_with_connector`).
@@ -65,10 +65,11 @@ offered as an option and not silently faked.
   `--validation-report` gate. The Rust `run_sync` core itself does not call
   StatGuardian. A real cross-repo test lives in
   `tests/test_statguardian_live.py` (skipped when StatGuardian is not installed).
-- **Not verified against live CRM accounts.** The Salesforce/HubSpot/Marketo adapters are
-  real REST clients, but they were verified against local mock HTTP servers that assert
-  the exact request shape (no live account was available). Please report request-shape
-  mismatches against a real account as issues.
+- **Not verified against live CRM accounts.** The Salesforce/HubSpot/Marketo/Squid
+  adapters are real REST clients, but they were verified against local mock HTTP servers
+  that assert the exact request shape (no live account was available). Please report
+  request-shape mismatches against a real account as issues. The Squid standard-object
+  path is create-only; it does not update an existing person/company record.
 - **Not encryption.** `Encrypt` compliance actions are reported as unresolved rather than
   silently claimed to succeed.
 
@@ -86,6 +87,7 @@ offered as an option and not silently faked.
 | CRM (`core/src/adapters/salesforce.rs`) | destination | Real REST API client: OAuth2 token exchange, object-based create/upsert-by-external-ID/delete/describe. Verified against a local mock HTTP server. |
 | CRM (`core/src/adapters/hubspot.rs`) | destination | Real v3-style REST API client (create, upsert-by-ID-property, delete, properties/schema). Verified against a mock server. |
 | Marketing automation (`core/src/adapters/marketo.rs`) | destination | Real REST API client (identity token endpoint, bulk lead create/update, delete, describe). Verified against a mock server. |
+| CRM (`core/src/adapters/squid.rs`) | destination | Real Squid-CRM REST create for people/companies with a stable per-record `Idempotency-Key` and `X-Correlation-Id`; response replay, body-hash conflict handling, Bearer auth, and allowlisted payloads. Verified against a mock server. Standard-object creates do not update existing records. |
 | Other cloud object storage backends | source + destination | **Not implemented.** Returns an explicit error instead of a fake success. |
 | StatGuardian gate | pre-sync gate | Wired in the CLI `execute-activation` path (`--statguardian-url` live `/validate`, or `--validation-report`); not in the Rust `run_sync` core. |
 | Kafka, HDFS, Spark/PySpark transforms, CLI dashboard | — | Present from earlier work, out of scope for this pass, not wired into `execute`/`run_sync`. Treat as experimental. |
@@ -334,11 +336,46 @@ print(pyreverseetl.lineage_json())
 print(pyreverseetl.lineage_dot())  # Graphviz DOT export
 ```
 
+### Squid-CRM activation
+
+The `squid` destination posts a real create to `/rest/people` or
+`/rest/companies` with a stable per-record `Idempotency-Key`. Reusing the
+same source record and payload after a transient failure replays Squid's
+stored response instead of creating a duplicate; reusing the key with a
+different body returns a non-retried conflict.
+
+```python
+import json
+import pyreverseetl
+
+result = pyreverseetl.run_sync(
+    source_type="postgres",
+    source_config=json.dumps({
+        "host": "localhost", "port": 5432, "database": "warehouse",
+        "username": "postgres", "password": "postgres", "table": "customers",
+    }),
+    destination_type="squid",
+    destination_config=json.dumps({
+        "base_url": "http://localhost:3000",
+        "object": "people",
+        "idempotency_key_prefix": "warehouse-people",
+        "auth": {"type": "bearer", "token": "squid-api-key"},
+    }),
+)
+print(result.rows_written, result.rows_failed)
+```
+
+The field allowlist is intentionally small: people forward `first_name`,
+`last_name`, `email`, `phone`, `job_title`, and `company_id`; companies
+forward `name` and `domain`. Other source columns are not sent. Standard
+Squid object creates are create-only, so a changed source record needs an
+explicit update workflow rather than being silently re-created.
+
 ### Reliability features
 
-- **Retry with backoff**: every HubSpot/Salesforce/Marketo/webhook HTTP call (upsert,
-  delete, schema fetch, OAuth token exchange) retries transient failures (connection
-  errors, timeouts, 429 rate limits) with exponential backoff.
+- **Retry with backoff**: every HubSpot/Salesforce/Marketo/Squid/webhook HTTP call
+  retries transient failures (connection errors, timeouts, 429 rate limits) with
+  exponential backoff. Squid retries reuse the same `Idempotency-Key`.
 - **Dry run** (`--dry-run` / `dry_run=True`): reads from the real source and runs the real
   compliance engine, but never writes to the destination. `dry_run_preview` shows the exact
   payload each record would have sent.
@@ -414,7 +451,7 @@ gate, not a full-table scan.
 ## Known issues and deferred work
 
 **Blocked / failed:**
-- Live Salesforce/HubSpot/Marketo verification (no accounts).
+- Live Salesforce/HubSpot/Marketo/Squid verification (no accounts).
 - Scheduler/run-history observability.
 - CDC/streaming.
 

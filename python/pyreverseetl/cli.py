@@ -175,12 +175,12 @@ class CLIInterface:
             workflow_id: Workflow to activate
             destination: Destination connector type. One of the real,
                 engine-backed connectors ("postgres", "mysql", "s3",
-                "webhook", "salesforce", "hubspot", "marketo") if this
+                "webhook", "salesforce", "hubspot", "marketo", "squid") if this
                 activation will ever be executed.
             sync_mode: 'batch', 'incremental', or 'streaming'
             destination_config: Real connection details for the destination
                 connector, including an "auth" object for webhook/salesforce/
-                hubspot/marketo (see README for the shape per connector).
+                hubspot/marketo/squid (see README for the shape per connector).
                 Required for `execute` to actually run.
 
         Returns:
@@ -257,7 +257,7 @@ class CLIInterface:
                 crash mid-batch) skips records already synced instead of
                 re-sending them, while a record whose content genuinely
                 changed is still sent. Only applies to the adapter-based
-                destinations (webhook/salesforce/hubspot/marketo). Omit to
+                destinations (webhook/salesforce/hubspot/marketo/squid). Omit to
                 disable idempotency checking entirely (default).
             validation_report_path: Optional path to a JSON validation report
                 (``{"passed": bool, ...}``). If supplied and not passing, the
@@ -744,10 +744,10 @@ COMMANDS:
         - activation_id: Unique identifier (required)
         - workflow_id: Workflow to activate (required)
         - destination: Target connector: postgres, mysql, s3, webhook,
-          salesforce, hubspot, or marketo to actually run (required)
+          salesforce, hubspot, marketo, or squid to actually run (required)
         - sync_mode: 'batch', 'incremental', or 'streaming' (default: incremental)
         - --dest-config: JSON connection details, including "auth" for
-          webhook/salesforce/hubspot/marketo
+          webhook/salesforce/hubspot/marketo/squid
 
         Example:
             pyreverseetl create-activation ltv_to_hook ltv_sync webhook \\
@@ -773,13 +773,13 @@ COMMANDS:
           <path>. Re-running the same sync (e.g. after a crash mid-batch)
           skips records already synced (rows_skipped_idempotent) instead of
           re-sending them, while a record whose content genuinely changed
-          is still sent. Only applies to webhook/salesforce/hubspot/marketo
+          is still sent. Only applies to webhook/salesforce/hubspot/marketo/squid
           destinations.
         - --dlq-store <path>: Persist every record the destination rejects to
           a real SQLite dead-letter queue at <path>, with the run id, reason,
           and exact payload (rows_dead_lettered), so a partial batch failure
           can be inspected and re-driven deliberately instead of re-running
-          the whole sync. Only applies to webhook/salesforce/hubspot/marketo
+          the whole sync. Only applies to webhook/salesforce/hubspot/marketo/squid
           destinations.
 
         Example:

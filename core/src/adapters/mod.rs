@@ -12,11 +12,13 @@ pub mod oauth_manager;
 pub mod retry_policy;
 pub mod salesforce;
 pub mod schema_detect;
+pub mod squid;
 pub mod webhook;
 
 pub use error::AdapterError;
 pub use http_client::HttpClient;
 pub use retry_policy::RetryPolicy;
+pub use squid::SquidAdapter;
 
 /// Field transformation operations
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -176,6 +178,10 @@ impl AdapterFactory {
             }
             "marketo" => {
                 let adapter = marketo::MarketoAdapter::new(config, auth.clone())?;
+                Ok(Box::new(adapter))
+            }
+            "squid" => {
+                let adapter = squid::SquidAdapter::new(config, auth.clone())?;
                 Ok(Box::new(adapter))
             }
             _ => Err(AdapterError::UnsupportedDestination(

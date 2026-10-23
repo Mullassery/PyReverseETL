@@ -14,6 +14,15 @@ that didn't happen, gaps are left as gaps. For full detail, use
 
 ## [Unreleased]
 
+### Added
+- Squid-CRM destination adapter (`core/src/adapters/squid.rs`) for people and
+  companies: native Squid create payloads, a stable per-record
+  `Idempotency-Key`, `X-Correlation-Id`, Bearer/API-key auth, retry with
+  backoff, and explicit field allowlists. Wired through
+  `DestinationSpec::Squid` and Python `destination_type="squid"`.
+  Standard-object creates are create-only; the adapter does not update an
+  existing Squid record.
+
 ## [3.5.0] - 2026-10-20
 
 ### Added

@@ -61,6 +61,10 @@ pub enum DestinationSpec {
         config: HashMap<String, serde_json::Value>,
         auth: AdapterAuth,
     },
+    Squid {
+        config: HashMap<String, serde_json::Value>,
+        auth: AdapterAuth,
+    },
 }
 
 #[derive(Debug, Clone, Default)]
@@ -334,6 +338,17 @@ fn destination_schema_key(destination: &DestinationSpec) -> String {
                 .get("api_host")
                 .and_then(|v| v.as_str())
                 .unwrap_or("unknown")
+        ),
+        DestinationSpec::Squid { config, .. } => format!(
+            "squid:{}:{}",
+            config
+                .get("base_url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown"),
+            config
+                .get("object")
+                .and_then(|v| v.as_str())
+                .unwrap_or("people")
         ),
     }
 }
@@ -620,6 +635,34 @@ async fn write_to_destination(
                 LineageNodeKind::Destination,
                 "marketo",
                 "leads".to_string(),
+            );
+            Ok((written, failed.len() as u64, skipped, failed, node))
+        }
+        DestinationSpec::Squid { config, auth } => {
+            let (written, skipped, failed) = write_via_adapter(
+                "squid",
+                config.clone(),
+                auth.clone(),
+                records.to_vec(),
+                idempotency_store_path.map(Path::to_path_buf),
+                destination_schema_key(destination),
+            )
+            .await?;
+            let object = config
+                .get("object")
+                .and_then(|v| v.as_str())
+                .unwrap_or("people");
+            let node = LineageNode::new(
+                format!(
+                    "squid:{}:{object}",
+                    config
+                        .get("base_url")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown")
+                ),
+                LineageNodeKind::Destination,
+                "squid",
+                object.to_string(),
             );
             Ok((written, failed.len() as u64, skipped, failed, node))
         }
@@ -1390,6 +1433,57 @@ mod tests {
             letters.iter().all(|l| !l.payload.is_empty()),
             "each quarantined record carries its payload for replay"
         );
+    }
+
+    #[tokio::test]
+    async fn squid_destination_uses_native_payload_and_stable_idempotency_key() {
+        let server = MockHttpServer::start(201, r#"{"data":{"createPerson":{"id":"squid-1"}}}"#);
+        let mut config = HashMap::new();
+        config.insert("base_url".to_string(), json!(server.base_url.clone()));
+        config.insert("object".to_string(), json!("people"));
+        let destination = DestinationSpec::Squid {
+            config,
+            auth: AdapterAuth::Bearer {
+                token: "squid-token".to_string(),
+            },
+        };
+        let records = vec![ConnRecord {
+            id: "warehouse-row-7".to_string(),
+            data: json!({
+                "first_name": "Ada",
+                "last_name": "Lovelace",
+                "email": "ada@example.com",
+                "unrelated_column": "must not leave the process"
+            }),
+            metadata: crate::connectors::RecordMetadata {
+                source: "test".to_string(),
+                source_timestamp: None,
+                received_at: chrono::Utc::now().to_rfc3339(),
+                operation: crate::connectors::RecordOperation::Insert,
+            },
+        }];
+
+        let (written, failed, skipped, failures, node) =
+            write_to_destination(&destination, &records, None)
+                .await
+                .unwrap();
+        assert_eq!(written, 1);
+        assert_eq!(failed, 0);
+        assert_eq!(skipped, 0);
+        assert!(failures.is_empty());
+        assert_eq!(node.kind, LineageNodeKind::Destination);
+        assert_eq!(node.connector, "squid");
+
+        let request = server.last_request().unwrap();
+        assert_eq!(request.path, "/rest/people");
+        assert_eq!(request.headers["authorization"], "Bearer squid-token");
+        assert_eq!(
+            request.headers["idempotency-key"],
+            "pyreverseetl:people:warehouse-row-7"
+        );
+        let body: serde_json::Value = serde_json::from_str(&request.body).unwrap();
+        assert_eq!(body["emails"]["primaryEmail"], "ada@example.com");
+        assert!(body.get("unrelated_column").is_none());
     }
 
     #[tokio::test]

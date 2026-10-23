@@ -78,6 +78,7 @@ impl PyDestination {
             "salesforce" => DestinationType::Salesforce,
             "hubspot" => DestinationType::HubSpot,
             "kafka" => DestinationType::Kafka,
+            "squid" => DestinationType::Squid,
             "webhook" => DestinationType::Webhook,
             _ => DestinationType::Webhook,
         };
@@ -403,8 +404,12 @@ fn build_destination_spec(destination_type: &str, config: &Value) -> PyResult<De
             config: json_object_to_map(config),
             auth: build_auth(config)?,
         }),
+        "squid" => Ok(DestinationSpec::Squid {
+            config: json_object_to_map(config),
+            auth: build_auth(config)?,
+        }),
         other => Err(py_err(format!(
-            "unsupported destination_type '{other}' (supported: postgres, mysql, s3, webhook, salesforce, hubspot, marketo)"
+            "unsupported destination_type '{other}' (supported: postgres, mysql, s3, webhook, salesforce, hubspot, marketo, squid)"
         ))),
     }
 }

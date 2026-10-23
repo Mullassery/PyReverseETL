@@ -26,6 +26,7 @@ pub enum DestinationType {
     Amplitude,
     PostHog,
     Kafka,
+    Squid,
     #[default]
     Webhook,
     Custom(String),
@@ -84,6 +85,7 @@ impl DestinationType {
             DestinationType::Amplitude => "amplitude",
             DestinationType::PostHog => "posthog",
             DestinationType::Kafka => "kafka",
+            DestinationType::Squid => "squid",
             DestinationType::Webhook => "webhook",
             DestinationType::Custom(name) => name,
         }
@@ -150,6 +152,7 @@ mod tests {
             DestinationType::HubSpot,
             DestinationType::Braze,
             DestinationType::Kafka,
+            DestinationType::Squid,
             DestinationType::Webhook,
         ];
 

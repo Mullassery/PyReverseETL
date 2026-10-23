@@ -47,7 +47,7 @@ class PyReverseETLServer:
         """Create an activation.
 
         `config` supports: workflow_id, destination (postgres/mysql/s3/
-        webhook/salesforce/hubspot/marketo to actually run), sync_mode,
+        webhook/salesforce/hubspot/marketo/squid to actually run), sync_mode,
         destination_config (real connector connection + auth details).
         """
         workflow_id = config.get("workflow_id")

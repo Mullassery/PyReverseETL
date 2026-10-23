@@ -10,45 +10,48 @@ Reference pin: `twentyhq/twenty@08a0e5f1ee2e7db7c1e6ef3aeec9bcef731f4e98`
 
 ## 1. The blocker
 
-**Status:** BLOCKED — No mutually verified activation payload or idempotency
-header contract between PyReverseETL and Squid-CRM.
+**Status:** RESOLVED IN WORKING TREE (mock-verified) — PyReverseETL now has a
+Squid-CRM destination adapter with a documented payload contract and stable
+`Idempotency-Key` headers. Live-account verification remains outstanding.
 
 Squid-CRM can accept idempotent REST creates via a workspace-scoped
 `Idempotency-Key` header with body-hash conflict detection and response replay.
-PyReverseETL cannot currently set that header, and its exact per-record payload
-contract for Squid destinations is not available locally. CRM adapters
-(Salesforce/HubSpot/Marketo) are mock-verified only, not live-account verified.
+The adapter now sets that header. CRM adapters (Salesforce/HubSpot/Marketo/Squid)
+are mock-verified only, not live-account verified.
 
 ## 2. The two sides
 
 | Aspect | Squid-CRM (destination) | PyReverseETL (source / activation) |
 |--------|------------------------|-----------------------------------|
 | Transport | REST `/rest/{object}` create; GraphQL `create<Object>`; custom-object REST `/rest/{object}` | Generic webhook destination; CRM adapters; Python connector plugins |
-| Idempotency | `Idempotency-Key` header (1–255 printable ASCII), body-hash conflict, response replay, expiry | Cannot currently set the header; posts one record at a time via generic webhook |
-| Payload shape | Squid REST create envelope (`data.create<Person>`, etc.) or custom-object `/rest/{object}` create | One record object at a time; no Squid per-object body contract |
-| Batch | Custom-object `/rest/{object}/upsert` (idempotent: id present → update, absent → create) | No bulk upsert or durable outbox for Squid deliveries |
+| Idempotency | `Idempotency-Key` header (1–255 printable ASCII), body-hash conflict, response replay, expiry | Squid adapter sends a stable per-record key (`<prefix>:<object>:<record-id>`); generic webhook still requires an idempotent endpoint |
+| Payload shape | REST request body is the object input; responses use `data.create<Person>` / `data.create<Company>` | Squid adapter maps an explicit allowlist to native person/company input; generic webhook remains raw JSON |
+| Batch | Custom-object `/rest/{object}/upsert` (idempotent: id present → update, absent → create) | Squid adapter is per-record; no bulk upsert/durable outbox yet |
 | Auth | API key or session cookie | Bearer / API key / Basic on webhook destination |
 | Retry | Bounded retries, `Retry-After`, durable `core.webhook_deliveries` log | Retry with backoff on transient HTTP failures; idempotency ledger for crash-mid-batch recovery |
 | PII | No field-level PII masking in webhook payloads | `Encrypt` compliance action reported as unresolved (not faked) |
 
-## 3. What must be agreed (PyReverseETL side)
+## 3. What was agreed and implemented (PyReverseETL side)
 
-1. **`Idempotency-Key` header support.** PyReverseETL must generate and send a
-   stable idempotency key per record, scoped to a Squid workspace, with
-   body-hash semantics matching Squid's contract. Without this, retries
-   duplicate CRM records.
-2. **Per-record payload contract.** The exact JSON field allowlist that maps to
-   Squid's REST create envelope (`data.create<Person>`, `data.create<Company>`,
-   etc.) or custom-object `/rest/{object}` create must be defined.
-3. **Batch vs single-record.** Squid supports custom-object batch upsert;
-   PyReverseETL posts one record at a time. Decide whether to buffer N records
-   then upsert, or stream single records — this affects throughput and idempotency
-   key stability.
-4. **Durable outbox.** PyReverseETL has an idempotency ledger for
-   crash-mid-batch recovery, but no durable outbox for failed Squid deliveries.
-   The retry/backoff contract must match Squid's bounded webhook retry semantics.
-5. **Encryption.** PyReverseETL's `Encrypt` compliance action is unresolved —
-   PII masking before egress to Squid is not guaranteed.
+1. **`Idempotency-Key` header support.** The Squid adapter generates
+   `<prefix>:<object>:<record-id>` and sends it on every create; retries reuse
+   the same key. `X-Correlation-Id` uses the same value.
+2. **Per-record payload contract.** People forward only `first_name`,
+   `last_name`, `email`, `phone`, `job_title`, and `company_id` in Squid's
+   native `{name, emails, ...}` shape. Companies forward `name` and `domain`
+   in the native `{name, domainName}` shape.
+3. **Batch vs single-record.** The adapter streams one record at a time and
+   explicitly does not claim a bulk upsert path. Custom-object bulk upsert is
+   a separate future contract.
+4. **Durable outbox.** The existing local idempotency ledger and DLQ remain
+   available, but there is still no durable outbox for failed Squid deliveries.
+   This is a disclosed follow-up, not part of the header/payload blocker.
+5. **Encryption.** PyReverseETL's `Encrypt` compliance action is still
+   unresolved — PII masking before egress to Squid is not claimed.
+
+Additional constraint: standard Squid object endpoints are create-only. The
+adapter is idempotent for retries, but it does not update an existing Squid
+person/company. A changed source record needs an explicit update workflow.
 
 ## 4. Evidence
 
@@ -67,14 +70,15 @@ contract for Squid destinations is not available locally. CRM adapters
 **Squid-CRM:**
 - Idempotent REST creates are integration-tested. Custom-object batch upsert
   (`/rest/{object}/upsert`) is integration-tested.
-- Python client `squid_crm` 0.2.1 on PyPI supports idempotency, correlation, and
+- Python client `squid_crm` 0.3.0 on PyPI supports idempotency, correlation, and
   retry headers (12 tests passing).
 
 ## 5. Owner of next move
 
-**PyReverseETL** must add `Idempotency-Key` header support and document its
-per-record payload shape for Squid destinations. Squid-CRM cannot unilaterally
-resolve this.
+**PyReverseETL:** implemented in `core/src/adapters/squid.rs`, wired through
+`DestinationSpec::Squid` and the Python `destination_type="squid"` path.
+**Squid-CRM:** no further change is required for the create path; live
+verification and an update contract remain follow-ups.
 
 ## 6. Related blockers
 
