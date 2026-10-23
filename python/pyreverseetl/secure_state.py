@@ -119,8 +119,17 @@ def import_key(path: str | Path) -> None:
 
         keyring.set_password(KEYRING_SERVICE, KEYRING_USER, key.decode("ascii"))
     except ImportError as exc:
+        if os.environ.get(ENV_KEY):
+            return
         raise SecureStateError(
             "keyring is not installed; set PYREVERSEETL_STATE_KEY to the imported key"
+        ) from exc
+    except Exception as exc:
+        if os.environ.get(ENV_KEY):
+            return
+        raise SecureStateError(
+            "could not store key in the OS keyring; set PYREVERSEETL_STATE_KEY "
+            "to the imported key"
         ) from exc
 
 
