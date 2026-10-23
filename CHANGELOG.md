@@ -23,6 +23,11 @@ that didn't happen, gaps are left as gaps. For full detail, use
   Standard-object creates are create-only; the adapter does not update an
   existing Squid record.
 
+## [3.5.3] - 2026-10-23
+
+### Fixed
+- Allowed environment-key state import when the OS keyring is unavailable.
+
 ## [3.5.0] - 2026-10-20
 
 ### Added
