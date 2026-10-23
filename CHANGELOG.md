@@ -27,6 +27,8 @@ that didn't happen, gaps are left as gaps. For full detail, use
 
 ### Fixed
 - Allowed environment-key state import when the OS keyring is unavailable.
+- Build macOS wheels against vendored OpenSSL so they do not depend on a
+  Homebrew OpenSSL installation.
 
 ## [3.5.0] - 2026-10-20
 

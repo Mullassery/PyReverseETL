@@ -30,7 +30,7 @@ backoff = { version = "0.4", features = ["tokio"] }
 # StatGuardian integration (HTTP API client)
 opentelemetry = "0.22"
 opentelemetry-http = "0.11"
-rdkafka = { version = "0.36", features = ["cmake-build", "ssl", "gssapi", "libz"] }
+rdkafka = { version = "0.36", features = ["cmake-build", "ssl-vendored", "gssapi", "libz"] }
 # Real database connectors (PostgreSQL / MySQL)
 # sqlx 0.8 is required to clear the RUSTSEC-2024-0363 advisory on 0.7.4 and to
 # drop the rustls 0.21.x transitive dependency (pulled via tokio-rustls 0.24).
