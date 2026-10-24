@@ -58,7 +58,9 @@ starts, and record the decision in the PR or changelog.
 
 ## OSS gap analysis — 2026-10-24
 
-**Scope:** PyReverseETL 3.5.3 (Apache-2.0): Rust sync engine plus Python, CLI, and optional Flask surfaces. Compared the implemented activation path — sources, destinations, incremental/upsert, retries, idempotency, schema drift, PII actions, lineage, scheduling, and packaging. Excluded experimental Kafka/HDFS/Spark paths and unreleased roadmap claims.
+**What matters most here:** warehouse sources and verified destinations. Starting only from Postgres/MySQL/S3 excludes warehouse teams, and four mock-tested adapters are thin; add Snowflake/BigQuery/Redshift/Databricks and sandbox contract tests.
+
+Scope: PyReverseETL 3.5.3 (Apache-2.0): Rust sync engine plus Python, CLI, and optional Flask surfaces. Compared the implemented activation path — sources, destinations, incremental/upsert, retries, idempotency, schema drift, PII actions, lineage, scheduling, and packaging. Excluded experimental Kafka/HDFS/Spark paths and unreleased roadmap claims.
 
 ### Comparable OSS projects
 
