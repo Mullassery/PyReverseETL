@@ -325,7 +325,7 @@ that didn't happen, gaps are left as gaps. For full detail, use
   verified to actually run green in CI (no network in the sandbox this was
   authored in to fetch the RustSec advisory database or PyPI index).
 - `CODE_OF_CONDUCT.md`, `.github/pull_request_template.md`,
-  `ROADMAP_HONEST.md` (this repo previously had `docs/ROADMAP.md` but not a
+  `docs/internal/ROADMAP_HONEST.md` (this repo previously had `docs/ROADMAP.md` but not a
   root-level honesty-first roadmap with an explicit technical-debt section).
 
 ### Changed

@@ -14,9 +14,9 @@
 - **[Full Development Guide](DEVELOPMENT.md)** — Complete dev & server deployment
 
 ### Technology Docs
-- **[Distributed Processing](docs/DISTRIBUTED_PROCESSING.md)** — PySpark (micro-batch) & PyFlink (streaming)
-- **[v2.1 Implementation Plan](docs/V2.1_IMPLEMENTATION_PLAN.md)** — 50 core connectors roadmap
-- **[Connector Ecosystem](docs/CONNECTOR_ECOSYSTEM.md)** — 280+ available connectors
+- **[Distributed Processing](DISTRIBUTED_PROCESSING.md)** — PySpark (micro-batch) & PyFlink (streaming)
+- **[v2.1 Implementation Plan](V2.1_IMPLEMENTATION_PLAN.md)** — 50 core connectors roadmap
+- **[Connector Ecosystem](CONNECTOR_ECOSYSTEM.md)** — 280+ available connectors
 
 ---
 
@@ -127,7 +127,7 @@ curl http://localhost:8080/health
   - Throughput: 100MB - 10 GB/min
   - Latency: 10-100ms
 
-See [Distributed Processing Guide](docs/DISTRIBUTED_PROCESSING.md) for details.
+See [Distributed Processing Guide](DISTRIBUTED_PROCESSING.md) for details.
 
 ---
 
@@ -261,10 +261,10 @@ curl http://localhost:8080/health  # Should show {"status":"ok"}
 ### 3. Start Development
 - See [QUICKSTART.md](QUICKSTART.md) for quick start
 - See [DEVELOPMENT.md](DEVELOPMENT.md) for full workflow
-- Read [v2.1 Implementation Plan](docs/V2.1_IMPLEMENTATION_PLAN.md)
+- Read [v2.1 Implementation Plan](V2.1_IMPLEMENTATION_PLAN.md)
 
 ### 4. Implement Connectors
-- Start with [Top 10 connectors](docs/V2.1_IMPLEMENTATION_PLAN.md#tier-1-core-top-10---priority-1)
+- Start with [Top 10 connectors](V2.1_IMPLEMENTATION_PLAN.md#tier-1-core-top-10---priority-1)
 - PostgreSQL template already documented
 - Follow test harness framework in `core/src/testing/`
 

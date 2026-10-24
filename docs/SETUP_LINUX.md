@@ -584,7 +584,7 @@ sudo sysctl -w net.ipv4.tcp_max_syn_backlog=65535
 1. **Complete Setup**: Follow steps above (20-40 minutes)
 2. **Run Tests**: `cargo test --all` (5-10 minutes)
 3. **Start Development**: See [QUICKSTART.md](QUICKSTART.md)
-4. **Deploy to Production**: Use [docker-compose.server.yml](docker-compose.server.yml)
+4. **Deploy to Production**: Use [docker-compose.server.yml](../docker-compose.server.yml)
 
 ---
 

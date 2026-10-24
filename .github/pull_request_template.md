@@ -17,7 +17,7 @@ overclaiming" standard - please keep your PR consistent with that:
 - [ ] If a feature is untested or only tested against a mock (no live
       account/service available), the PR description and any doc updates
       say so explicitly, rather than implying it's verified.
-- [ ] `README.md` / `docs/ROADMAP.md` / `ROADMAP_HONEST.md` are updated if
+- [ ] `README.md` / `docs/ROADMAP.md` / `../docs/internal/ROADMAP_HONEST.md` are updated if
       this changes what's real vs. not-yet-wired.
 
 ## Testing
@@ -26,6 +26,6 @@ overclaiming" standard - please keep your PR consistent with that:
 
 - [ ] `cargo test -p pyreverseetl-core --lib` passes
 - [ ] `cargo clippy -p pyreverseetl-core --lib` reviewed (existing warnings
-      are tracked in `ROADMAP_HONEST.md`; please don't add new ones)
+      are tracked in `../docs/internal/ROADMAP_HONEST.md`; please don't add new ones)
 - [ ] `pytest tests/` passes (or documents why a case is skipped, e.g. no
       Docker)

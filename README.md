@@ -6,7 +6,6 @@
 [![PyPI](https://img.shields.io/pypi/v/pyreverseetl)](https://pypi.org/project/pyreverseetl/)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
 [![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
 ## What it is
 
@@ -105,7 +104,7 @@ and unit-tested but not yet exercised end-to-end against a live site; the CRM/ma
 adapters are real but mock-verified only; several
 modules from earlier work remain unwired and are called out as such above. For a blunt,
 file-and-line-referenced list of what's tested vs. untested vs. broken vs. not built, see
-[`ROADMAP_HONEST.md`](ROADMAP_HONEST.md). Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
+[`docs/internal/ROADMAP_HONEST.md`](docs/internal/ROADMAP_HONEST.md). Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
 
@@ -441,7 +440,7 @@ gate, not a full-table scan.
 
 ## Documentation
 
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — what's tested vs. untested vs. broken vs. not
+- [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) — what's tested vs. untested vs. broken vs. not
   built, plus known technical debt.
 - [docs/ROADMAP.md](docs/ROADMAP.md) — narrative roadmap.
 - [CHANGELOG.md](CHANGELOG.md) — release history.
@@ -458,7 +457,7 @@ gate, not a full-table scan.
 **Rejected / deferred:**
 - Spark transforms and streaming CDC now — outside the proven sync path.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Contributing
 

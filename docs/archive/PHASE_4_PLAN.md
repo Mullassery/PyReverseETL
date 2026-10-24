@@ -405,8 +405,8 @@ pub mod intelligence {
 
 ## References
 
-- [Phase 3 Completion Summary](PHASE_3_COMPLETION_SUMMARY.md) — 12-layer architecture
-- [Architecture & Ecosystem Boundaries](ARCHITECTURE.md) — Mission & responsibilities
+- [Phase 3 Completion Summary](../PHASE_3_COMPLETION_SUMMARY.md) — 12-layer architecture
+- [Architecture & Ecosystem Boundaries](../ARCHITECTURE.md) — Mission & responsibilities
 - [Known Issues](KNOWN_ISSUES.md) — 49 semantic errors to fix
 - [Performance Targets](docs/performance.md) — Latency/throughput goals
 - [Three-Project Platform](../memory/three_project_integration_platform.md) — Ecosystem context

@@ -212,11 +212,11 @@ cargo test --lib transformers::           # Transformations
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
-Proprietary License. See [LICENSE](LICENSE) for details.
+Proprietary License. See [LICENSE](../LICENSE) for details.
 
 ---
 

@@ -15,6 +15,6 @@ status:
 
 For current, verified status see the main [`README.md`](../../README.md),
 [`../ROADMAP.md`](../ROADMAP.md), and
-[`../../ROADMAP_HONEST.md`](../../ROADMAP_HONEST.md).
+[`../../ROADMAP_HONEST.md`](../internal/ROADMAP_HONEST.md).
 [`../../COMPLIANCE_CHECKLIST.md`](../../COMPLIANCE_CHECKLIST.md) already
 carries its own correction notice and was left at the repo root.
