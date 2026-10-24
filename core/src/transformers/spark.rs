@@ -208,7 +208,10 @@ impl SparkTransformer {
     /// (1000 processed / 950 output) regardless of `self.config` -- do not
     /// treat its `SparkJobResult` as real job telemetry.
     pub async fn submit(&self) -> crate::Result<SparkJobResult> {
-        self.execute_local()
+        Err(crate::Error::Internal(
+            "Spark cluster submission is not implemented; no spark-submit/Spark cluster integration exists yet. Use build_spark_submit_command() to inspect the intended command, and execute_local() only for local simulation/tests."
+                .to_string(),
+        ))
     }
 
     /// Get Spark configuration
@@ -356,16 +359,10 @@ impl super::Transformer for SparkTransformer {
     }
 
     fn execute(&self) -> crate::Result<super::TransformationResult> {
-        let result = self.execute_local()?;
-
-        Ok(super::TransformationResult {
-            status: super::TransformationStatus::Completed,
-            records_processed: result.records_processed,
-            records_output: result.records_output,
-            error: result.error_message,
-            execution_time_ms: result.execution_time_ms,
-            output_topic: self.config.output_topic.clone(),
-        })
+        Err(crate::Error::Internal(
+            "Spark transformation is not wired into the sync path; no Spark cluster integration exists yet."
+                .to_string(),
+        ))
     }
 
     fn validate(&self) -> crate::Result<()> {
@@ -520,17 +517,22 @@ mod tests {
     }
 
     #[test]
-    fn test_spark_transformer_implement_trait() {
+    fn test_spark_transformer_trait_execute_is_an_explicit_error() {
         let config = SparkConfig {
             script: "transform.py".to_string(),
             ..Default::default()
         };
 
         let transformer = SparkTransformer::new(config);
-        let result = transformer.execute().unwrap();
+        let error = transformer.execute().unwrap_err();
+        assert!(error.to_string().contains("not wired into the sync path"));
+    }
 
-        assert_eq!(result.status, super::super::TransformationStatus::Completed);
-        assert_eq!(result.records_processed, 1000);
+    #[tokio::test]
+    async fn test_spark_submit_is_an_explicit_error() {
+        let transformer = SparkTransformer::new(SparkConfig::default());
+        let error = transformer.submit().await.unwrap_err();
+        assert!(error.to_string().contains("not implemented"));
     }
 
     #[test]

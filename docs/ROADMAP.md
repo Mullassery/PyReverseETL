@@ -75,10 +75,12 @@ what's actually shipped, using the same evidence README.md already cites.
   explicit "not implemented" error.
 - **Kafka/CDC streaming, HDFS, PySpark transforms, the CLI dashboard,
   StatGuardian quality-gate integration** — present in the codebase from
-  earlier work but not wired into `execute`/`run_sync`. Several return
-  fixed/fabricated numbers if called directly (e.g.
-  `SparkTransformer::submit`), documented inline in the affected modules.
-  Treat as experimental, not usable.
+  earlier work but not wired into `execute`/`run_sync`. `SparkTransformer`'s
+  public `submit()`/`Transformer::execute()` paths now return an explicit
+  "not implemented" error instead of fabricated success (2026-10-25);
+  `execute_local()` remains only as a documented local simulation for tests.
+  Other unwired modules still need the same audit and fate decision. Treat
+  them as experimental, not usable.
 - **CRM/marketing-automation adapters** are real API clients but only
   verified against mocked HTTP responses — no live Salesforce/HubSpot/
   Marketo account was available to confirm the real API matches the
