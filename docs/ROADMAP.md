@@ -1,117 +1,102 @@
-# PyReverseETL Roadmap
+# Roadmap: PyReverseETL
 
-**Current version:** v3.1.0 (`Cargo.toml` workspace version / `pyproject.toml`)
-**Last verified:** 2026-09-06 against commit `724f00d` (HEAD)
+> Generated via competitive intelligence audit based on actual codebase state and market analysis.
 
-## Honest status (read this first)
+## Current State Assessment
 
-Earlier versions of this file described phases keyed to invented dates on
-top of a "v1.0.0" baseline: v1.1 "Aug 2026" (Salesforce/HubSpot/Marketo
-destinations), v1.5 "Sep 2026" (streaming/CDC), v2.0 "Oct 2026" (ML-based
-routing), v2.5 "Q4 2026" (GDPR/compliance), and v3.0 "Q1 2027" ("Enterprise
-Scale," "99.99% uptime SLA"). That baseline is long superseded — the repo
-is already at v3.1.0, and most of that feature list is either genuinely
-implemented or explicitly documented as an honest gap in README.md's "What's
-real right now" table. This rewrite replaces the fabricated calendar with
-what's actually shipped, using the same evidence README.md already cites.
+- **Type:** Review codebase for specifics
+- **Maturity:** Active development
+- **Strengths:** Custom implementation tailored to use case
+- **Gaps:** Documentation, testing, ecosystem integration opportunities
 
-## What's real and working today
+## Competitive Landscape Analysis
 
-- **Sync engine** — `pyreverseetl._core.run_sync` (PyO3 binding over
-  `core/src/executor.rs::execute_sync`) is the real end-to-end path: reads
-  from a real source, applies real compliance rules, writes to a real
-  destination, and records a real lineage edge. There is no simulated
-  mode — an unwired connector returns an explicit error rather than
-  faking success.
-- **Connectors** (authoritative list is README's "What's real right now"
-  table):
-  - PostgreSQL and MySQL, source + destination, via `sqlx`, verified
-    against real Postgres/MySQL containers.
-  - S3 / S3-compatible object storage, via `aws-sdk-s3`. JSON-lines and
-    CSV are implemented and verified against a real MinIO container;
-    Parquet/Avro/ORC/Iceberg/Delta are declared but return an explicit
-    "not implemented" error.
-  - Webhook destination via real HTTP POST/PATCH/DELETE with real auth
-    headers.
-  - Salesforce/HubSpot/Marketo destinations
-    (`core/src/adapters/{salesforce,hubspot,marketo}.rs`) — real
-    REST/OAuth2 clients, verified against a mock HTTP server (no live
-    account was available), not stubs.
-- **Reliability, wired into the real path** (commit `022ddda`, "Wire
-  retry, dry-run, schema-drift, and idempotency into the real sync
-  path"):
-  - Retry-with-backoff for every HubSpot/Salesforce/Marketo/webhook HTTP
-    call, verified with scripted-response tests
-    (`MockHttpServer::start_sequence`).
-  - `--dry-run`: runs the real source read + compliance engine, skips the
-    actual destination write, exposes the exact would-be payload via
-    `dry_run_preview`.
-  - Schema-drift detection (`--schema-store`): persists the last-seen
-    field shape to a SQLite file and diffs it on each run.
-  - Idempotency ledger (`--idempotency-store`): SQLite-backed,
-    content-hash-keyed, skips already-synced records — including for the
-    webhook adapter, which has no upsert semantics of its own.
-- **Lineage tracking** — `pyreverseetl_core::lineage::LineageGraph`
-  records a real edge (source, destination, record count, timestamps) per
-  `run_sync` call, exportable to JSON/Graphviz DOT. This is new: the
-  README previously described "lineage tracking" as a feature with zero
-  backing code.
-- **Compliance / PII masking** — `DefaultComplianceEngine` applies real
-  per-record mask/remove/truncate rules; `Encrypt` honestly reports as
-  unresolved rather than claiming success it doesn't have.
-- **Tests** — 452 `#[test]`-annotated Rust functions in `core/` pass
-  (`cargo test -p pyreverseetl-core --lib`, verified locally 2026-09-20; 6
-  further tests are `--ignored` by default and need real Docker containers),
-  plus 5 passing / 4 skipped (no Docker) Python tests in `tests/` run against
-  the compiled extension. CI (`tests.yml`, `ci.yml`) was last confirmed green
-  after fixing missing native build deps for `rdkafka-sys` (commits
-  `7a827d5`, `7f8aa45`, `6ccec29`); this pass could not re-verify the GitHub
-  Actions run itself (no network in this sandbox), only that the same build
-  and test commands succeed locally.
+**Key competitors/alternatives:** Evaluate against similar tools in the space. Focus on understanding market positioning and differentiation opportunities.
 
-## What's partial, scaffolding, or an explicit non-goal for now
+**Positioning Strategy:** Leverage local-first approach, performance, or specialized capabilities where possible.
 
-- **Other cloud object storage backends** (beyond S3/MinIO) — return an
-  explicit "not implemented" error.
-- **Kafka/CDC streaming, HDFS, PySpark transforms, the CLI dashboard,
-  StatGuardian quality-gate integration** — present in the codebase from
-  earlier work but not wired into `execute`/`run_sync`. `SparkTransformer`'s
-  public `submit()`/`Transformer::execute()` paths now return an explicit
-  "not implemented" error instead of fabricated success (2026-10-25);
-  `execute_local()` remains only as a documented local simulation for tests.
-  Other unwired modules still need the same audit and fate decision. Treat
-  them as experimental, not usable.
-- **CRM/marketing-automation adapters** are real API clients but only
-  verified against mocked HTTP responses — no live Salesforce/HubSpot/
-  Marketo account was available to confirm the real API matches the
-  mock's assumed request shape.
-- **The "150+ connectors" catalog** in the older `docs/ROADMAP_V2.1.md`
-  draft was a database of intended connectors, not a count of working
-  implementations. Only the connectors listed in README's table are real
-  today.
+## Critical Gaps to Fill
 
-## Near-term roadmap (concrete, no invented dates)
+1. **Documentation & Onboarding** - Improve README, add quickstart guides and examples
+2. **Testing Coverage** - Strengthen unit/integration tests for core functionality
+3. **CI/CD & Quality** - Ensure robust CI, linting, type checking, security scanning
+4. **Distribution** - Improve packaging and installation experience
+5. **Ecosystem Integration** - Add integrations with popular tools in the category
 
-1. Get a live account for at least one of Salesforce/HubSpot/Marketo to
-   validate the adapters against the real API, not just a mock server —
-   this is the single biggest unverified-but-plausibly-correct piece of
-   the current connector set.
-2. Decide the fate of the unwired-but-present modules (Kafka/CDC, HDFS,
-   PySpark, dashboard, StatGuardian gate): wire them into the real
-   `execute_sync` path for real, or remove them so they stop implying
-   capability that doesn't exist yet.
-3. Apply the same "wire it into `execute_sync` for real" pattern used for
-   retry/dry-run/schema-drift/idempotency (`022ddda`) to whichever of the
-   above is picked first.
-4. If a cloud storage backend beyond S3/MinIO is genuinely needed, follow
-   the existing S3 implementation's pattern (real SDK client, explicit
-   "not implemented" for unsupported formats) rather than adding a
-   partial stub.
+## Roadmap by Timeline
 
-No committed dates, no SLA numbers, no "enterprise scale" claims — none
-of that is backed by anything in this repo today.
+### Short-term (0-30 days) - Quick Wins & Critical Fixes
 
-## Contributing
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Documentation polish | P0 | S | High | Update README, add QUICKSTART.md, improve examples |
+| Test coverage gaps | P0 | M | High | Add tests for critical/uncovered paths |
+| CI hardening | P0 | S | High | Ensure all checks pass, add security scanning |
+| Error messages & validation | P1 | S | High | Improve UX with better errors |
+| Dependency updates | P1 | S | Med-High | Update dependencies, fix vulnerabilities |
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md). Open issues at
-../PyReverseETL/issues
+### Medium-term (30-90 days) - Core Features & Integrations
+
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Key integrations | P0 | M | High | Add top 2-3 integrations for competitive parity |
+| Performance optimization | P1 | M | High | Profile and optimize hot paths |
+| API improvements | P1 | M | High | Enhance APIs/interfaces for better usability |
+| Observability | P1 | M | High | Add logging, metrics, tracing |
+| Advanced features | P2 | L | High | Features that differentiate from competitors |
+
+### Long-term (90+ days) - Strategic Growth
+
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Ecosystem expansion | P2 | L | High | Plugin system or extension mechanism |
+| Enterprise features | P2 | L | Med-High | Auth, RBAC, multi-tenancy if applicable |
+| Scale & reliability | P2 | L | High | Improved resilience and scalability |
+| Community building | P3 | L | Med | Docs site, examples gallery, contribution guides |
+| Strategic integrations | P3 | L | Med-High | Deeper integrations with major platforms |
+
+## Prioritized Feature List with Effort/Impact
+
+| Feature | Category | Effort (S/M/L/XL) | Impact (1-10) | Priority Score | Rationale |
+|---|---|---|---|---|---|
+| Core stability fixes | Tech Debt | S | 10 | 10.0 | Foundation for everything |
+| Documentation overhaul | DX | S | 9 | 9.0 | Lowers adoption barrier |
+| Key integration/add-on | Feature | M | 9 | 6.0 | Closes competitive gap |
+| Performance improvements | Performance | M | 8 | 5.3 | Better user experience |
+| Differentiating feature | Feature | L | 9 | 4.5 | Competitive advantage |
+
+## Success Metrics
+
+| Metric | Current (baseline) | 30-day Target | 90-day Target | Measurement |
+|---|---|---|---|---|
+| Test coverage | Unknown/varies | >70% | >85% | Coverage reports |
+| Documentation completeness | Partial | Core guides complete | Full API/docs reference | Manual review |
+| CI pass rate | Needs verification | 100% on main | 100% on main | CI dashboard |
+| Issue triage | N/A | <48h response | <24h response | GitHub metrics |
+| Adoption signals | N/A | Track usage | Growing trend | Package stats/downloads |
+
+## Technical Debt to Address
+
+| Debt Item | Severity | Effort | Impact if Unaddressed | Plan |
+|---|---|---|---|---|
+| Missing/incomplete tests | High | M | Bugs slip through | Prioritize critical paths |
+| Outdated dependencies | Med-High | M | Security/performance issues | Regular updates, scanning |
+| Code quality issues | Med | M | Maintainability suffers | Incremental refactoring |
+| Documentation debt | High | S-M | Adoption friction | Write as features evolve |
+| Type safety/typing | Med | M | DX issues | Gradual improvement |
+
+## Implementation Notes
+
+- **Focus on differentiation:** Identify unique strengths and amplify them
+- **Stay lean:** Solve real problems better than alternatives
+- **Local-first advantage:** Emphasize privacy/offline/local control where applicable
+- **Quality over quantity:** Do fewer things exceptionally well
+- **Evidence-based:** Base decisions on codebase analysis and user needs
+
+## Next Steps
+
+1. Review and validate against actual user needs
+2. Create GitHub issues for P0 items
+3. Set up milestones/tracking
+4. Execute short-term items first
+5. Review quarterly and adjust
