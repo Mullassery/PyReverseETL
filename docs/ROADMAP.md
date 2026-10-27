@@ -114,4 +114,4 @@ of that is backed by anything in this repo today.
 ## Contributing
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md). Open issues at
-https://github.com/Mullassery/PyReverseETL/issues
+../PyReverseETL/issues

@@ -260,8 +260,8 @@ Open source, MIT licensed, enterprise-ready.
 
 ## 📞 Support
 
-- Issues: https://github.com/Mullassery/PyReverseETL/issues
-- Discussions: https://github.com/Mullassery/PyReverseETL/discussions
+- Issues: ../PyReverseETL/issues
+- Discussions: ../PyReverseETL/discussions
 - Email: mullassery@gmail.com
 
 ---

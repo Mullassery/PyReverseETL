@@ -166,7 +166,7 @@ mkdir -p ~/projects
 cd ~/projects
 
 # Clone repository
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Verify git

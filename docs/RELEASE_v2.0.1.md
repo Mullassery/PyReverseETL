@@ -318,8 +318,8 @@ destination_polling:
 
 ## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/Mullassery/PyReverseETL/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/Mullassery/PyReverseETL/discussions)
+- **Issues:** [GitHub Issues](../PyReverseETL/issues)
+- **Discussions:** [GitHub Discussions](../PyReverseETL/discussions)
 - **Documentation:** [Docs folder](docs/)
 
 ---

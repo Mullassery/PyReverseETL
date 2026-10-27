@@ -14,7 +14,7 @@
 brew install rust rustup docker git python@3.11
 
 # Clone project
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Build (2-3 minutes on M1/M2/M3)
@@ -167,7 +167,7 @@ mkdir -p ~/projects
 cd ~/projects
 
 # Clone repository
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Build optimized for your Mac

@@ -1,7 +1,7 @@
 # Bundle role — MarTech customer-data loop
 
 This repository is part of the **MarTech customer-data loop** bundle. Portfolio-level rationale,
-reuse map, and phases are in [`Mullassery/BUNDLES.md`](https://github.com/Mullassery/Mullassery/blob/main/BUNDLES.md).
+reuse map, and phases are in [`Mullassery/BUNDLES.md`](../Mullassery/blob/main/BUNDLES.md).
 
 - **Role:** Activation, lineage, PII, idempotency
 - **Upstream/downstream:** MessageBirds (bulk sync), StatGuardian (quality gate)

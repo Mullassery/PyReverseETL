@@ -5,7 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/pyreverseetl)](https://pypi.org/project/pyreverseetl/)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org)
-[![CI](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyReverseETL/actions/workflows/ci.yml)
+[![CI](../PyReverseETL/actions/workflows/ci.yml/badge.svg)](../PyReverseETL/actions/workflows/ci.yml)
 
 ## What it is
 
@@ -496,14 +496,14 @@ PYREVERSEETL_TEST_MINIO_ENDPOINT=http://localhost:9000 \
 
 Other tools from the same family, for adjacent parts of the data platform:
 
-- [StatGuardian](https://github.com/Mullassery/StatGuardian) — fast, declarative data quality framework (Rust): schema validation, drift detection, anomaly detection.
-- [PyDBTGuard](https://github.com/Mullassery/PyDBTGuard) — analyzes a dbt project's `manifest.json` to flag risky tests, map blast radius, and estimate test cost from static metadata.
-- [PyAirflowTester](https://github.com/Mullassery/PyAirflowTester) — dependency intelligence and quality assurance for Airflow and dbt pipelines.
-- [PyBeamGuard](https://github.com/Mullassery/PyBeamGuard) — Apache Beam and Dataflow pipeline analysis for pre-deployment validation, cost forecasting, hot-key detection, and reliability.
-- [ClusterAudienceKit](https://github.com/Mullassery/ClusterAudienceKit) — Rust-powered customer segmentation: RFM, clustering, churn, CLV, and lookalike audiences.
-- [PyWeatherEnriched](https://github.com/Mullassery/PyWeatherEnriched) — real historical weather and geocoding enrichment for ML pipelines.
+- [StatGuardian](../StatGuardian) — fast, declarative data quality framework (Rust): schema validation, drift detection, anomaly detection.
+- [PyDBTGuard](../PyDBTGuard) — analyzes a dbt project's `manifest.json` to flag risky tests, map blast radius, and estimate test cost from static metadata.
+- [PyAirflowTester](../PyAirflowTester) — dependency intelligence and quality assurance for Airflow and dbt pipelines.
+- [PyBeamGuard](../PyBeamGuard) — Apache Beam and Dataflow pipeline analysis for pre-deployment validation, cost forecasting, hot-key detection, and reliability.
+- [ClusterAudienceKit](../ClusterAudienceKit) — Rust-powered customer segmentation: RFM, clustering, churn, CLV, and lookalike audiences.
+- [PyWeatherEnriched](../PyWeatherEnriched) — real historical weather and geocoding enrichment for ML pipelines.
 
-[Browse all projects →](https://github.com/Mullassery?tab=repositories)
+[Browse all projects →](../Mullassery-profile)
 
 ## License
 

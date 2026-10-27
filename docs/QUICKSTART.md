@@ -21,7 +21,7 @@ docker --version # 24.0+
 
 ### 2. Clone & Build
 ```bash
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Start test infrastructure
@@ -380,7 +380,7 @@ docker-compose -f docker-compose.server.yml up -d --scale pyreverseetl=1
 - **Implementation Plan**: [docs/V2.1_IMPLEMENTATION_PLAN.md](V2.1_IMPLEMENTATION_PLAN.md)
 - **Connector Docs**: [docs/connectors/](docs/connectors/)
 - **Architecture**: [docs/ADVANCED_ARCHITECTURE_PATTERNS.md](ADVANCED_ARCHITECTURE_PATTERNS.md)
-- **GitHub**: [github.com/Mullassery/PyReverseETL](https://github.com/Mullassery/PyReverseETL)
+- **GitHub**: [github.com/Mullassery/PyReverseETL](../PyReverseETL)
 
 ---
 

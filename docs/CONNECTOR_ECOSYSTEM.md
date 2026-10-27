@@ -407,8 +407,8 @@ pyreverseetl connectors info --connector=snowflake
 
 - **Built-in connectors** — See docs for each connector
 - **Custom connectors** — [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **Issues** — [GitHub Issues](https://github.com/Mullassery/PyReverseETL/issues)
-- **Discussions** — [GitHub Discussions](https://github.com/Mullassery/PyReverseETL/discussions)
+- **Issues** — [GitHub Issues](../PyReverseETL/issues)
+- **Discussions** — [GitHub Discussions](../PyReverseETL/discussions)
 
 ---
 

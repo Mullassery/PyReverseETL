@@ -18,7 +18,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 
 # Clone project
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Build
@@ -147,7 +147,7 @@ mkdir -p ~/projects
 cd ~/projects
 
 # Clone project
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 
 # Build (optimized)

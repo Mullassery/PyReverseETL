@@ -32,7 +32,7 @@ wsl
 sudo apt-get update
 sudo apt-get install -y build-essential curl git rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 cargo build --release
 ./target/release/pyreverseetl server --port 8080
@@ -45,7 +45,7 @@ sudo apt-get update
 sudo apt-get install -y build-essential pkg-config curl git libssl-dev python3-dev docker.io
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 cargo build --release
 docker-compose -f docker-compose.local.yml up -d
@@ -59,7 +59,7 @@ docker-compose -f docker-compose.local.yml up -d
 brew install rustup docker git python@3.11
 rustup-init
 source ~/.cargo/env
-git clone https://github.com/Mullassery/PyReverseETL.git
+git clone ../PyReverseETL
 cd PyReverseETL
 cargo build --release
 docker-compose -f docker-compose.local.yml up -d
@@ -278,9 +278,9 @@ curl http://localhost:8080/health  # Should show {"status":"ok"}
 ## Support & Resources
 
 ### Official Docs
-- GitHub: [github.com/Mullassery/PyReverseETL](https://github.com/Mullassery/PyReverseETL)
-- Issues: [Report bugs](https://github.com/Mullassery/PyReverseETL/issues)
-- Discussions: [Ask questions](https://github.com/Mullassery/PyReverseETL/discussions)
+- GitHub: [github.com/Mullassery/PyReverseETL](../PyReverseETL)
+- Issues: [Report bugs](../PyReverseETL/issues)
+- Discussions: [Ask questions](../PyReverseETL/discussions)
 
 ### External Resources
 - [Rust Book](https://doc.rust-lang.org/book/)
