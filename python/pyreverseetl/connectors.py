@@ -34,6 +34,8 @@ import json
 import re
 import sqlite3
 import time
+import urllib.error
+import urllib.request
 import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -838,6 +840,137 @@ def run_with_connector(
     )
 
 
+class WebhookConnector(BaseConnector):
+    """Real-HTTP webhook destination for the Python plugin path.
+
+    Delivers each record as one real HTTP request (stdlib ``urllib``; no extra
+    dependency). Retries transient failures (connection errors, timeouts,
+    429/5xx) with bounded exponential backoff, honoring a ``Retry-After``
+    header when the server sends one.
+
+    Config keys:
+
+    * ``url`` (required) — destination URL.
+    * ``method`` — HTTP method, default ``POST``.
+    * ``timeout_secs`` — per-request timeout, default 10.
+    * ``max_attempts`` — delivery attempts per record, default 3.
+    * ``retry_base_delay`` — seconds, exponential (``base * 2**attempt``),
+      default 0.5.
+    * ``signature_header`` + ``signature_field`` — send the per-record value
+      of ``signature_field`` as a request header named ``signature_header``.
+      This is how a producer (e.g. Voxora Studio) passes a precomputed HMAC
+      signature so every retry/replay carries a byte-identical signature
+      while the signing secret stays producer-side. Both keys must be set
+      together.
+    * ``body_field`` — when set, the record's value under this key is sent as
+      the exact request body bytes (never re-serialized); the whole record is
+      JSON-serialized otherwise.
+    * ``dead_letter_path`` — when set, records that exhaust their attempts are
+      appended to this JSONL file (record, error, attempts, timestamp) so a
+      terminal failure is inspectable and re-drivable instead of lost.
+
+    ``write`` returns the true number of records actually delivered (2xx).
+    Terminal failures are dead-lettered, never fabricated as success; the
+    caller compares ``rows_read`` against ``rows_written`` to detect them.
+    """
+
+    name = "webhook"
+
+    def test_connection(self, config: Mapping[str, Any]) -> bool:
+        _ = self._url(config)
+        return True
+
+    def _url(self, config: Mapping[str, Any]) -> str:
+        url = str(config.get("url") or "").strip()
+        if not url:
+            raise ConnectorError("webhook connector requires a 'url' in config")
+        return url
+
+    def read(self, config: Mapping[str, Any], limit: int | None = None) -> list[dict[str, Any]]:
+        raise ConnectorError(
+            "webhook connector is a destination; it does not support read()"
+        )
+
+    def write(self, config: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]) -> int:
+        url = self._url(config)
+        method = str(config.get("method") or "POST").upper()
+        timeout_secs = float(config.get("timeout_secs", 10))
+        max_attempts = max(1, int(config.get("max_attempts", 3)))
+        retry_base_delay = float(config.get("retry_base_delay", 0.5))
+        signature_header = config.get("signature_header")
+        signature_field = config.get("signature_field")
+        body_field = config.get("body_field")
+        dead_letter_path = config.get("dead_letter_path")
+        if bool(signature_header) != bool(signature_field):
+            raise ConnectorError(
+                "webhook connector requires signature_header and signature_field together"
+            )
+
+        written = 0
+        for row in rows:
+            if body_field is not None:
+                if body_field not in row:
+                    raise ConnectorError(f"record is missing body field {body_field!r}")
+                body = str(row[body_field]).encode("utf-8")
+            else:
+                body = json.dumps(dict(row), sort_keys=True).encode("utf-8")
+            headers = {"Content-Type": "application/json"}
+            if signature_header is not None:
+                if signature_field not in row:  # type: ignore[operator]
+                    raise ConnectorError(
+                        f"record is missing signature field {signature_field!r}"
+                    )
+                headers[str(signature_header)] = str(row[signature_field])  # type: ignore[operator]
+            error_detail = ""
+            for attempt in range(max_attempts):
+                try:
+                    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+                    with urllib.request.urlopen(request, timeout=timeout_secs) as response:
+                        status = int(getattr(response, "status", 0) or 0)
+                    if 200 <= status < 300:
+                        written += 1
+                        error_detail = ""
+                        break
+                    error_detail = f"http_{status}"
+                except urllib.error.HTTPError as error:
+                    error_detail = f"http_{error.code}"
+                    if error.code not in (429, 500, 502, 503, 504):
+                        break  # non-retryable client error
+                    retry_after = error.headers.get("Retry-After") if error.headers else None
+                except Exception as error:  # noqa: BLE001 - transport errors are retryable
+                    error_detail = f"{type(error).__name__}: {error}"[:300]
+                    retry_after = None
+                if attempt < max_attempts - 1:
+                    delay = retry_base_delay * (2**attempt)
+                    if retry_after:
+                        try:
+                            delay = max(delay, float(retry_after))
+                        except ValueError:
+                            pass
+                    time.sleep(delay)
+            else:
+                self._dead_letter(
+                    dead_letter_path, url=url, row=row, error=error_detail, attempts=max_attempts
+                )
+        return written
+
+    @staticmethod
+    def _dead_letter(
+        path: Any, *, url: str, row: Mapping[str, Any], error: str, attempts: int
+    ) -> None:
+        if not path:
+            return
+        entry = {
+            "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "url": url,
+            "error": error,
+            "attempts": attempts,
+            "record": dict(row),
+        }
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, sort_keys=True, default=str) + "\n")
+
+
 __all__ = [
     "ENTRY_POINT_GROUP",
     "BaseConnector",
@@ -846,6 +979,7 @@ __all__ = [
     "DuckDBConnector",
     "PostgresConnector",
     "SQLiteConnector",
+    "WebhookConnector",
     "available_connectors",
     "get_connector",
     "register_connector",

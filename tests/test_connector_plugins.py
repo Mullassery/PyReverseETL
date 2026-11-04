@@ -257,3 +257,130 @@ def test_entry_point_plugins_are_discovered(monkeypatch):
 def test_unknown_connector_is_an_error():
     with pytest.raises(ConnectorError, match="unknown connector"):
         get_connector("does_not_exist")
+
+
+# -- WebhookConnector: real HTTP against a local server -----------------------
+
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+from pyreverseetl.connectors import WebhookConnector
+
+
+class _RecordingHandler(BaseHTTPRequestHandler):
+    """Programmable local webhook: status codes per request, records everything."""
+
+    behavior: list = []  # list of (status, retry_after, headers_dict_per_call)
+    seen: list = []
+
+    def do_POST(self) -> None:  # noqa: N802 - stdlib naming
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length)
+        self.seen.append(
+            {
+                "path": self.path,
+                "body": body,
+                "signature": self.headers.get("x-voxora-signature"),
+                "content_type": self.headers.get("Content-Type"),
+            }
+        )
+        status, retry_after = self.behavior.pop(0) if self.behavior else (200, None)
+        self.send_response(status)
+        if retry_after:
+            self.send_header("Retry-After", str(retry_after))
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(b'{"ok":true}')
+
+    def log_message(self, *args) -> None:  # silence test output
+        return
+
+
+def _start_server(behavior):
+    _RecordingHandler.behavior = behavior
+    _RecordingHandler.seen = []
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _RecordingHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def test_webhook_connector_delivers_exact_body_and_signature(tmp_path):
+    server = _start_server([(200, None)])
+    try:
+        connector = WebhookConnector()
+        record = {
+            "event_id": "evt_1",
+            "body": '{"event_id": "evt_1", "event_type": "voice_session.created"}',
+            "signature": "v1=deadbeef",
+        }
+        written = connector.write(
+            {
+                "url": f"http://127.0.0.1:{server.server_port}/wh",
+                "signature_header": "x-voxora-signature",
+                "signature_field": "signature",
+                "body_field": "body",
+            },
+            [record],
+        )
+        assert written == 1
+        seen = _RecordingHandler.seen
+        assert len(seen) == 1
+        # Exact signed body bytes, never re-serialized.
+        assert seen[0]["body"] == record["body"].encode("utf-8")
+        assert seen[0]["signature"] == "v1=deadbeef"
+        assert seen[0]["content_type"] == "application/json"
+    finally:
+        server.shutdown()
+
+
+def test_webhook_connector_retries_429_honoring_retry_after(tmp_path):
+    server = _start_server([(429, 1), (200, None)])
+    try:
+        started = time.monotonic()
+        written = WebhookConnector().write(
+            {
+                "url": f"http://127.0.0.1:{server.server_port}/wh",
+                "max_attempts": 3,
+                "retry_base_delay": 0.05,
+            },
+            [{"event_id": "evt_2"}],
+        )
+        assert written == 1
+        assert time.monotonic() - started >= 1.0  # honored the 1s Retry-After
+        assert len(_RecordingHandler.seen) == 2
+    finally:
+        server.shutdown()
+
+
+def test_webhook_connector_dead_letters_terminal_failures(tmp_path):
+    server = _start_server([(500, None), (500, None)])
+    dead_letter = tmp_path / "dl.jsonl"
+    written = WebhookConnector().write(
+        {
+            "url": f"http://127.0.0.1:{server.server_port}/wh",
+            "max_attempts": 2,
+            "retry_base_delay": 0.01,
+            "dead_letter_path": str(dead_letter),
+        },
+        [{"event_id": "evt_3", "body": "x", "signature": "v1=aa"}],
+    )
+    assert written == 0  # true count: failure is never fabricated as success
+    assert len(_RecordingHandler.seen) == 2  # one retry after the first 500
+    entry = json.loads(dead_letter.read_text().splitlines()[0])
+    assert entry["error"] == "http_500" and entry["attempts"] == 2
+    assert entry["record"]["event_id"] == "evt_3"
+
+
+def test_webhook_connector_rejects_partial_signature_config():
+    with pytest.raises(ConnectorError):
+        WebhookConnector().write(
+            {"url": "http://127.0.0.1:1/wh", "signature_header": "x-voxora-signature"},
+            [{"signature": "v1=aa"}],
+        )
+
+
+def test_webhook_connector_requires_url():
+    with pytest.raises(ConnectorError):
+        WebhookConnector().write({}, [{}])

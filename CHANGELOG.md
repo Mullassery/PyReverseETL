@@ -15,6 +15,17 @@ that didn't happen, gaps are left as gaps. For full detail, use
 ## [Unreleased]
 
 ### Added
+- `WebhookConnector` Python destination (`pyreverseetl.connectors`): real
+  webhook delivery for the Python plugin path (`run_with_connector`) with
+  bounded retries + exponential backoff, `Retry-After` honoring, per-record
+  signature passthrough (`signature_header`/`signature_field`, e.g. a
+  producer-precomputed HMAC so replays carry a byte-identical signature),
+  exact-byte body passthrough (`body_field`), and JSONL dead-lettering of
+  terminal failures (`dead_letter_path`). `write` returns the true delivered
+  count — failures are dead-lettered, never fabricated as success.
+- Rust `WebhookAdapter` `extra_headers` config: caller-supplied static
+  headers (e.g. `x-voxora-signature`) merge over auth headers for
+  producer-signed replay on the `run_sync` path.
 - Squid-CRM destination adapter (`core/src/adapters/squid.rs`) for people and
   companies: native Squid create payloads, a stable per-record
   `Idempotency-Key`, `X-Correlation-Id`, Bearer/API-key auth, retry with
