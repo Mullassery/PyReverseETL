@@ -42,7 +42,23 @@ impl WebhookAdapter {
             .and_then(|v| v.as_u64())
             .unwrap_or(30);
 
-        let headers = Self::build_headers(&auth);
+        let mut headers = Self::build_headers(&auth);
+
+        // Caller-supplied static headers merge over the auth headers. This is
+        // how a producer (e.g. Voxora Studio) passes a precomputed HMAC
+        // signature (`x-voxora-signature`) so replays carry a byte-identical
+        // signature while the signing secret stays producer-side.
+        if let Some(extra) = config.get("extra_headers").and_then(|v| v.as_object()) {
+            for (key, value) in extra {
+                if let Some(value_str) = value.as_str() {
+                    headers.insert(key.clone(), value_str.to_string());
+                } else {
+                    return Err(AdapterError::InvalidConfiguration(format!(
+                        "extra_headers value for '{key}' must be a string"
+                    )));
+                }
+            }
+        }
 
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
@@ -448,6 +464,42 @@ mod tests {
         let body: Value = serde_json::from_str(&req.body).unwrap();
         assert_eq!(body["ltv"], json!(5000));
         assert_eq!(body["id"], json!("cust_9"));
+    }
+
+    #[test]
+    fn extra_headers_are_sent_verbatim_for_signed_replay() {
+        let server = MockHttpServer::start(200, r#"{"ok":true}"#);
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!(server.base_url.clone()));
+        config.insert(
+            "extra_headers".to_string(),
+            json!({"x-voxora-signature": "v1=deadbeef", "x-trace": "evt_1"}),
+        );
+        let adapter = WebhookAdapter::new(&config, AuthMethod::Bearer { token: "t".to_string() }).unwrap();
+
+        let entity = Entity::new(crate::entity::EntityType::Customer, "id", "cust_2")
+            .add_attribute("body", json!("signed-at-enqueue-time"));
+        let result = adapter.upsert(&entity, &[]).unwrap();
+        assert!(result.success, "{:?}", result.error_message);
+
+        let req = server.last_request().unwrap();
+        assert_eq!(
+            req.headers.get("x-voxora-signature"),
+            Some(&"v1=deadbeef".to_string())
+        );
+        assert_eq!(req.headers.get("x-trace"), Some(&"evt_1".to_string()));
+    }
+
+    #[test]
+    fn extra_headers_reject_non_string_values() {
+        let mut config = HashMap::new();
+        config.insert("url".to_string(), json!("https://example.com/webhook"));
+        config.insert(
+            "extra_headers".to_string(),
+            json!({"x-bad": 42}),
+        );
+        let result = WebhookAdapter::new(&config, AuthMethod::Bearer { token: "t".to_string() });
+        assert!(result.is_err());
     }
 
     #[test]
