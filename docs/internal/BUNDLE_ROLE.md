@@ -4,7 +4,7 @@ This repository is part of the **MarTech customer-data loop** bundle. Portfolio-
 reuse map, and phases are in [`Mullassery/BUNDLES.md`](../Mullassery/blob/main/BUNDLES.md).
 
 - **Role:** Activation, lineage, PII, idempotency
-- **Upstream/downstream:** MessageBirds (bulk sync), StatGuardian (quality gate)
+- **Upstream/downstream:** PyCustomerHub (bulk sync), StatGuardian (quality gate)
 - **Next integration step:** Wire StatGuardian into the real sync path; live-verify CRM connectors; publish wheels.
 - **Non-goal:** Build CDC/streaming or a segmentation engine.
 
