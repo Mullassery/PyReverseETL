@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from typing import ClassVar
 
 import pytest
 from pyreverseetl.connectors import (
@@ -271,10 +272,10 @@ from pyreverseetl.connectors import WebhookConnector
 class _RecordingHandler(BaseHTTPRequestHandler):
     """Programmable local webhook: status codes per request, records everything."""
 
-    behavior: list = []  # list of (status, retry_after, headers_dict_per_call)
-    seen: list = []
+    behavior: ClassVar[list] = []  # list of (status, retry_after, headers_dict_per_call)
+    seen: ClassVar[list] = []
 
-    def do_POST(self) -> None:  # noqa: N802 - stdlib naming
+    def do_POST(self) -> None:
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length)
         self.seen.append(
